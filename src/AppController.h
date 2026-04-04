@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QVariantMap>
 
 class AppController : public QObject
 {
@@ -14,4 +15,5 @@ public:
     QString appTitle() const;
 
     Q_INVOKABLE QString helloMessage() const;
+    Q_INVOKABLE QVariantMap mockChartResult() const;
 };

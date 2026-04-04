@@ -24,6 +24,7 @@ qt_add_qml_module(appFourPillarsOfDestiny
     VERSION 1.0
     QML_FILES
         src/qml/Main.qml
+        src/qml/pages/ChartResultPage.qml
         src/qml/pages/HomePage.qml
         src/qml/pages/InputPage.qml
 )

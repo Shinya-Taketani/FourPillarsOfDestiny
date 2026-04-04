@@ -14,3 +14,14 @@ QString AppController::helloMessage() const
 {
     return QStringLiteral("泰山流四柱推命ソフトの初期画面です。");
 }
+
+QVariantMap AppController::mockChartResult() const
+{
+    return {
+        {QStringLiteral("yearPillar"), QStringLiteral("甲子")},
+        {QStringLiteral("monthPillar"), QStringLiteral("乙丑")},
+        {QStringLiteral("dayPillar"), QStringLiteral("丙寅")},
+        {QStringLiteral("hourPillar"), QStringLiteral("丁卯")},
+        {QStringLiteral("description"), QStringLiteral("これは仮の命式結果です。計算ロジックは未実装です。")}
+    };
+}

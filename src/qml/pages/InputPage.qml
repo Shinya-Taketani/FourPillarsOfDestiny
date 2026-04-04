@@ -5,6 +5,8 @@ import org.kde.kirigami as Kirigami
 Kirigami.Page {
     title: "命式入力"
 
+    property var chartResult: ({})
+
     Column {
         anchors.centerIn: parent
         spacing: 12
@@ -24,7 +26,13 @@ Kirigami.Page {
 
         Button {
             text: "計算"
-            onClicked: console.log("将来ここで命式計算を呼ぶ")
+            onClicked: {
+                chartResult = appController.mockChartResult()
+                applicationWindow().pageStack.push(
+                    Qt.resolvedUrl("ChartResultPage.qml"),
+                    { chartResult: chartResult }
+                )
+            }
         }
     }
 }
