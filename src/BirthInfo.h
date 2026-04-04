@@ -12,5 +12,6 @@ struct BirthInfo
 
     bool isValid() const;
     QStringList validationErrors() const;
+    static BirthInfo fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;
 };

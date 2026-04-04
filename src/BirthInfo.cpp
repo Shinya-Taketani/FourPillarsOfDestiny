@@ -33,6 +33,15 @@ QStringList BirthInfo::validationErrors() const
     return errors;
 }
 
+BirthInfo BirthInfo::fromVariantMap(const QVariantMap &map)
+{
+    return {
+        map.value(QStringLiteral("birthDate")).toString(),
+        map.value(QStringLiteral("birthTime")).toString(),
+        map.value(QStringLiteral("gender")).toString()
+    };
+}
+
 QVariantMap BirthInfo::toVariantMap() const
 {
     return {

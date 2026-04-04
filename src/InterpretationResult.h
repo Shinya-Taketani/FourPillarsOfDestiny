@@ -9,5 +9,6 @@ struct InterpretationResult
     QString detailText;
     QString cautionText;
 
+    static InterpretationResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;
 };

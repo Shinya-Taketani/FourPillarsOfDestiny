@@ -33,6 +33,9 @@ private slots:
     void savedChartRecordConvertsToJsonObject();
     void jsonRecordStorageWritesJsonFile();
     void appControllerCanSaveCurrentRecord();
+    void jsonRecordStorageListsSavedFiles();
+    void jsonRecordStorageLoadsSavedRecord();
+    void appControllerCanListAndLoadSavedRecords();
 };
 
 void CoreTests::chartCalculatorReturnsNonEmptyResult()
@@ -294,6 +297,104 @@ void CoreTests::appControllerCanSaveCurrentRecord()
 
     QVERIFY(controller.saveCurrentRecord());
     QVERIFY(!controller.lastSaveMessage().isEmpty());
+}
+
+void CoreTests::jsonRecordStorageListsSavedFiles()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    JsonRecordStorage storage(temporaryDir.path());
+    const SavedChartRecord record{
+        BirthInfo{QStringLiteral("1991-02-03"), QStringLiteral("09:10"), QStringLiteral("女性")},
+        ChartResult{
+            QStringLiteral("甲子"),
+            QStringLiteral("乙丑"),
+            QStringLiteral("丙寅"),
+            QStringLiteral("丁卯"),
+            QStringLiteral("これは仮の命式結果です。")
+        },
+        InterpretationResult{
+            QStringLiteral("これは仮の解釈結果です。"),
+            QStringLiteral("本実装の解釈ロジックは未対応です。"),
+            QStringLiteral("要確認事項があります。")
+        },
+        QStringLiteral("2026-04-05T00:00:00Z")
+    };
+
+    QVERIFY(storage.save(record));
+
+    const QVariantList records = storage.listRecords();
+    QVERIFY(!records.isEmpty());
+
+    const QVariantMap firstRecord = records.first().toMap();
+    QVERIFY(firstRecord.contains(QStringLiteral("filePath")));
+    QVERIFY(firstRecord.contains(QStringLiteral("savedAt")));
+    QCOMPARE(firstRecord.value(QStringLiteral("birthDate")).toString(), QStringLiteral("1991-02-03"));
+}
+
+void CoreTests::jsonRecordStorageLoadsSavedRecord()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    JsonRecordStorage storage(temporaryDir.path());
+    const SavedChartRecord savedRecord{
+        BirthInfo{QStringLiteral("1992-03-04"), QStringLiteral("10:20"), QStringLiteral("男性")},
+        ChartResult{
+            QStringLiteral("甲子"),
+            QStringLiteral("乙丑"),
+            QStringLiteral("丙寅"),
+            QStringLiteral("丁卯"),
+            QStringLiteral("これは仮の命式結果です。")
+        },
+        InterpretationResult{
+            QStringLiteral("これは仮の解釈結果です。"),
+            QStringLiteral("本実装の解釈ロジックは未対応です。"),
+            QStringLiteral("要確認事項があります。")
+        },
+        QStringLiteral("2026-04-05T00:00:00Z")
+    };
+
+    QString filePath;
+    QVERIFY(storage.save(savedRecord, &filePath));
+
+    SavedChartRecord loadedRecord;
+    QString errorMessage;
+    QVERIFY(storage.load(filePath, &loadedRecord, &errorMessage));
+    QVERIFY(errorMessage.isEmpty());
+    QCOMPARE(loadedRecord.birthInfo.birthDate, QStringLiteral("1992-03-04"));
+    QCOMPARE(loadedRecord.birthInfo.gender, QStringLiteral("男性"));
+    QCOMPARE(loadedRecord.chartResult.yearPillar, QStringLiteral("甲子"));
+    QCOMPARE(loadedRecord.interpretationResult.summaryText, QStringLiteral("これは仮の解釈結果です。"));
+}
+
+void CoreTests::appControllerCanListAndLoadSavedRecords()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    AppController controller;
+    controller.setRecordStorageDirectory(temporaryDir.path());
+    controller.setBirthInfo(
+        QStringLiteral("1988-12-24"),
+        QStringLiteral("06:15"),
+        QStringLiteral("未指定")
+    );
+
+    controller.calculateChartResult();
+    controller.calculateInterpretationResult();
+    QVERIFY(controller.saveCurrentRecord());
+
+    const QVariantList records = controller.savedRecords();
+    QVERIFY(!records.isEmpty());
+
+    const QString filePath = records.first().toMap().value(QStringLiteral("filePath")).toString();
+    QVERIFY(!filePath.isEmpty());
+    QVERIFY(controller.loadSavedRecord(filePath));
+    QCOMPARE(controller.currentBirthInfo().value(QStringLiteral("birthDate")).toString(), QStringLiteral("1988-12-24"));
+    QVERIFY(!controller.currentChartResult().value(QStringLiteral("yearPillar")).toString().isEmpty());
+    QVERIFY(!controller.currentInterpretationResult().value(QStringLiteral("summaryText")).toString().isEmpty());
 }
 
 QTEST_MAIN(CoreTests)

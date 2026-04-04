@@ -17,5 +17,10 @@ Kirigami.Page {
             text: "命式入力へ"
             onClicked: applicationWindow().pageStack.push(Qt.resolvedUrl("InputPage.qml"))
         }
+
+        Button {
+            text: "保存済み一覧へ"
+            onClicked: applicationWindow().pageStack.push(Qt.resolvedUrl("SavedRecordsPage.qml"))
+        }
     }
 }

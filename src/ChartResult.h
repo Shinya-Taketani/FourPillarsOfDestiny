@@ -11,5 +11,6 @@ struct ChartResult
     QString hourPillar;
     QString description;
 
+    static ChartResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;
 };

@@ -31,6 +31,10 @@ public:
     Q_INVOKABLE QVariantMap calculateChartResult() const;
     Q_INVOKABLE QVariantMap calculateInterpretationResult() const;
     Q_INVOKABLE bool saveCurrentRecord();
+    Q_INVOKABLE QVariantList savedRecords() const;
+    Q_INVOKABLE bool loadSavedRecord(const QString &filePath);
+    Q_INVOKABLE QVariantMap currentChartResult() const;
+    Q_INVOKABLE QVariantMap currentInterpretationResult() const;
     Q_INVOKABLE QString lastSaveMessage() const;
 
     void setRecordStorageDirectory(const QString &baseDirectoryPath);

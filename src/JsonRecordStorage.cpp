@@ -1,9 +1,11 @@
 #include "JsonRecordStorage.h"
 
 #include <QDateTime>
+#include <QFileInfo>
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QStandardPaths>
 
 JsonRecordStorage::JsonRecordStorage(QString baseDirectoryPath)
@@ -48,6 +50,74 @@ bool JsonRecordStorage::save(const SavedChartRecord &record, QString *savedFileP
 
     if (savedFilePath) {
         *savedFilePath = filePath;
+    }
+
+    return true;
+}
+
+QVariantList JsonRecordStorage::listRecords(QString *errorMessage) const
+{
+    QVariantList records;
+    QDir directory(storageDirectoryPath());
+
+    if (!directory.exists()) {
+        return records;
+    }
+
+    const QFileInfoList files = directory.entryInfoList(
+        {QStringLiteral("*.json")},
+        QDir::Files,
+        QDir::Time | QDir::Reversed
+    );
+
+    for (const QFileInfo &fileInfo : files) {
+        SavedChartRecord record;
+        QString loadError;
+        if (!load(fileInfo.absoluteFilePath(), &record, &loadError)) {
+            continue;
+        }
+
+        records.append(QVariantMap{
+            {QStringLiteral("filePath"), fileInfo.absoluteFilePath()},
+            {QStringLiteral("fileName"), fileInfo.fileName()},
+            {QStringLiteral("savedAt"), record.savedAt},
+            {QStringLiteral("birthDate"), record.birthInfo.birthDate},
+            {QStringLiteral("gender"), record.birthInfo.gender}
+        });
+    }
+
+    if (records.isEmpty() && errorMessage && directory.entryList({QStringLiteral("*.json")}, QDir::Files).isEmpty()) {
+        *errorMessage = QString();
+    }
+
+    return records;
+}
+
+bool JsonRecordStorage::load(const QString &filePath, SavedChartRecord *outRecord, QString *errorMessage) const
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("保存ファイルを開けませんでした。");
+        }
+        return false;
+    }
+
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll());
+    file.close();
+
+    if (!document.isObject()) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("JSON 形式が不正です。");
+        }
+        return false;
+    }
+
+    if (!SavedChartRecord::fromJsonObject(document.object(), outRecord)) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("保存データの復元に失敗しました。");
+        }
+        return false;
     }
 
     return true;

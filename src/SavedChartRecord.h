@@ -14,5 +14,6 @@ struct SavedChartRecord
     InterpretationResult interpretationResult;
     QString savedAt;
 
+    static bool fromJsonObject(const QJsonObject &jsonObject, SavedChartRecord *outRecord);
     QJsonObject toJsonObject() const;
 };

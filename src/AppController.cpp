@@ -85,6 +85,40 @@ bool AppController::saveCurrentRecord()
     return true;
 }
 
+QVariantList AppController::savedRecords() const
+{
+    return m_recordStorage.listRecords();
+}
+
+bool AppController::loadSavedRecord(const QString &filePath)
+{
+    SavedChartRecord record;
+    QString errorMessage;
+
+    if (!m_recordStorage.load(filePath, &record, &errorMessage)) {
+        m_lastSaveMessage = errorMessage.isEmpty()
+            ? QStringLiteral("保存データの読み込みに失敗しました。")
+            : errorMessage;
+        return false;
+    }
+
+    m_birthInfo = record.birthInfo;
+    m_chartResult = record.chartResult;
+    m_interpretationResult = record.interpretationResult;
+    m_lastSaveMessage = QStringLiteral("保存データを読み込みました。");
+    return true;
+}
+
+QVariantMap AppController::currentChartResult() const
+{
+    return m_chartResult.toVariantMap();
+}
+
+QVariantMap AppController::currentInterpretationResult() const
+{
+    return m_interpretationResult.toVariantMap();
+}
+
 QString AppController::lastSaveMessage() const
 {
     return m_lastSaveMessage;

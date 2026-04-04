@@ -42,6 +42,7 @@ qt_add_qml_module(appFourPillarsOfDestiny
         src/qml/pages/ChartResultPage.qml
         src/qml/pages/HomePage.qml
         src/qml/pages/InputPage.qml
+        src/qml/pages/SavedRecordsPage.qml
 )
 
 target_link_libraries(appFourPillarsOfDestiny PRIVATE
