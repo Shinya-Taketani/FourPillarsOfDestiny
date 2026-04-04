@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QVariantMap>
 
 #include "BirthInfo.h"
@@ -21,6 +22,8 @@ public:
     Q_INVOKABLE QString helloMessage() const;
     Q_INVOKABLE void setBirthInfo(const QString &birthDate, const QString &birthTime, const QString &gender);
     Q_INVOKABLE QVariantMap currentBirthInfo() const;
+    Q_INVOKABLE bool isBirthInfoValid() const;
+    Q_INVOKABLE QStringList birthInfoValidationErrors() const;
     Q_INVOKABLE QVariantMap calculateChartResult() const;
 
 private:

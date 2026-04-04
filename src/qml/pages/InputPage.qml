@@ -6,6 +6,7 @@ Kirigami.Page {
     title: "命式入力"
 
     property var chartResult: ({})
+    property string validationMessage: ""
 
     Column {
         anchors.centerIn: parent
@@ -27,6 +28,14 @@ Kirigami.Page {
             model: ["男性", "女性", "未指定"]
         }
 
+        Label {
+            width: parent.width
+            visible: validationMessage.length > 0
+            wrapMode: Text.WordWrap
+            color: Kirigami.Theme.negativeTextColor
+            text: validationMessage
+        }
+
         Button {
             text: "計算"
             onClicked: {
@@ -35,6 +44,13 @@ Kirigami.Page {
                     birthTimeField.text,
                     genderComboBox.currentText
                 )
+
+                if (!appController.isBirthInfoValid()) {
+                    validationMessage = appController.birthInfoValidationErrors().join("\n")
+                    return
+                }
+
+                validationMessage = ""
                 chartResult = appController.calculateChartResult()
                 applicationWindow().pageStack.push(
                     Qt.resolvedUrl("ChartResultPage.qml"),

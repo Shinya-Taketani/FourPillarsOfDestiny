@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 #include <QVariantMap>
 
 struct BirthInfo
@@ -9,5 +10,7 @@ struct BirthInfo
     QString birthTime;
     QString gender;
 
+    bool isValid() const;
+    QStringList validationErrors() const;
     QVariantMap toVariantMap() const;
 };

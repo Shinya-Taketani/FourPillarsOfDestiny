@@ -27,6 +27,16 @@ QVariantMap AppController::currentBirthInfo() const
     return m_birthInfo.toVariantMap();
 }
 
+bool AppController::isBirthInfoValid() const
+{
+    return m_birthInfo.isValid();
+}
+
+QStringList AppController::birthInfoValidationErrors() const
+{
+    return m_birthInfo.validationErrors();
+}
+
 QVariantMap AppController::calculateChartResult() const
 {
     m_chartResult = m_chartCalculator.calculate(m_birthInfo);

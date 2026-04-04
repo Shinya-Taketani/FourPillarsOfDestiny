@@ -12,7 +12,12 @@ class CoreTests : public QObject
 private slots:
     void chartCalculatorReturnsNonEmptyResult();
     void chartResultToVariantMapContainsRequiredKeys();
+    void birthInfoValidationAcceptsValidInput();
+    void birthInfoValidationRejectsEmptyBirthDate();
+    void birthInfoValidationRejectsEmptyBirthTime();
+    void birthInfoValidationRejectsEmptyGender();
     void appControllerStoresBirthInfo();
+    void appControllerExposesBirthInfoValidation();
     void appControllerReturnsChartResultMap();
 };
 
@@ -53,6 +58,54 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("description")));
 }
 
+void CoreTests::birthInfoValidationAcceptsValidInput()
+{
+    BirthInfo birthInfo;
+
+    birthInfo.birthDate = QStringLiteral("1990-01-01");
+    birthInfo.birthTime = QStringLiteral("13:30");
+    birthInfo.gender = QStringLiteral("男性");
+
+    QVERIFY(birthInfo.isValid());
+    QVERIFY(birthInfo.validationErrors().isEmpty());
+}
+
+void CoreTests::birthInfoValidationRejectsEmptyBirthDate()
+{
+    BirthInfo birthInfo;
+
+    birthInfo.birthDate = QStringLiteral("");
+    birthInfo.birthTime = QStringLiteral("13:30");
+    birthInfo.gender = QStringLiteral("男性");
+
+    QVERIFY(!birthInfo.isValid());
+    QVERIFY(!birthInfo.validationErrors().isEmpty());
+}
+
+void CoreTests::birthInfoValidationRejectsEmptyBirthTime()
+{
+    BirthInfo birthInfo;
+
+    birthInfo.birthDate = QStringLiteral("1990-01-01");
+    birthInfo.birthTime = QStringLiteral("");
+    birthInfo.gender = QStringLiteral("男性");
+
+    QVERIFY(!birthInfo.isValid());
+    QVERIFY(!birthInfo.validationErrors().isEmpty());
+}
+
+void CoreTests::birthInfoValidationRejectsEmptyGender()
+{
+    BirthInfo birthInfo;
+
+    birthInfo.birthDate = QStringLiteral("1990-01-01");
+    birthInfo.birthTime = QStringLiteral("13:30");
+    birthInfo.gender = QStringLiteral("");
+
+    QVERIFY(!birthInfo.isValid());
+    QVERIFY(!birthInfo.validationErrors().isEmpty());
+}
+
 void CoreTests::appControllerStoresBirthInfo()
 {
     AppController controller;
@@ -68,6 +121,20 @@ void CoreTests::appControllerStoresBirthInfo()
     QCOMPARE(birthInfo.value(QStringLiteral("birthDate")).toString(), QStringLiteral("2000-02-03"));
     QCOMPARE(birthInfo.value(QStringLiteral("birthTime")).toString(), QStringLiteral("08:45"));
     QCOMPARE(birthInfo.value(QStringLiteral("gender")).toString(), QStringLiteral("女性"));
+}
+
+void CoreTests::appControllerExposesBirthInfoValidation()
+{
+    AppController controller;
+
+    controller.setBirthInfo(
+        QStringLiteral("2000/02/03"),
+        QStringLiteral("08:45"),
+        QStringLiteral("女性")
+    );
+
+    QVERIFY(!controller.isBirthInfoValid());
+    QVERIFY(!controller.birthInfoValidationErrors().isEmpty());
 }
 
 void CoreTests::appControllerReturnsChartResultMap()
