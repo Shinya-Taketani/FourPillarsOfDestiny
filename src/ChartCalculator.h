@@ -1,11 +1,10 @@
 #pragma once
 
-#include <QVariantMap>
-
 #include "BirthInfo.h"
+#include "ChartResult.h"
 
 class ChartCalculator
 {
 public:
-    QVariantMap calculate(const BirthInfo &birthInfo) const;
+    ChartResult calculate(const BirthInfo &birthInfo) const;
 };

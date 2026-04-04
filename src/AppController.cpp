@@ -29,5 +29,6 @@ QVariantMap AppController::currentBirthInfo() const
 
 QVariantMap AppController::calculateChartResult() const
 {
-    return m_chartCalculator.calculate(m_birthInfo);
+    m_chartResult = m_chartCalculator.calculate(m_birthInfo);
+    return m_chartResult.toVariantMap();
 }

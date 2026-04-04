@@ -1,6 +1,6 @@
 #include "ChartCalculator.h"
 
-QVariantMap ChartCalculator::calculate(const BirthInfo &birthInfo) const
+ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
 {
     QString description = QStringLiteral(
         "これは仮の命式結果です。ChartCalculator の本実装は未対応です。"
@@ -14,10 +14,10 @@ QVariantMap ChartCalculator::calculate(const BirthInfo &birthInfo) const
     }
 
     return {
-        {QStringLiteral("yearPillar"), QStringLiteral("甲子")},
-        {QStringLiteral("monthPillar"), QStringLiteral("乙丑")},
-        {QStringLiteral("dayPillar"), QStringLiteral("丙寅")},
-        {QStringLiteral("hourPillar"), QStringLiteral("丁卯")},
-        {QStringLiteral("description"), description}
+        QStringLiteral("甲子"),
+        QStringLiteral("乙丑"),
+        QStringLiteral("丙寅"),
+        QStringLiteral("丁卯"),
+        description
     };
 }

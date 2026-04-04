@@ -6,6 +6,7 @@
 
 #include "BirthInfo.h"
 #include "ChartCalculator.h"
+#include "ChartResult.h"
 
 class AppController : public QObject
 {
@@ -25,4 +26,5 @@ public:
 private:
     BirthInfo m_birthInfo;
     ChartCalculator m_chartCalculator;
+    mutable ChartResult m_chartResult;
 };

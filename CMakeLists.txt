@@ -21,6 +21,8 @@ qt_add_executable(appFourPillarsOfDestiny
     src/BirthInfo.h
     src/ChartCalculator.cpp
     src/ChartCalculator.h
+    src/ChartResult.cpp
+    src/ChartResult.h
 )
 
 qt_add_qml_module(appFourPillarsOfDestiny
