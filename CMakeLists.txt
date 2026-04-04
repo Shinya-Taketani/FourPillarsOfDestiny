@@ -8,10 +8,11 @@ project(FourPillarsOfDestiny
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Test)
 find_package(KF6Kirigami REQUIRED)
 
 qt_standard_project_setup(REQUIRES 6.8)
+enable_testing()
 
 qt_add_executable(appFourPillarsOfDestiny
     src/main.cpp
@@ -50,3 +51,26 @@ install(TARGETS appFourPillarsOfDestiny
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+add_executable(FourPillarsOfDestinyTests
+    tests/CoreTests.cpp
+    src/AppController.cpp
+    src/AppController.h
+    src/BirthInfo.cpp
+    src/BirthInfo.h
+    src/ChartCalculator.cpp
+    src/ChartCalculator.h
+    src/ChartResult.cpp
+    src/ChartResult.h
+)
+
+target_include_directories(FourPillarsOfDestinyTests PRIVATE
+    src
+)
+
+target_link_libraries(FourPillarsOfDestinyTests PRIVATE
+    Qt6::Core
+    Qt6::Test
+)
+
+add_test(NAME FourPillarsOfDestinyCoreTests COMMAND FourPillarsOfDestinyTests)
