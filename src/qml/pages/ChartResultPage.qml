@@ -12,6 +12,11 @@ Kirigami.Page {
         hourPillar: "",
         description: ""
     })
+    property var interpretationResult: ({
+        summaryText: "",
+        detailText: "",
+        cautionText: ""
+    })
 
     Column {
         anchors.fill: parent
@@ -56,6 +61,39 @@ Kirigami.Page {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     text: chartResult.description
+                }
+            }
+        }
+
+        Frame {
+            width: parent.width
+
+            Column {
+                width: parent.width
+                spacing: 12
+
+                Label {
+                    text: "解釈メモ"
+                    font.bold: true
+                }
+
+                Label {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: interpretationResult.summaryText
+                }
+
+                Label {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: interpretationResult.detailText
+                }
+
+                Label {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    color: Kirigami.Theme.disabledTextColor
+                    text: interpretationResult.cautionText
                 }
             }
         }

@@ -42,3 +42,9 @@ QVariantMap AppController::calculateChartResult() const
     m_chartResult = m_chartCalculator.calculate(m_birthInfo);
     return m_chartResult.toVariantMap();
 }
+
+QVariantMap AppController::calculateInterpretationResult() const
+{
+    m_interpretationResult = m_interpretationEngine.interpret(m_chartResult);
+    return m_interpretationResult.toVariantMap();
+}

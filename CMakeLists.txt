@@ -24,6 +24,10 @@ qt_add_executable(appFourPillarsOfDestiny
     src/ChartCalculator.h
     src/ChartResult.cpp
     src/ChartResult.h
+    src/InterpretationEngine.cpp
+    src/InterpretationEngine.h
+    src/InterpretationResult.cpp
+    src/InterpretationResult.h
 )
 
 qt_add_qml_module(appFourPillarsOfDestiny
@@ -62,6 +66,10 @@ add_executable(FourPillarsOfDestinyTests
     src/ChartCalculator.h
     src/ChartResult.cpp
     src/ChartResult.h
+    src/InterpretationEngine.cpp
+    src/InterpretationEngine.h
+    src/InterpretationResult.cpp
+    src/InterpretationResult.h
 )
 
 target_include_directories(FourPillarsOfDestinyTests PRIVATE

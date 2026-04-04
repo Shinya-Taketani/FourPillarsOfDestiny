@@ -4,6 +4,8 @@
 #include "BirthInfo.h"
 #include "ChartCalculator.h"
 #include "ChartResult.h"
+#include "InterpretationEngine.h"
+#include "InterpretationResult.h"
 
 class CoreTests : public QObject
 {
@@ -19,6 +21,8 @@ private slots:
     void appControllerStoresBirthInfo();
     void appControllerExposesBirthInfoValidation();
     void appControllerReturnsChartResultMap();
+    void interpretationEngineReturnsNonEmptyResult();
+    void appControllerReturnsInterpretationResultMap();
 };
 
 void CoreTests::chartCalculatorReturnsNonEmptyResult()
@@ -155,6 +159,44 @@ void CoreTests::appControllerReturnsChartResultMap()
     QVERIFY(resultMap.contains(QStringLiteral("hourPillar")));
     QVERIFY(resultMap.contains(QStringLiteral("description")));
     QVERIFY(!resultMap.value(QStringLiteral("description")).toString().isEmpty());
+}
+
+void CoreTests::interpretationEngineReturnsNonEmptyResult()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("甲子"),
+        QStringLiteral("乙丑"),
+        QStringLiteral("丙寅"),
+        QStringLiteral("丁卯"),
+        QStringLiteral("これは仮の命式結果です。")
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+
+    QVERIFY(!result.summaryText.isEmpty());
+    QVERIFY(!result.detailText.isEmpty());
+    QVERIFY(!result.cautionText.isEmpty());
+}
+
+void CoreTests::appControllerReturnsInterpretationResultMap()
+{
+    AppController controller;
+
+    controller.setBirthInfo(
+        QStringLiteral("1988-12-24"),
+        QStringLiteral("06:15"),
+        QStringLiteral("未指定")
+    );
+
+    controller.calculateChartResult();
+    const QVariantMap interpretationMap = controller.calculateInterpretationResult();
+
+    QVERIFY(interpretationMap.contains(QStringLiteral("summaryText")));
+    QVERIFY(interpretationMap.contains(QStringLiteral("detailText")));
+    QVERIFY(interpretationMap.contains(QStringLiteral("cautionText")));
+    QVERIFY(!interpretationMap.value(QStringLiteral("summaryText")).toString().isEmpty());
+    QVERIFY(!interpretationMap.value(QStringLiteral("detailText")).toString().isEmpty());
 }
 
 QTEST_MAIN(CoreTests)

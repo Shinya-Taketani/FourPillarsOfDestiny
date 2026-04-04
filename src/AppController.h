@@ -8,6 +8,8 @@
 #include "BirthInfo.h"
 #include "ChartCalculator.h"
 #include "ChartResult.h"
+#include "InterpretationEngine.h"
+#include "InterpretationResult.h"
 
 class AppController : public QObject
 {
@@ -25,9 +27,12 @@ public:
     Q_INVOKABLE bool isBirthInfoValid() const;
     Q_INVOKABLE QStringList birthInfoValidationErrors() const;
     Q_INVOKABLE QVariantMap calculateChartResult() const;
+    Q_INVOKABLE QVariantMap calculateInterpretationResult() const;
 
 private:
     BirthInfo m_birthInfo;
     ChartCalculator m_chartCalculator;
+    InterpretationEngine m_interpretationEngine;
     mutable ChartResult m_chartResult;
+    mutable InterpretationResult m_interpretationResult;
 };

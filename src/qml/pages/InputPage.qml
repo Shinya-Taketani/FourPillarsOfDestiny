@@ -6,6 +6,7 @@ Kirigami.Page {
     title: "命式入力"
 
     property var chartResult: ({})
+    property var interpretationResult: ({})
     property string validationMessage: ""
 
     Column {
@@ -52,9 +53,13 @@ Kirigami.Page {
 
                 validationMessage = ""
                 chartResult = appController.calculateChartResult()
+                interpretationResult = appController.calculateInterpretationResult()
                 applicationWindow().pageStack.push(
                     Qt.resolvedUrl("ChartResultPage.qml"),
-                    { chartResult: chartResult }
+                    {
+                        chartResult: chartResult,
+                        interpretationResult: interpretationResult
+                    }
                 )
             }
         }
