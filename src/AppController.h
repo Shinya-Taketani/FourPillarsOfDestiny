@@ -10,6 +10,8 @@
 #include "ChartResult.h"
 #include "InterpretationEngine.h"
 #include "InterpretationResult.h"
+#include "JsonRecordStorage.h"
+#include "SavedChartRecord.h"
 
 class AppController : public QObject
 {
@@ -28,11 +30,17 @@ public:
     Q_INVOKABLE QStringList birthInfoValidationErrors() const;
     Q_INVOKABLE QVariantMap calculateChartResult() const;
     Q_INVOKABLE QVariantMap calculateInterpretationResult() const;
+    Q_INVOKABLE bool saveCurrentRecord();
+    Q_INVOKABLE QString lastSaveMessage() const;
+
+    void setRecordStorageDirectory(const QString &baseDirectoryPath);
 
 private:
     BirthInfo m_birthInfo;
     ChartCalculator m_chartCalculator;
     InterpretationEngine m_interpretationEngine;
+    JsonRecordStorage m_recordStorage;
     mutable ChartResult m_chartResult;
     mutable InterpretationResult m_interpretationResult;
+    QString m_lastSaveMessage;
 };

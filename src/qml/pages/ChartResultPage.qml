@@ -17,6 +17,7 @@ Kirigami.Page {
         detailText: "",
         cautionText: ""
     })
+    property string saveMessage: ""
 
     Column {
         anchors.fill: parent
@@ -96,6 +97,21 @@ Kirigami.Page {
                     text: interpretationResult.cautionText
                 }
             }
+        }
+
+        Button {
+            text: "保存"
+            onClicked: {
+                appController.saveCurrentRecord()
+                saveMessage = appController.lastSaveMessage()
+            }
+        }
+
+        Label {
+            width: parent.width
+            visible: saveMessage.length > 0
+            wrapMode: Text.WordWrap
+            text: saveMessage
         }
 
         Button {

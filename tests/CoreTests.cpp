@@ -1,11 +1,18 @@
 #include <QtTest>
 
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTemporaryDir>
+
 #include "AppController.h"
 #include "BirthInfo.h"
 #include "ChartCalculator.h"
 #include "ChartResult.h"
 #include "InterpretationEngine.h"
 #include "InterpretationResult.h"
+#include "JsonRecordStorage.h"
+#include "SavedChartRecord.h"
 
 class CoreTests : public QObject
 {
@@ -23,6 +30,9 @@ private slots:
     void appControllerReturnsChartResultMap();
     void interpretationEngineReturnsNonEmptyResult();
     void appControllerReturnsInterpretationResultMap();
+    void savedChartRecordConvertsToJsonObject();
+    void jsonRecordStorageWritesJsonFile();
+    void appControllerCanSaveCurrentRecord();
 };
 
 void CoreTests::chartCalculatorReturnsNonEmptyResult()
@@ -197,6 +207,93 @@ void CoreTests::appControllerReturnsInterpretationResultMap()
     QVERIFY(interpretationMap.contains(QStringLiteral("cautionText")));
     QVERIFY(!interpretationMap.value(QStringLiteral("summaryText")).toString().isEmpty());
     QVERIFY(!interpretationMap.value(QStringLiteral("detailText")).toString().isEmpty());
+}
+
+void CoreTests::savedChartRecordConvertsToJsonObject()
+{
+    SavedChartRecord record{
+        BirthInfo{QStringLiteral("1990-01-01"), QStringLiteral("13:30"), QStringLiteral("男性")},
+        ChartResult{
+            QStringLiteral("甲子"),
+            QStringLiteral("乙丑"),
+            QStringLiteral("丙寅"),
+            QStringLiteral("丁卯"),
+            QStringLiteral("これは仮の命式結果です。")
+        },
+        InterpretationResult{
+            QStringLiteral("これは仮の解釈結果です。"),
+            QStringLiteral("本実装の解釈ロジックは未対応です。"),
+            QStringLiteral("要確認事項があります。")
+        },
+        QStringLiteral("2026-04-05T00:00:00Z")
+    };
+
+    const QJsonObject jsonObject = record.toJsonObject();
+
+    QVERIFY(jsonObject.contains(QStringLiteral("schemaVersion")));
+    QVERIFY(jsonObject.contains(QStringLiteral("savedAt")));
+    QVERIFY(jsonObject.contains(QStringLiteral("birthInfo")));
+    QVERIFY(jsonObject.contains(QStringLiteral("chartResult")));
+    QVERIFY(jsonObject.contains(QStringLiteral("interpretationResult")));
+}
+
+void CoreTests::jsonRecordStorageWritesJsonFile()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    JsonRecordStorage storage(temporaryDir.path());
+    const SavedChartRecord record{
+        BirthInfo{QStringLiteral("1990-01-01"), QStringLiteral("13:30"), QStringLiteral("男性")},
+        ChartResult{
+            QStringLiteral("甲子"),
+            QStringLiteral("乙丑"),
+            QStringLiteral("丙寅"),
+            QStringLiteral("丁卯"),
+            QStringLiteral("これは仮の命式結果です。")
+        },
+        InterpretationResult{
+            QStringLiteral("これは仮の解釈結果です。"),
+            QStringLiteral("本実装の解釈ロジックは未対応です。"),
+            QStringLiteral("要確認事項があります。")
+        },
+        QStringLiteral("2026-04-05T00:00:00Z")
+    };
+
+    QString savedFilePath;
+    QString errorMessage;
+
+    QVERIFY(storage.save(record, &savedFilePath, &errorMessage));
+    QVERIFY(errorMessage.isEmpty());
+    QVERIFY(QFile::exists(savedFilePath));
+
+    QFile savedFile(savedFilePath);
+    QVERIFY(savedFile.open(QIODevice::ReadOnly));
+    const QJsonDocument document = QJsonDocument::fromJson(savedFile.readAll());
+    QVERIFY(document.isObject());
+    QVERIFY(document.object().contains(QStringLiteral("birthInfo")));
+    QVERIFY(document.object().contains(QStringLiteral("chartResult")));
+    QVERIFY(document.object().contains(QStringLiteral("interpretationResult")));
+}
+
+void CoreTests::appControllerCanSaveCurrentRecord()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    AppController controller;
+    controller.setRecordStorageDirectory(temporaryDir.path());
+    controller.setBirthInfo(
+        QStringLiteral("1988-12-24"),
+        QStringLiteral("06:15"),
+        QStringLiteral("未指定")
+    );
+
+    controller.calculateChartResult();
+    controller.calculateInterpretationResult();
+
+    QVERIFY(controller.saveCurrentRecord());
+    QVERIFY(!controller.lastSaveMessage().isEmpty());
 }
 
 QTEST_MAIN(CoreTests)

@@ -28,6 +28,10 @@ qt_add_executable(appFourPillarsOfDestiny
     src/InterpretationEngine.h
     src/InterpretationResult.cpp
     src/InterpretationResult.h
+    src/JsonRecordStorage.cpp
+    src/JsonRecordStorage.h
+    src/SavedChartRecord.cpp
+    src/SavedChartRecord.h
 )
 
 qt_add_qml_module(appFourPillarsOfDestiny
@@ -70,6 +74,10 @@ add_executable(FourPillarsOfDestinyTests
     src/InterpretationEngine.h
     src/InterpretationResult.cpp
     src/InterpretationResult.h
+    src/JsonRecordStorage.cpp
+    src/JsonRecordStorage.h
+    src/SavedChartRecord.cpp
+    src/SavedChartRecord.h
 )
 
 target_include_directories(FourPillarsOfDestinyTests PRIVATE
