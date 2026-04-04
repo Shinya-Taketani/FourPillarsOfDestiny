@@ -5,6 +5,7 @@
 #include <QVariantMap>
 
 #include "BirthInfo.h"
+#include "ChartCalculator.h"
 
 class AppController : public QObject
 {
@@ -19,8 +20,9 @@ public:
     Q_INVOKABLE QString helloMessage() const;
     Q_INVOKABLE void setBirthInfo(const QString &birthDate, const QString &birthTime, const QString &gender);
     Q_INVOKABLE QVariantMap currentBirthInfo() const;
-    Q_INVOKABLE QVariantMap mockChartResult() const;
+    Q_INVOKABLE QVariantMap calculateChartResult() const;
 
 private:
     BirthInfo m_birthInfo;
+    ChartCalculator m_chartCalculator;
 };

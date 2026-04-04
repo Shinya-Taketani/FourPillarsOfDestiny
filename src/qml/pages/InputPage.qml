@@ -35,7 +35,7 @@ Kirigami.Page {
                     birthTimeField.text,
                     genderComboBox.currentText
                 )
-                chartResult = appController.mockChartResult()
+                chartResult = appController.calculateChartResult()
                 applicationWindow().pageStack.push(
                     Qt.resolvedUrl("ChartResultPage.qml"),
                     { chartResult: chartResult }
