@@ -1,0 +1,11 @@
+build
+build/*
+AGENTS.md
+docs
+docs/*
+CMakeLists.txt.user
+*.user
+*.autosave
+.cache/
+.codex
+
