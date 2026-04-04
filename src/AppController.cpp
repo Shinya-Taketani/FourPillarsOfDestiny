@@ -15,6 +15,18 @@ QString AppController::helloMessage() const
     return QStringLiteral("泰山流四柱推命ソフトの初期画面です。");
 }
 
+void AppController::setBirthInfo(const QString &birthDate, const QString &birthTime, const QString &gender)
+{
+    m_birthInfo.birthDate = birthDate;
+    m_birthInfo.birthTime = birthTime;
+    m_birthInfo.gender = gender;
+}
+
+QVariantMap AppController::currentBirthInfo() const
+{
+    return m_birthInfo.toVariantMap();
+}
+
 QVariantMap AppController::mockChartResult() const
 {
     return {

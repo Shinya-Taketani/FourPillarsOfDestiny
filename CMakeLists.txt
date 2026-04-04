@@ -17,6 +17,8 @@ qt_add_executable(appFourPillarsOfDestiny
     src/main.cpp
     src/AppController.cpp
     src/AppController.h
+    src/BirthInfo.cpp
+    src/BirthInfo.h
 )
 
 qt_add_qml_module(appFourPillarsOfDestiny
