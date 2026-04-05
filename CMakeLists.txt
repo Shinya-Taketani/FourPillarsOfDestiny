@@ -34,6 +34,8 @@ qt_add_executable(appFourPillarsOfDestiny
     src/RecordExportService.h
     src/SavedChartRecord.cpp
     src/SavedChartRecord.h
+    src/SolarTermDataSource.cpp
+    src/SolarTermDataSource.h
     src/SolarTermResolver.cpp
     src/SolarTermResolver.h
 )
@@ -56,6 +58,10 @@ target_link_libraries(appFourPillarsOfDestiny PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
     KF6::Kirigami
+)
+
+target_compile_definitions(appFourPillarsOfDestiny PRIVATE
+    FPOFD_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 include(GNUInstallDirs)
@@ -85,6 +91,8 @@ add_executable(FourPillarsOfDestinyTests
     src/RecordExportService.h
     src/SavedChartRecord.cpp
     src/SavedChartRecord.h
+    src/SolarTermDataSource.cpp
+    src/SolarTermDataSource.h
     src/SolarTermResolver.cpp
     src/SolarTermResolver.h
 )
@@ -96,6 +104,10 @@ target_include_directories(FourPillarsOfDestinyTests PRIVATE
 target_link_libraries(FourPillarsOfDestinyTests PRIVATE
     Qt6::Core
     Qt6::Test
+)
+
+target_compile_definitions(FourPillarsOfDestinyTests PRIVATE
+    FPOFD_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 add_test(NAME FourPillarsOfDestinyCoreTests COMMAND FourPillarsOfDestinyTests)

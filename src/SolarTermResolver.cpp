@@ -14,12 +14,30 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
         };
     }
 
-    // 節入り日時テーブルや天文計算は未実装。
-    // 現段階では、月柱が節入り依存であることを明示するための受け口だけを提供する。
+    const SolarTermYearData yearData = m_dataSource.loadYearData(birthDate.year());
+    if (!yearData.dataSourceAvailable) {
+        return {
+            false,
+            false,
+            QStringLiteral("月柱未実装"),
+            QStringLiteral("節入りデータを参照できません。月柱本実装は保留しています。")
+        };
+    }
+
+    if (!yearData.hasYearData) {
+        return {
+            false,
+            false,
+            QStringLiteral("月柱未実装"),
+            QStringLiteral("節入りデータは外部 JSON 方式を採用していますが、指定年データが未整備です。")
+        };
+    }
+
+    // 節入りデータの保持方式は導入済みだが、節入り日時の利用ロジックはまだ未実装。
     return {
         false,
         false,
         QStringLiteral("月柱未実装"),
-        QStringLiteral("節入り判定は未実装です。月柱本実装は今後ここへ差し込みます。")
+        QStringLiteral("節入りデータは読み込み可能ですが、月柱本実装は未対応です。")
     };
 }

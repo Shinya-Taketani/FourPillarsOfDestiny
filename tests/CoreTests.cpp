@@ -14,6 +14,7 @@
 #include "JsonRecordStorage.h"
 #include "RecordExportService.h"
 #include "SavedChartRecord.h"
+#include "SolarTermDataSource.h"
 #include "SolarTermResolver.h"
 
 class CoreTests : public QObject
@@ -27,6 +28,8 @@ private slots:
     void chartCalculatorHourPillarChangesWithBirthTime();
     void chartCalculatorHandlesMissingBirthTime();
     void chartCalculatorMarksMonthPillarAsUnimplemented();
+    void solarTermDataSourceLoadsSampleYearData();
+    void solarTermDataSourceHandlesMissingYearData();
     void solarTermResolverReturnsUnimplementedContract();
     void chartResultToVariantMapContainsRequiredKeys();
     void birthInfoValidationAcceptsValidInput();
@@ -156,7 +159,31 @@ void CoreTests::chartCalculatorMarksMonthPillarAsUnimplemented()
 
     QCOMPARE(result.monthPillar, QStringLiteral("月柱未実装"));
     QVERIFY(result.description.contains(QStringLiteral("節入り判定責務を分離済み")));
-    QVERIFY(result.description.contains(QStringLiteral("節入り判定は未実装")));
+    QVERIFY(result.description.contains(QStringLiteral("節入りデータは読み込み可能")));
+}
+
+void CoreTests::solarTermDataSourceLoadsSampleYearData()
+{
+    SolarTermDataSource dataSource;
+
+    const SolarTermYearData yearData = dataSource.loadYearData(1990);
+
+    QVERIFY(yearData.dataSourceAvailable);
+    QVERIFY(yearData.hasYearData);
+    QCOMPARE(yearData.year, 1990);
+    QVERIFY(!yearData.entries.isEmpty());
+}
+
+void CoreTests::solarTermDataSourceHandlesMissingYearData()
+{
+    SolarTermDataSource dataSource;
+
+    const SolarTermYearData yearData = dataSource.loadYearData(2099);
+
+    QVERIFY(yearData.dataSourceAvailable);
+    QVERIFY(!yearData.hasYearData);
+    QCOMPARE(yearData.year, 2099);
+    QVERIFY(yearData.entries.isEmpty());
 }
 
 void CoreTests::solarTermResolverReturnsUnimplementedContract()
@@ -173,7 +200,7 @@ void CoreTests::solarTermResolverReturnsUnimplementedContract()
     QVERIFY(!resolution.isImplemented);
     QVERIFY(!resolution.canDetermineMonthPillar);
     QCOMPARE(resolution.monthPillar, QStringLiteral("月柱未実装"));
-    QVERIFY(resolution.statusMessage.contains(QStringLiteral("節入り判定は未実装")));
+    QVERIFY(resolution.statusMessage.contains(QStringLiteral("節入りデータは読み込み可能")));
 }
 
 void CoreTests::chartResultToVariantMapContainsRequiredKeys()
