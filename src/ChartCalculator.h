@@ -16,8 +16,13 @@ private:
         const QString &yearPillar
     ) const;
     QString calculateDayPillar(const BirthInfo &birthInfo) const;
-    QString calculateHourPillar(const BirthInfo &birthInfo) const;
-    QVariantMap buildTenGodsPlaceholder() const;
+    QString calculateHourPillar(const BirthInfo &birthInfo, const QString &dayPillar) const;
+    QVariantMap calculateTenGods(
+        const QString &yearPillar,
+        const QString &monthPillar,
+        const QString &dayPillar,
+        const QString &hourPillar
+    ) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,
