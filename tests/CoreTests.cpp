@@ -21,6 +21,11 @@ class CoreTests : public QObject
 
 private slots:
     void chartCalculatorReturnsNonEmptyResult();
+    void chartCalculatorYearPillarChangesWithBirthYear();
+    void chartCalculatorReturnsStableResultForSameInput();
+    void chartCalculatorHourPillarChangesWithBirthTime();
+    void chartCalculatorHandlesMissingBirthTime();
+    void chartCalculatorMarksMonthPillarAsUnimplemented();
     void chartResultToVariantMapContainsRequiredKeys();
     void birthInfoValidationAcceptsValidInput();
     void birthInfoValidationRejectsEmptyBirthDate();
@@ -58,6 +63,97 @@ void CoreTests::chartCalculatorReturnsNonEmptyResult()
     QVERIFY(!result.dayPillar.isEmpty());
     QVERIFY(!result.hourPillar.isEmpty());
     QVERIFY(!result.description.isEmpty());
+}
+
+void CoreTests::chartCalculatorYearPillarChangesWithBirthYear()
+{
+    ChartCalculator calculator;
+
+    const BirthInfo birthInfo1984{
+        QStringLiteral("1984-06-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo birthInfo1985{
+        QStringLiteral("1985-06-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result1984 = calculator.calculate(birthInfo1984);
+    const ChartResult result1985 = calculator.calculate(birthInfo1985);
+
+    QCOMPARE(result1984.yearPillar, QStringLiteral("甲子"));
+    QCOMPARE(result1985.yearPillar, QStringLiteral("乙丑"));
+    QVERIFY(result1984.yearPillar != result1985.yearPillar);
+}
+
+void CoreTests::chartCalculatorReturnsStableResultForSameInput()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-01-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult firstResult = calculator.calculate(birthInfo);
+    const ChartResult secondResult = calculator.calculate(birthInfo);
+
+    QCOMPARE(firstResult.yearPillar, secondResult.yearPillar);
+    QCOMPARE(firstResult.monthPillar, secondResult.monthPillar);
+    QCOMPARE(firstResult.dayPillar, secondResult.dayPillar);
+    QCOMPARE(firstResult.hourPillar, secondResult.hourPillar);
+}
+
+void CoreTests::chartCalculatorHourPillarChangesWithBirthTime()
+{
+    ChartCalculator calculator;
+
+    const BirthInfo earlyBirthInfo{
+        QStringLiteral("1990-01-01"),
+        QStringLiteral("00:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo lateBirthInfo{
+        QStringLiteral("1990-01-01"),
+        QStringLiteral("03:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult earlyResult = calculator.calculate(earlyBirthInfo);
+    const ChartResult lateResult = calculator.calculate(lateBirthInfo);
+
+    QVERIFY(earlyResult.hourPillar != lateResult.hourPillar);
+}
+
+void CoreTests::chartCalculatorHandlesMissingBirthTime()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-01-01"),
+        QString(),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.hourPillar, QStringLiteral("時柱未計算"));
+}
+
+void CoreTests::chartCalculatorMarksMonthPillarAsUnimplemented()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-01-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.monthPillar, QStringLiteral("月柱未実装"));
+    QVERIFY(result.description.contains(QStringLiteral("月柱は節入り未実装")));
 }
 
 void CoreTests::chartResultToVariantMapContainsRequiredKeys()
