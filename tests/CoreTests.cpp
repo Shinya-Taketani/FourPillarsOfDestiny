@@ -14,6 +14,7 @@
 #include "JsonRecordStorage.h"
 #include "RecordExportService.h"
 #include "SavedChartRecord.h"
+#include "SolarTermResolver.h"
 
 class CoreTests : public QObject
 {
@@ -26,6 +27,7 @@ private slots:
     void chartCalculatorHourPillarChangesWithBirthTime();
     void chartCalculatorHandlesMissingBirthTime();
     void chartCalculatorMarksMonthPillarAsUnimplemented();
+    void solarTermResolverReturnsUnimplementedContract();
     void chartResultToVariantMapContainsRequiredKeys();
     void birthInfoValidationAcceptsValidInput();
     void birthInfoValidationRejectsEmptyBirthDate();
@@ -153,7 +155,25 @@ void CoreTests::chartCalculatorMarksMonthPillarAsUnimplemented()
     const ChartResult result = calculator.calculate(birthInfo);
 
     QCOMPARE(result.monthPillar, QStringLiteral("月柱未実装"));
-    QVERIFY(result.description.contains(QStringLiteral("月柱は節入り未実装")));
+    QVERIFY(result.description.contains(QStringLiteral("節入り判定責務を分離済み")));
+    QVERIFY(result.description.contains(QStringLiteral("節入り判定は未実装")));
+}
+
+void CoreTests::solarTermResolverReturnsUnimplementedContract()
+{
+    SolarTermResolver resolver;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-01-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const SolarTermResolution resolution = resolver.resolveMonthPillar(birthInfo);
+
+    QVERIFY(!resolution.isImplemented);
+    QVERIFY(!resolution.canDetermineMonthPillar);
+    QCOMPARE(resolution.monthPillar, QStringLiteral("月柱未実装"));
+    QVERIFY(resolution.statusMessage.contains(QStringLiteral("節入り判定は未実装")));
 }
 
 void CoreTests::chartResultToVariantMapContainsRequiredKeys()

@@ -2,6 +2,7 @@
 
 #include "BirthInfo.h"
 #include "ChartResult.h"
+#include "SolarTermResolver.h"
 
 class ChartCalculator
 {
@@ -20,4 +21,6 @@ private:
         const QString &dayPillar,
         const QString &hourPillar
     ) const;
+
+    SolarTermResolver m_solarTermResolver;
 };

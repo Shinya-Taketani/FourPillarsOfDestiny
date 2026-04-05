@@ -87,13 +87,8 @@ QString ChartCalculator::calculateYearPillar(const BirthInfo &birthInfo) const
 
 QString ChartCalculator::calculateMonthPillar(const BirthInfo &birthInfo) const
 {
-    const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
-    if (!birthDate.isValid()) {
-        return QStringLiteral("月柱未計算");
-    }
-
-    // 節入り未実装のため、月柱はまだ確定できない。
-    return QStringLiteral("月柱未実装");
+    const SolarTermResolution resolution = m_solarTermResolver.resolveMonthPillar(birthInfo);
+    return resolution.monthPillar;
 }
 
 QString ChartCalculator::calculateDayPillar(const BirthInfo &birthInfo) const
@@ -127,9 +122,12 @@ QString ChartCalculator::buildDescription(
 ) const
 {
     QStringList lines;
+    const SolarTermResolution monthResolution = m_solarTermResolver.resolveMonthPillar(birthInfo);
+
     lines << QStringLiteral("一般四柱推命の共通計算基盤の途中実装です。")
           << QStringLiteral("年柱は暦年ベースで計算しています。立春基準の年切り替えは未対応です。")
-          << QStringLiteral("月柱は節入り未実装のため未確定です。")
+          << QStringLiteral("月柱は節入り判定責務を分離済みです。")
+          << monthResolution.statusMessage
           << QStringLiteral("日柱は未実装です。")
           << QStringLiteral("時柱は出生時刻から時支のみ計算しています。時干は未実装です。");
 

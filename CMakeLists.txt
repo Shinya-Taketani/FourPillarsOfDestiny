@@ -34,6 +34,8 @@ qt_add_executable(appFourPillarsOfDestiny
     src/RecordExportService.h
     src/SavedChartRecord.cpp
     src/SavedChartRecord.h
+    src/SolarTermResolver.cpp
+    src/SolarTermResolver.h
 )
 
 qt_add_qml_module(appFourPillarsOfDestiny
@@ -83,6 +85,8 @@ add_executable(FourPillarsOfDestinyTests
     src/RecordExportService.h
     src/SavedChartRecord.cpp
     src/SavedChartRecord.h
+    src/SolarTermResolver.cpp
+    src/SolarTermResolver.h
 )
 
 target_include_directories(FourPillarsOfDestinyTests PRIVATE
