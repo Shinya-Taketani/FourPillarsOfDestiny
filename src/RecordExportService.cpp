@@ -26,9 +26,14 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "[ChartResult]\n";
     stream << "年柱: " << record.chartResult.yearPillar << "\n";
     stream << "月柱: " << record.chartResult.monthPillar << "\n";
+    stream << "月柱状態: " << record.chartResult.monthPillarStatusMessage << "\n";
     stream << "日柱: " << record.chartResult.dayPillar << "\n";
     stream << "時柱: " << record.chartResult.hourPillar << "\n";
     stream << "命式説明: " << record.chartResult.description << "\n";
+    stream << "通変星(年柱): " << record.chartResult.tenGods.value(QStringLiteral("yearPillar")).toString() << "\n";
+    stream << "通変星(月柱): " << record.chartResult.tenGods.value(QStringLiteral("monthPillar")).toString() << "\n";
+    stream << "通変星(日柱): " << record.chartResult.tenGods.value(QStringLiteral("dayPillar")).toString() << "\n";
+    stream << "通変星(時柱): " << record.chartResult.tenGods.value(QStringLiteral("hourPillar")).toString() << "\n";
     stream << "\n";
     stream << "[InterpretationResult]\n";
     stream << "summaryText: " << record.interpretationResult.summaryText << "\n";

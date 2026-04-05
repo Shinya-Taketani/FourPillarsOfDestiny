@@ -10,6 +10,8 @@ struct ChartResult
     QString dayPillar;
     QString hourPillar;
     QString description;
+    QString monthPillarStatusMessage;
+    QVariantMap tenGods;
 
     static ChartResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;

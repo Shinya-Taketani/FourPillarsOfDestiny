@@ -10,7 +10,9 @@ Kirigami.Page {
         monthPillar: "",
         dayPillar: "",
         hourPillar: "",
-        description: ""
+        description: "",
+        monthPillarStatusMessage: "",
+        tenGods: {}
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -48,7 +50,15 @@ Kirigami.Page {
                 }
 
                 Label {
-                    text: "月柱: " + chartResult.monthPillar
+                    text: "月柱: " + (chartResult.monthPillar.length > 0 ? chartResult.monthPillar : "未対応")
+                }
+
+                Label {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    visible: chartResult.monthPillarStatusMessage.length > 0
+                    color: Kirigami.Theme.disabledTextColor
+                    text: "月柱状態: " + chartResult.monthPillarStatusMessage
                 }
 
                 Label {
@@ -63,6 +73,36 @@ Kirigami.Page {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     text: chartResult.description
+                }
+            }
+        }
+
+        Frame {
+            width: parent.width
+
+            Column {
+                width: parent.width
+                spacing: 12
+
+                Label {
+                    text: "詳細命式"
+                    font.bold: true
+                }
+
+                Label {
+                    text: "通変星(年柱): " + ((chartResult.tenGods && chartResult.tenGods.yearPillar) ? chartResult.tenGods.yearPillar : "未実装")
+                }
+
+                Label {
+                    text: "通変星(月柱): " + ((chartResult.tenGods && chartResult.tenGods.monthPillar) ? chartResult.tenGods.monthPillar : "未実装")
+                }
+
+                Label {
+                    text: "通変星(日柱): " + ((chartResult.tenGods && chartResult.tenGods.dayPillar) ? chartResult.tenGods.dayPillar : "未実装")
+                }
+
+                Label {
+                    text: "通変星(時柱): " + ((chartResult.tenGods && chartResult.tenGods.hourPillar) ? chartResult.tenGods.hourPillar : "未実装")
                 }
             }
         }

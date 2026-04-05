@@ -52,23 +52,25 @@ int positiveModulo(int value, int divisor)
 ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
 {
     const QString yearPillar = calculateYearPillar(birthInfo);
-    const QString monthPillar = calculateMonthPillar(birthInfo);
+    const SolarTermResolution monthResolution = calculateMonthPillarResolution(birthInfo, yearPillar);
     const QString dayPillar = calculateDayPillar(birthInfo);
     const QString hourPillar = calculateHourPillar(birthInfo);
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
-        monthPillar,
+        monthResolution,
         dayPillar,
         hourPillar
     );
 
     return {
         yearPillar,
-        monthPillar,
+        monthResolution.monthPillar,
         dayPillar,
         hourPillar,
-        description
+        description,
+        monthResolution.statusMessage,
+        buildTenGodsPlaceholder()
     };
 }
 
@@ -85,11 +87,12 @@ QString ChartCalculator::calculateYearPillar(const BirthInfo &birthInfo) const
     return heavenlyStemAt(offset % 10) + earthlyBranchAt(offset % 12);
 }
 
-QString ChartCalculator::calculateMonthPillar(const BirthInfo &birthInfo) const
+SolarTermResolution ChartCalculator::calculateMonthPillarResolution(
+    const BirthInfo &birthInfo,
+    const QString &yearPillar
+) const
 {
-    const QString yearPillar = calculateYearPillar(birthInfo);
-    const SolarTermResolution resolution = m_solarTermResolver.resolveMonthPillar(birthInfo, yearPillar);
-    return resolution.monthPillar;
+    return m_solarTermResolver.resolveMonthPillar(birthInfo, yearPillar);
 }
 
 QString ChartCalculator::calculateDayPillar(const BirthInfo &birthInfo) const
@@ -114,16 +117,25 @@ QString ChartCalculator::calculateHourPillar(const BirthInfo &birthInfo) const
     return QStringLiteral("?") + earthlyBranchAt(branchIndex);
 }
 
+QVariantMap ChartCalculator::buildTenGodsPlaceholder() const
+{
+    return {
+        {QStringLiteral("yearPillar"), QStringLiteral("未実装")},
+        {QStringLiteral("monthPillar"), QStringLiteral("未実装")},
+        {QStringLiteral("dayPillar"), QStringLiteral("未実装")},
+        {QStringLiteral("hourPillar"), QStringLiteral("未実装")}
+    };
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
-    const QString &monthPillar,
+    const SolarTermResolution &monthResolution,
     const QString &dayPillar,
     const QString &hourPillar
 ) const
 {
     QStringList lines;
-    const SolarTermResolution monthResolution = m_solarTermResolver.resolveMonthPillar(birthInfo, yearPillar);
 
     lines << QStringLiteral("一般四柱推命の共通計算基盤の途中実装です。")
           << QStringLiteral("年柱は暦年ベースで計算しています。立春基準の年切り替えは未対応です。")
@@ -141,9 +153,10 @@ QString ChartCalculator::buildDescription(
 
     lines << QStringLiteral("計算結果: %1 / %2 / %3 / %4")
                  .arg(yearPillar)
-                 .arg(monthPillar)
+                 .arg(monthResolution.monthPillar)
                  .arg(dayPillar)
                  .arg(hourPillar);
+    lines << QStringLiteral("通変星: 受け皿のみ追加済みで、計算は未実装です。");
 
     return lines.join(QLatin1Char('\n'));
 }
