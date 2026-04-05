@@ -85,6 +85,74 @@ bool AppController::saveCurrentRecord()
     return true;
 }
 
+bool AppController::exportCurrentRecordAsText()
+{
+    if (!m_birthInfo.isValid()) {
+        m_lastExportMessage = QStringLiteral("入力内容に不備があるため出力できません。");
+        return false;
+    }
+
+    if (m_chartResult.yearPillar.isEmpty() || m_interpretationResult.summaryText.isEmpty()) {
+        m_lastExportMessage = QStringLiteral("命式結果または解釈結果が未生成のため出力できません。");
+        return false;
+    }
+
+    const SavedChartRecord record{
+        m_birthInfo,
+        m_chartResult,
+        m_interpretationResult,
+        QDateTime::currentDateTimeUtc().toString(Qt::ISODate)
+    };
+
+    QString exportedFilePath;
+    QString errorMessage;
+    const bool success = m_recordExportService.exportAsText(record, &exportedFilePath, &errorMessage);
+
+    if (!success) {
+        m_lastExportMessage = errorMessage.isEmpty()
+            ? QStringLiteral("テキスト出力に失敗しました。")
+            : errorMessage;
+        return false;
+    }
+
+    m_lastExportMessage = QStringLiteral("テキスト出力しました: %1").arg(exportedFilePath);
+    return true;
+}
+
+bool AppController::exportCurrentRecordAsJson()
+{
+    if (!m_birthInfo.isValid()) {
+        m_lastExportMessage = QStringLiteral("入力内容に不備があるため出力できません。");
+        return false;
+    }
+
+    if (m_chartResult.yearPillar.isEmpty() || m_interpretationResult.summaryText.isEmpty()) {
+        m_lastExportMessage = QStringLiteral("命式結果または解釈結果が未生成のため出力できません。");
+        return false;
+    }
+
+    const SavedChartRecord record{
+        m_birthInfo,
+        m_chartResult,
+        m_interpretationResult,
+        QDateTime::currentDateTimeUtc().toString(Qt::ISODate)
+    };
+
+    QString exportedFilePath;
+    QString errorMessage;
+    const bool success = m_recordExportService.exportAsJson(record, &exportedFilePath, &errorMessage);
+
+    if (!success) {
+        m_lastExportMessage = errorMessage.isEmpty()
+            ? QStringLiteral("JSON 出力に失敗しました。")
+            : errorMessage;
+        return false;
+    }
+
+    m_lastExportMessage = QStringLiteral("JSON 出力しました: %1").arg(exportedFilePath);
+    return true;
+}
+
 QVariantList AppController::savedRecords() const
 {
     return m_recordStorage.listRecords();
@@ -124,7 +192,17 @@ QString AppController::lastSaveMessage() const
     return m_lastSaveMessage;
 }
 
+QString AppController::lastExportMessage() const
+{
+    return m_lastExportMessage;
+}
+
 void AppController::setRecordStorageDirectory(const QString &baseDirectoryPath)
 {
     m_recordStorage.setBaseDirectoryPath(baseDirectoryPath);
+}
+
+void AppController::setExportDirectory(const QString &baseDirectoryPath)
+{
+    m_recordExportService.setBaseDirectoryPath(baseDirectoryPath);
 }

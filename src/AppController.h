@@ -11,6 +11,7 @@
 #include "InterpretationEngine.h"
 #include "InterpretationResult.h"
 #include "JsonRecordStorage.h"
+#include "RecordExportService.h"
 #include "SavedChartRecord.h"
 
 class AppController : public QObject
@@ -36,15 +37,21 @@ public:
     Q_INVOKABLE QVariantMap currentChartResult() const;
     Q_INVOKABLE QVariantMap currentInterpretationResult() const;
     Q_INVOKABLE QString lastSaveMessage() const;
+    Q_INVOKABLE bool exportCurrentRecordAsText();
+    Q_INVOKABLE bool exportCurrentRecordAsJson();
+    Q_INVOKABLE QString lastExportMessage() const;
 
     void setRecordStorageDirectory(const QString &baseDirectoryPath);
+    void setExportDirectory(const QString &baseDirectoryPath);
 
 private:
     BirthInfo m_birthInfo;
     ChartCalculator m_chartCalculator;
     InterpretationEngine m_interpretationEngine;
     JsonRecordStorage m_recordStorage;
+    RecordExportService m_recordExportService;
     mutable ChartResult m_chartResult;
     mutable InterpretationResult m_interpretationResult;
     QString m_lastSaveMessage;
+    QString m_lastExportMessage;
 };

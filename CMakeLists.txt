@@ -30,6 +30,8 @@ qt_add_executable(appFourPillarsOfDestiny
     src/InterpretationResult.h
     src/JsonRecordStorage.cpp
     src/JsonRecordStorage.h
+    src/RecordExportService.cpp
+    src/RecordExportService.h
     src/SavedChartRecord.cpp
     src/SavedChartRecord.h
 )
@@ -77,6 +79,8 @@ add_executable(FourPillarsOfDestinyTests
     src/InterpretationResult.h
     src/JsonRecordStorage.cpp
     src/JsonRecordStorage.h
+    src/RecordExportService.cpp
+    src/RecordExportService.h
     src/SavedChartRecord.cpp
     src/SavedChartRecord.h
 )

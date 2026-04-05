@@ -1,0 +1,161 @@
+#include "RecordExportService.h"
+
+#include <QDateTime>
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QStringConverter>
+#include <QStandardPaths>
+#include <QTextStream>
+
+namespace {
+QString buildTextContent(const SavedChartRecord &record)
+{
+    QString content;
+    QTextStream stream(&content);
+    stream.setEncoding(QStringConverter::Utf8);
+
+    stream << "FourPillarsOfDestiny 出力\n";
+    stream << "savedAt: " << record.savedAt << "\n";
+    stream << "\n";
+    stream << "[BirthInfo]\n";
+    stream << "生年月日: " << record.birthInfo.birthDate << "\n";
+    stream << "出生時刻: " << record.birthInfo.birthTime << "\n";
+    stream << "性別: " << record.birthInfo.gender << "\n";
+    stream << "\n";
+    stream << "[ChartResult]\n";
+    stream << "年柱: " << record.chartResult.yearPillar << "\n";
+    stream << "月柱: " << record.chartResult.monthPillar << "\n";
+    stream << "日柱: " << record.chartResult.dayPillar << "\n";
+    stream << "時柱: " << record.chartResult.hourPillar << "\n";
+    stream << "命式説明: " << record.chartResult.description << "\n";
+    stream << "\n";
+    stream << "[InterpretationResult]\n";
+    stream << "summaryText: " << record.interpretationResult.summaryText << "\n";
+    stream << "detailText: " << record.interpretationResult.detailText << "\n";
+    stream << "cautionText: " << record.interpretationResult.cautionText << "\n";
+    stream << "\n";
+    stream << "注記: この内容は仮実装の出力です。\n";
+
+    return content;
+}
+}
+
+RecordExportService::RecordExportService(QString baseDirectoryPath)
+    : m_baseDirectoryPath(baseDirectoryPath)
+{
+}
+
+bool RecordExportService::exportAsText(
+    const SavedChartRecord &record,
+    QString *exportedFilePath,
+    QString *errorMessage
+) const
+{
+    const QString directoryPath = exportDirectoryPath();
+    QDir directory;
+
+    if (!directory.mkpath(directoryPath)) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("出力先ディレクトリを作成できませんでした。");
+        }
+        return false;
+    }
+
+    const QString fileName = QStringLiteral("export_%1.txt")
+                                 .arg(QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd_HHmmss_zzz")));
+    const QString filePath = QDir(directoryPath).filePath(fileName);
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("テキスト出力ファイルを開けませんでした。");
+        }
+        return false;
+    }
+
+    const QByteArray bytes = buildTextContent(record).toUtf8();
+    const qint64 written = file.write(bytes);
+    file.close();
+
+    if (written < 0) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("テキスト出力に失敗しました。");
+        }
+        return false;
+    }
+
+    if (exportedFilePath) {
+        *exportedFilePath = filePath;
+    }
+
+    return true;
+}
+
+bool RecordExportService::exportAsJson(
+    const SavedChartRecord &record,
+    QString *exportedFilePath,
+    QString *errorMessage
+) const
+{
+    const QString directoryPath = exportDirectoryPath();
+    QDir directory;
+
+    if (!directory.mkpath(directoryPath)) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("出力先ディレクトリを作成できませんでした。");
+        }
+        return false;
+    }
+
+    const QString fileName = QStringLiteral("export_%1.json")
+                                 .arg(QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd_HHmmss_zzz")));
+    const QString filePath = QDir(directoryPath).filePath(fileName);
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("JSON 出力ファイルを開けませんでした。");
+        }
+        return false;
+    }
+
+    QJsonObject jsonObject = record.toJsonObject();
+    jsonObject.remove(QStringLiteral("savedAt"));
+    jsonObject.insert(
+        QStringLiteral("exportedAt"),
+        QDateTime::currentDateTimeUtc().toString(Qt::ISODate)
+    );
+
+    const QJsonDocument document(jsonObject);
+    const qint64 written = file.write(document.toJson(QJsonDocument::Indented));
+    file.close();
+
+    if (written < 0) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("JSON 出力に失敗しました。");
+        }
+        return false;
+    }
+
+    if (exportedFilePath) {
+        *exportedFilePath = filePath;
+    }
+
+    return true;
+}
+
+QString RecordExportService::exportDirectoryPath() const
+{
+    if (!m_baseDirectoryPath.isEmpty()) {
+        return QDir(m_baseDirectoryPath).filePath(QStringLiteral("exports"));
+    }
+
+    const QString appDataLocation = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    return QDir(appDataLocation).filePath(QStringLiteral("exports"));
+}
+
+void RecordExportService::setBaseDirectoryPath(const QString &baseDirectoryPath)
+{
+    m_baseDirectoryPath = baseDirectoryPath;
+}

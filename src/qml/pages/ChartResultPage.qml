@@ -18,6 +18,7 @@ Kirigami.Page {
         cautionText: ""
     })
     property string saveMessage: ""
+    property string exportMessage: ""
 
     Column {
         anchors.fill: parent
@@ -107,11 +108,38 @@ Kirigami.Page {
             }
         }
 
+        Row {
+            spacing: 12
+
+            Button {
+                text: "テキスト出力"
+                onClicked: {
+                    appController.exportCurrentRecordAsText()
+                    exportMessage = appController.lastExportMessage()
+                }
+            }
+
+            Button {
+                text: "JSON出力"
+                onClicked: {
+                    appController.exportCurrentRecordAsJson()
+                    exportMessage = appController.lastExportMessage()
+                }
+            }
+        }
+
         Label {
             width: parent.width
             visible: saveMessage.length > 0
             wrapMode: Text.WordWrap
             text: saveMessage
+        }
+
+        Label {
+            width: parent.width
+            visible: exportMessage.length > 0
+            wrapMode: Text.WordWrap
+            text: exportMessage
         }
 
         Button {

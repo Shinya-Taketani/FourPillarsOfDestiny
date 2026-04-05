@@ -12,6 +12,7 @@
 #include "InterpretationEngine.h"
 #include "InterpretationResult.h"
 #include "JsonRecordStorage.h"
+#include "RecordExportService.h"
 #include "SavedChartRecord.h"
 
 class CoreTests : public QObject
@@ -36,6 +37,9 @@ private slots:
     void jsonRecordStorageListsSavedFiles();
     void jsonRecordStorageLoadsSavedRecord();
     void appControllerCanListAndLoadSavedRecords();
+    void recordExportServiceWritesTextFile();
+    void recordExportServiceWritesJsonFile();
+    void appControllerCanExportCurrentRecord();
 };
 
 void CoreTests::chartCalculatorReturnsNonEmptyResult()
@@ -395,6 +399,104 @@ void CoreTests::appControllerCanListAndLoadSavedRecords()
     QCOMPARE(controller.currentBirthInfo().value(QStringLiteral("birthDate")).toString(), QStringLiteral("1988-12-24"));
     QVERIFY(!controller.currentChartResult().value(QStringLiteral("yearPillar")).toString().isEmpty());
     QVERIFY(!controller.currentInterpretationResult().value(QStringLiteral("summaryText")).toString().isEmpty());
+}
+
+void CoreTests::recordExportServiceWritesTextFile()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    RecordExportService exportService(temporaryDir.path());
+    const SavedChartRecord record{
+        BirthInfo{QStringLiteral("1990-01-01"), QStringLiteral("13:30"), QStringLiteral("男性")},
+        ChartResult{
+            QStringLiteral("甲子"),
+            QStringLiteral("乙丑"),
+            QStringLiteral("丙寅"),
+            QStringLiteral("丁卯"),
+            QStringLiteral("これは仮の命式結果です。")
+        },
+        InterpretationResult{
+            QStringLiteral("これは仮の解釈結果です。"),
+            QStringLiteral("本実装の解釈ロジックは未対応です。"),
+            QStringLiteral("要確認事項があります。")
+        },
+        QStringLiteral("2026-04-05T00:00:00Z")
+    };
+
+    QString filePath;
+    QString errorMessage;
+    QVERIFY(exportService.exportAsText(record, &filePath, &errorMessage));
+    QVERIFY(errorMessage.isEmpty());
+    QVERIFY(QFile::exists(filePath));
+
+    QFile file(filePath);
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString content = QString::fromUtf8(file.readAll());
+    QVERIFY(content.contains(QStringLiteral("生年月日: 1990-01-01")));
+    QVERIFY(content.contains(QStringLiteral("年柱: 甲子")));
+    QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
+}
+
+void CoreTests::recordExportServiceWritesJsonFile()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    RecordExportService exportService(temporaryDir.path());
+    const SavedChartRecord record{
+        BirthInfo{QStringLiteral("1990-01-01"), QStringLiteral("13:30"), QStringLiteral("男性")},
+        ChartResult{
+            QStringLiteral("甲子"),
+            QStringLiteral("乙丑"),
+            QStringLiteral("丙寅"),
+            QStringLiteral("丁卯"),
+            QStringLiteral("これは仮の命式結果です。")
+        },
+        InterpretationResult{
+            QStringLiteral("これは仮の解釈結果です。"),
+            QStringLiteral("本実装の解釈ロジックは未対応です。"),
+            QStringLiteral("要確認事項があります。")
+        },
+        QStringLiteral("2026-04-05T00:00:00Z")
+    };
+
+    QString filePath;
+    QString errorMessage;
+    QVERIFY(exportService.exportAsJson(record, &filePath, &errorMessage));
+    QVERIFY(errorMessage.isEmpty());
+    QVERIFY(QFile::exists(filePath));
+
+    QFile file(filePath);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll());
+    QVERIFY(document.isObject());
+    QVERIFY(document.object().contains(QStringLiteral("exportedAt")));
+    QVERIFY(document.object().contains(QStringLiteral("birthInfo")));
+    QVERIFY(document.object().contains(QStringLiteral("chartResult")));
+    QVERIFY(document.object().contains(QStringLiteral("interpretationResult")));
+}
+
+void CoreTests::appControllerCanExportCurrentRecord()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    AppController controller;
+    controller.setExportDirectory(temporaryDir.path());
+    controller.setBirthInfo(
+        QStringLiteral("1988-12-24"),
+        QStringLiteral("06:15"),
+        QStringLiteral("未指定")
+    );
+
+    controller.calculateChartResult();
+    controller.calculateInterpretationResult();
+
+    QVERIFY(controller.exportCurrentRecordAsText());
+    QVERIFY(!controller.lastExportMessage().isEmpty());
+    QVERIFY(controller.exportCurrentRecordAsJson());
+    QVERIFY(!controller.lastExportMessage().isEmpty());
 }
 
 QTEST_MAIN(CoreTests)
