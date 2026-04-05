@@ -34,6 +34,7 @@ private slots:
     void chartCalculatorReturnsMonthPillarForSupportedSampleYear();
     void chartCalculatorCalculatesTenGodsForSupportedSampleYear();
     void chartCalculatorCalculatesHiddenStemsForSupportedSampleYear();
+    void chartCalculatorCalculatesFiveElementsForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
@@ -129,6 +130,11 @@ void CoreTests::chartCalculatorReturnsStableResultForSameInput()
     QCOMPARE(firstResult.hourPillar, secondResult.hourPillar);
     QCOMPARE(firstResult.tenGods, secondResult.tenGods);
     QCOMPARE(firstResult.hiddenStems, secondResult.hiddenStems);
+    QCOMPARE(firstResult.fiveElements, secondResult.fiveElements);
+    QCOMPARE(
+        firstResult.fiveElementDistributionStatusMessage,
+        secondResult.fiveElementDistributionStatusMessage
+    );
 }
 
 void CoreTests::chartCalculatorHourPillarChangesWithBirthTime()
@@ -280,6 +286,25 @@ void CoreTests::chartCalculatorCalculatesHiddenStemsForSupportedSampleYear()
     QCOMPARE(result.hiddenStems.value(QStringLiteral("monthPillar")).toStringList(), expectedMonthHiddenStems);
     QCOMPARE(result.hiddenStems.value(QStringLiteral("dayPillar")).toStringList(), expectedDayHiddenStems);
     QCOMPARE(result.hiddenStems.value(QStringLiteral("hourPillar")).toStringList(), expectedHourHiddenStems);
+}
+
+void CoreTests::chartCalculatorCalculatesFiveElementsForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.fiveElements.value(QStringLiteral("wood")).toInt(), 4);
+    QCOMPARE(result.fiveElements.value(QStringLiteral("fire")).toInt(), 4);
+    QCOMPARE(result.fiveElements.value(QStringLiteral("earth")).toInt(), 7);
+    QCOMPARE(result.fiveElements.value(QStringLiteral("metal")).toInt(), 3);
+    QCOMPARE(result.fiveElements.value(QStringLiteral("water")).toInt(), 1);
+    QVERIFY(result.fiveElementDistributionStatusMessage.contains(QStringLiteral("単純件数")));
 }
 
 void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
@@ -460,6 +485,7 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
         result.hiddenStems.value(QStringLiteral("monthPillar")).toStringList(),
         QStringList{QStringLiteral("未対応")}
     );
+    QVERIFY(result.fiveElementDistributionStatusMessage.contains(QStringLiteral("月柱")));
     QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
 }
 
@@ -516,7 +542,15 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("monthPillar"), QStringList{QStringLiteral("乙"), QStringLiteral("癸")}},
             {QStringLiteral("dayPillar"), QStringList{QStringLiteral("丙")}},
             {QStringLiteral("hourPillar"), QStringList{QStringLiteral("丁"), QStringLiteral("辛")}}
-        }
+        },
+        {
+            {QStringLiteral("wood"), 1},
+            {QStringLiteral("fire"), 2},
+            {QStringLiteral("earth"), 3},
+            {QStringLiteral("metal"), 4},
+            {QStringLiteral("water"), 5}
+        },
+        QStringLiteral("五行分布の最小集計です。")
     };
 
     const QVariantMap resultMap = result.toVariantMap();
@@ -530,12 +564,19 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("monthPillarStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("tenGods")));
     QVERIFY(resultMap.contains(QStringLiteral("hiddenStems")));
+    QVERIFY(resultMap.contains(QStringLiteral("fiveElements")));
+    QVERIFY(resultMap.contains(QStringLiteral("fiveElementDistributionStatusMessage")));
     QCOMPARE(resultMap.value(QStringLiteral("monthPillarStatusMessage")).toString(), QStringLiteral("月柱は限定実装です。"));
     QCOMPARE(
         resultMap.value(QStringLiteral("tenGods")).toMap().value(QStringLiteral("yearPillar")).toString(),
         QStringLiteral("未実装")
     );
     QCOMPARE(resultMap.value(QStringLiteral("hiddenStems")).toMap().value(QStringLiteral("monthPillar")).toStringList(), expectedMonthHiddenStems);
+    QCOMPARE(resultMap.value(QStringLiteral("fiveElements")).toMap().value(QStringLiteral("earth")).toInt(), 3);
+    QCOMPARE(
+        resultMap.value(QStringLiteral("fiveElementDistributionStatusMessage")).toString(),
+        QStringLiteral("五行分布の最小集計です。")
+    );
 }
 
 void CoreTests::birthInfoValidationAcceptsValidInput()
@@ -822,7 +863,15 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                 {QStringLiteral("monthPillar"), QStringList{QStringLiteral("己"), QStringLiteral("癸"), QStringLiteral("辛")}},
                 {QStringLiteral("dayPillar"), QStringList{QStringLiteral("甲"), QStringLiteral("丙"), QStringLiteral("戊")}},
                 {QStringLiteral("hourPillar"), QStringList{QStringLiteral("乙")}}
-            }
+            },
+            {
+                {QStringLiteral("wood"), 2},
+                {QStringLiteral("fire"), 1},
+                {QStringLiteral("earth"), 4},
+                {QStringLiteral("metal"), 1},
+                {QStringLiteral("water"), 3}
+            },
+            QStringLiteral("月柱まで含めた最小集計です。")
         },
         InterpretationResult{
             QStringLiteral("これは仮の解釈結果です。"),
@@ -849,6 +898,11 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
         QStringLiteral("未実装")
     );
     QCOMPARE(loadedRecord.chartResult.hiddenStems.value(QStringLiteral("monthPillar")).toStringList(), expectedMonthHiddenStems);
+    QCOMPARE(loadedRecord.chartResult.fiveElements.value(QStringLiteral("earth")).toInt(), 4);
+    QCOMPARE(
+        loadedRecord.chartResult.fiveElementDistributionStatusMessage,
+        QStringLiteral("月柱まで含めた最小集計です。")
+    );
     QCOMPARE(loadedRecord.interpretationResult.summaryText, QStringLiteral("これは仮の解釈結果です。"));
 }
 
@@ -915,6 +969,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("生年月日: 1990-01-01")));
     QVERIFY(content.contains(QStringLiteral("年柱: 甲子")));
     QVERIFY(content.contains(QStringLiteral("蔵干(年支):")));
+    QVERIFY(content.contains(QStringLiteral("五行(木):")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
 }
 

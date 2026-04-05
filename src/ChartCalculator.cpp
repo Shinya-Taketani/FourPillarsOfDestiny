@@ -168,6 +168,56 @@ FiveElement fiveElementForStem(int stemIndex)
     }
 }
 
+FiveElement fiveElementForBranch(int branchIndex)
+{
+    switch (branchIndex) {
+    case 0:
+    case 11:
+        return FiveElement::Water;
+    case 2:
+    case 3:
+        return FiveElement::Wood;
+    case 5:
+    case 6:
+        return FiveElement::Fire;
+    case 8:
+    case 9:
+        return FiveElement::Metal;
+    case 1:
+    case 4:
+    case 7:
+    case 10:
+        return FiveElement::Earth;
+    default:
+        return FiveElement::Earth;
+    }
+}
+
+QString fiveElementKey(FiveElement element)
+{
+    switch (element) {
+    case FiveElement::Wood:
+        return QStringLiteral("wood");
+    case FiveElement::Fire:
+        return QStringLiteral("fire");
+    case FiveElement::Earth:
+        return QStringLiteral("earth");
+    case FiveElement::Metal:
+        return QStringLiteral("metal");
+    case FiveElement::Water:
+        return QStringLiteral("water");
+    }
+
+    return QStringLiteral("earth");
+}
+
+void incrementFiveElementCount(QVariantMap *counts, FiveElement element)
+{
+    const QString key = fiveElementKey(element);
+    const int currentValue = counts->value(key).toInt();
+    counts->insert(key, currentValue + 1);
+}
+
 QString tenGodName(int dayStemIndex, int targetStemIndex)
 {
     if (dayStemIndex < 0 || targetStemIndex < 0) {
@@ -242,6 +292,15 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         dayPillar,
         hourPillar
     );
+    QString fiveElementDistributionStatusMessage;
+    const QVariantMap fiveElements = calculateFiveElements(
+        yearPillar,
+        monthResolution.monthPillar,
+        dayPillar,
+        hourPillar,
+        hiddenStems,
+        &fiveElementDistributionStatusMessage
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -258,7 +317,9 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         description,
         monthResolution.statusMessage,
         tenGods,
-        hiddenStems
+        hiddenStems,
+        fiveElements,
+        fiveElementDistributionStatusMessage
     };
 }
 
@@ -364,6 +425,64 @@ QVariantMap ChartCalculator::calculateHiddenStems(
     };
 }
 
+QVariantMap ChartCalculator::calculateFiveElements(
+    const QString &yearPillar,
+    const QString &monthPillar,
+    const QString &dayPillar,
+    const QString &hourPillar,
+    const QVariantMap &hiddenStems,
+    QString *statusMessage
+) const
+{
+    QVariantMap counts{
+        {QStringLiteral("wood"), 0},
+        {QStringLiteral("fire"), 0},
+        {QStringLiteral("earth"), 0},
+        {QStringLiteral("metal"), 0},
+        {QStringLiteral("water"), 0}
+    };
+    QStringList excludedPillars;
+
+    const auto accumulatePillar = [&](const QString &pillarKey, const QString &label, const QString &pillar) {
+        const int stemIndex = heavenlyStemIndex(pillar);
+        const int branchIndex = earthlyBranchIndex(pillar);
+
+        if (stemIndex < 0 || branchIndex < 0) {
+            excludedPillars << label;
+            return;
+        }
+
+        incrementFiveElementCount(&counts, fiveElementForStem(stemIndex));
+        incrementFiveElementCount(&counts, fiveElementForBranch(branchIndex));
+
+        const QStringList pillarHiddenStems = hiddenStems.value(pillarKey).toStringList();
+        for (const QString &hiddenStem : pillarHiddenStems) {
+            const int hiddenStemIndex = heavenlyStemIndex(hiddenStem);
+            if (hiddenStemIndex < 0) {
+                continue;
+            }
+
+            incrementFiveElementCount(&counts, fiveElementForStem(hiddenStemIndex));
+        }
+    };
+
+    accumulatePillar(QStringLiteral("yearPillar"), QStringLiteral("年柱"), yearPillar);
+    accumulatePillar(QStringLiteral("monthPillar"), QStringLiteral("月柱"), monthPillar);
+    accumulatePillar(QStringLiteral("dayPillar"), QStringLiteral("日柱"), dayPillar);
+    accumulatePillar(QStringLiteral("hourPillar"), QStringLiteral("時柱"), hourPillar);
+
+    if (statusMessage) {
+        if (excludedPillars.isEmpty()) {
+            *statusMessage = QStringLiteral("四柱天干・地支・蔵干を単純件数で集計しています。");
+        } else {
+            *statusMessage = QStringLiteral("%1 が未対応のため、その柱由来の五行を除外して集計しています。")
+                                 .arg(excludedPillars.join(QStringLiteral("、")));
+        }
+    }
+
+    return counts;
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -381,7 +500,8 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("日柱は暦日ベースの最小実装です。地方時補正や日界の厳密判定は未対応です。")
           << QStringLiteral("時柱は日干と出生時刻から最小実装で計算しています。")
           << QStringLiteral("通変星は日干を基準に、年干・月干・時干の天干どうしのみ最小実装しています。")
-          << QStringLiteral("蔵干は各支に対応する一般的な一覧のみ最小実装しています。");
+          << QStringLiteral("蔵干は各支に対応する一般的な一覧のみ最小実装しています。")
+          << QStringLiteral("五行分布は四柱天干・地支・蔵干を単純件数で最小集計しています。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")

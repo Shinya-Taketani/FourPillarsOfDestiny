@@ -13,7 +13,9 @@ Kirigami.Page {
         description: "",
         monthPillarStatusMessage: "",
         tenGods: {},
-        hiddenStems: {}
+        hiddenStems: {},
+        fiveElements: {},
+        fiveElementDistributionStatusMessage: ""
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -37,6 +39,14 @@ Kirigami.Page {
         }
 
         return "未対応"
+    }
+
+    function formatFiveElementCount(key) {
+        if (!chartResult.fiveElements || chartResult.fiveElements[key] === undefined || chartResult.fiveElements[key] === null) {
+            return "0"
+        }
+
+        return chartResult.fiveElements[key]
     }
 
     Column {
@@ -136,6 +146,34 @@ Kirigami.Page {
 
                 Label {
                     text: "蔵干(時支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.hourPillar : null)
+                }
+
+                Label {
+                    text: "五行(木): " + formatFiveElementCount("wood")
+                }
+
+                Label {
+                    text: "五行(火): " + formatFiveElementCount("fire")
+                }
+
+                Label {
+                    text: "五行(土): " + formatFiveElementCount("earth")
+                }
+
+                Label {
+                    text: "五行(金): " + formatFiveElementCount("metal")
+                }
+
+                Label {
+                    text: "五行(水): " + formatFiveElementCount("water")
+                }
+
+                Label {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    visible: chartResult.fiveElementDistributionStatusMessage.length > 0
+                    color: Kirigami.Theme.disabledTextColor
+                    text: "五行集計状態: " + chartResult.fiveElementDistributionStatusMessage
                 }
             }
         }

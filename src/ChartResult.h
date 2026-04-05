@@ -13,6 +13,8 @@ struct ChartResult
     QString monthPillarStatusMessage;
     QVariantMap tenGods;
     QVariantMap hiddenStems;
+    QVariantMap fiveElements;
+    QString fiveElementDistributionStatusMessage;
 
     static ChartResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;

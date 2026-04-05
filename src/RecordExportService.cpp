@@ -20,6 +20,11 @@ QString formatStemList(const QVariant &value)
     return text.isEmpty() ? QStringLiteral("未対応") : text;
 }
 
+QString formatElementCount(const QVariant &value)
+{
+    return value.isValid() ? value.toString() : QStringLiteral("0");
+}
+
 QString buildTextContent(const SavedChartRecord &record)
 {
     QString content;
@@ -49,6 +54,12 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "蔵干(月支): " << formatStemList(record.chartResult.hiddenStems.value(QStringLiteral("monthPillar"))) << "\n";
     stream << "蔵干(日支): " << formatStemList(record.chartResult.hiddenStems.value(QStringLiteral("dayPillar"))) << "\n";
     stream << "蔵干(時支): " << formatStemList(record.chartResult.hiddenStems.value(QStringLiteral("hourPillar"))) << "\n";
+    stream << "五行(木): " << formatElementCount(record.chartResult.fiveElements.value(QStringLiteral("wood"))) << "\n";
+    stream << "五行(火): " << formatElementCount(record.chartResult.fiveElements.value(QStringLiteral("fire"))) << "\n";
+    stream << "五行(土): " << formatElementCount(record.chartResult.fiveElements.value(QStringLiteral("earth"))) << "\n";
+    stream << "五行(金): " << formatElementCount(record.chartResult.fiveElements.value(QStringLiteral("metal"))) << "\n";
+    stream << "五行(水): " << formatElementCount(record.chartResult.fiveElements.value(QStringLiteral("water"))) << "\n";
+    stream << "五行集計状態: " << record.chartResult.fiveElementDistributionStatusMessage << "\n";
     stream << "\n";
     stream << "[InterpretationResult]\n";
     stream << "summaryText: " << record.interpretationResult.summaryText << "\n";

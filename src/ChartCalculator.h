@@ -29,6 +29,14 @@ private:
         const QString &dayPillar,
         const QString &hourPillar
     ) const;
+    QVariantMap calculateFiveElements(
+        const QString &yearPillar,
+        const QString &monthPillar,
+        const QString &dayPillar,
+        const QString &hourPillar,
+        const QVariantMap &hiddenStems,
+        QString *statusMessage
+    ) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,
