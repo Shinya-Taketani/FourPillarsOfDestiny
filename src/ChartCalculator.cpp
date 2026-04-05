@@ -372,6 +372,64 @@ int firstHourStemIndexForDayStem(int dayStemIndex)
         return -1;
     }
 }
+
+QString temperatureLabelForBranch(int branchIndex)
+{
+    switch (branchIndex) {
+    case 2:
+    case 3:
+        return QStringLiteral("やや暖");
+    case 4:
+        return QStringLiteral("中庸");
+    case 5:
+        return QStringLiteral("暖");
+    case 6:
+        return QStringLiteral("熱");
+    case 7:
+        return QStringLiteral("暖");
+    case 8:
+    case 9:
+        return QStringLiteral("涼");
+    case 10:
+        return QStringLiteral("中庸");
+    case 11:
+    case 0:
+    case 1:
+        return QStringLiteral("寒");
+    default:
+        return QStringLiteral("中庸");
+    }
+}
+
+QString moistureLabelForBranch(int branchIndex)
+{
+    switch (branchIndex) {
+    case 2:
+    case 3:
+        return QStringLiteral("やや湿");
+    case 4:
+        return QStringLiteral("やや湿");
+    case 5:
+        return QStringLiteral("やや乾");
+    case 6:
+        return QStringLiteral("乾");
+    case 7:
+        return QStringLiteral("中庸");
+    case 8:
+    case 9:
+        return QStringLiteral("やや乾");
+    case 10:
+        return QStringLiteral("やや乾");
+    case 11:
+        return QStringLiteral("やや湿");
+    case 0:
+        return QStringLiteral("湿");
+    case 1:
+        return QStringLiteral("やや湿");
+    default:
+        return QStringLiteral("中庸");
+    }
+}
 }
 
 ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
@@ -414,6 +472,12 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         seasonalEvaluation,
         &strengthEvaluationStatusMessage
     );
+    QString climateEvaluationStatusMessage;
+    const QVariantMap climateEvaluation = calculateClimateEvaluation(
+        monthResolution.monthPillar,
+        seasonalEvaluation,
+        &climateEvaluationStatusMessage
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -436,7 +500,9 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         seasonalEvaluation,
         seasonalEvaluationStatusMessage,
         strengthEvaluation,
-        strengthEvaluationStatusMessage
+        strengthEvaluationStatusMessage,
+        climateEvaluation,
+        climateEvaluationStatusMessage
     };
 }
 
@@ -720,6 +786,47 @@ QVariantMap ChartCalculator::calculateStrengthEvaluation(
     };
 }
 
+QVariantMap ChartCalculator::calculateClimateEvaluation(
+    const QString &monthPillar,
+    const QVariantMap &seasonalEvaluation,
+    QString *statusMessage
+) const
+{
+    const int monthBranchIndex = earthlyBranchIndex(monthPillar);
+    const QString season = seasonalEvaluation.value(QStringLiteral("season")).toString();
+
+    if (monthBranchIndex < 0) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("月柱未対応のため、寒暖・乾湿評価は未対応です。");
+        }
+
+        return {
+            {QStringLiteral("monthBranch"), QStringLiteral("未対応")},
+            {QStringLiteral("temperature"), QStringLiteral("未対応")},
+            {QStringLiteral("moisture"), QStringLiteral("未対応")},
+            {QStringLiteral("note"), QStringLiteral("月支を取得できません。")}
+        };
+    }
+
+    const QString temperature = temperatureLabelForBranch(monthBranchIndex);
+    const QString moisture = moistureLabelForBranch(monthBranchIndex);
+    const QString monthBranch = earthlyBranchAt(monthBranchIndex);
+    const QString note = QStringLiteral(
+        "月支 %1 と季節 %2 をもとにした調候前提の簡易評価です。"
+    ).arg(monthBranch, season.isEmpty() ? QStringLiteral("未対応") : season);
+
+    if (statusMessage) {
+        *statusMessage = QStringLiteral("月支ベースの寒暖・乾湿に関する最小評価です。");
+    }
+
+    return {
+        {QStringLiteral("monthBranch"), monthBranch},
+        {QStringLiteral("temperature"), temperature},
+        {QStringLiteral("moisture"), moisture},
+        {QStringLiteral("note"), note}
+    };
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -740,7 +847,8 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("蔵干は各支に対応する一般的な一覧のみ最小実装しています。")
           << QStringLiteral("五行分布は四柱天干・地支・蔵干を単純件数で最小集計しています。")
           << QStringLiteral("季節評価は月支ベースで春夏秋冬と日干適性を最小判定しています。")
-          << QStringLiteral("強弱評価は五行分布と季節評価を使った暫定ラベルです。正式な身強身弱判定ではありません。");
+          << QStringLiteral("強弱評価は五行分布と季節評価を使った暫定ラベルです。正式な身強身弱判定ではありません。")
+          << QStringLiteral("寒暖・乾湿評価は月支ベースの調候前提情報を最小実装しています。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")

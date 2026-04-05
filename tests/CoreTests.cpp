@@ -37,10 +37,12 @@ private slots:
     void chartCalculatorCalculatesFiveElementsForSupportedSampleYear();
     void chartCalculatorCalculatesSeasonalEvaluationForSupportedSampleYear();
     void chartCalculatorCalculatesStrengthEvaluationForSupportedSampleYear();
+    void chartCalculatorCalculatesClimateEvaluationForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcrossSolarTermBoundary();
+    void chartCalculatorChangesClimateEvaluationAcross1971Boundary();
     void chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear();
     void chartCalculatorProvidesMonthPillarStatusMessage();
     void solarTermDataSourceLoads1955YearData();
@@ -352,6 +354,24 @@ void CoreTests::chartCalculatorCalculatesStrengthEvaluationForSupportedSampleYea
     QVERIFY(result.strengthEvaluationStatusMessage.contains(QStringLiteral("暫定的")));
 }
 
+void CoreTests::chartCalculatorCalculatesClimateEvaluationForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.climateEvaluation.value(QStringLiteral("monthBranch")).toString(), QStringLiteral("寅"));
+    QCOMPARE(result.climateEvaluation.value(QStringLiteral("temperature")).toString(), QStringLiteral("やや暖"));
+    QCOMPARE(result.climateEvaluation.value(QStringLiteral("moisture")).toString(), QStringLiteral("やや湿"));
+    QVERIFY(result.climateEvaluation.value(QStringLiteral("note")).toString().contains(QStringLiteral("簡易評価")));
+    QVERIFY(result.climateEvaluationStatusMessage.contains(QStringLiteral("月支ベース")));
+}
+
 void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
 {
     ChartCalculator calculator;
@@ -512,6 +532,28 @@ void CoreTests::chartCalculatorChangesMonthPillarAcrossSolarTermBoundary()
     QVERIFY(beforeResult.monthPillar != afterResult.monthPillar);
 }
 
+void CoreTests::chartCalculatorChangesClimateEvaluationAcross1971Boundary()
+{
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1971-02-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1971-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
+
+    QCOMPARE(beforeResult.climateEvaluation.value(QStringLiteral("temperature")).toString(), QStringLiteral("寒"));
+    QCOMPARE(afterResult.climateEvaluation.value(QStringLiteral("temperature")).toString(), QStringLiteral("やや暖"));
+    QVERIFY(beforeResult.climateEvaluation != afterResult.climateEvaluation);
+}
+
 void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
 {
     ChartCalculator calculator;
@@ -536,6 +578,9 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
     QVERIFY(result.seasonalEvaluationStatusMessage.contains(QStringLiteral("月柱未対応")));
     QCOMPARE(result.strengthEvaluation.value(QStringLiteral("label")).toString(), QStringLiteral("未対応"));
     QVERIFY(result.strengthEvaluationStatusMessage.contains(QStringLiteral("月柱未対応")));
+    QCOMPARE(result.climateEvaluation.value(QStringLiteral("temperature")).toString(), QStringLiteral("未対応"));
+    QCOMPARE(result.climateEvaluation.value(QStringLiteral("moisture")).toString(), QStringLiteral("未対応"));
+    QVERIFY(result.climateEvaluationStatusMessage.contains(QStringLiteral("月柱未対応")));
     QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
 }
 
@@ -612,7 +657,14 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("reason"), QStringLiteral("暫定理由です。")},
             {QStringLiteral("score"), 2}
         },
-        QStringLiteral("暫定強弱評価です。")
+        QStringLiteral("暫定強弱評価です。"),
+        {
+            {QStringLiteral("monthBranch"), QStringLiteral("寅")},
+            {QStringLiteral("temperature"), QStringLiteral("やや暖")},
+            {QStringLiteral("moisture"), QStringLiteral("やや湿")},
+            {QStringLiteral("note"), QStringLiteral("調候前提の簡易評価です。")}
+        },
+        QStringLiteral("寒暖・乾湿評価です。")
     };
 
     const QVariantMap resultMap = result.toVariantMap();
@@ -632,6 +684,8 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("seasonalEvaluationStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("strengthEvaluation")));
     QVERIFY(resultMap.contains(QStringLiteral("strengthEvaluationStatusMessage")));
+    QVERIFY(resultMap.contains(QStringLiteral("climateEvaluation")));
+    QVERIFY(resultMap.contains(QStringLiteral("climateEvaluationStatusMessage")));
     QCOMPARE(resultMap.value(QStringLiteral("monthPillarStatusMessage")).toString(), QStringLiteral("月柱は限定実装です。"));
     QCOMPARE(
         resultMap.value(QStringLiteral("tenGods")).toMap().value(QStringLiteral("yearPillar")).toString(),
@@ -658,6 +712,14 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("strengthEvaluationStatusMessage")).toString(),
         QStringLiteral("暫定強弱評価です。")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("climateEvaluation")).toMap().value(QStringLiteral("temperature")).toString(),
+        QStringLiteral("やや暖")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("climateEvaluationStatusMessage")).toString(),
+        QStringLiteral("寒暖・乾湿評価です。")
     );
 }
 
@@ -965,7 +1027,14 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                 {QStringLiteral("reason"), QStringLiteral("保存確認用の暫定理由です。")},
                 {QStringLiteral("score"), 0}
             },
-            QStringLiteral("暫定強弱評価の保存確認用データです。")
+            QStringLiteral("暫定強弱評価の保存確認用データです。"),
+            {
+                {QStringLiteral("monthBranch"), QStringLiteral("丑")},
+                {QStringLiteral("temperature"), QStringLiteral("寒")},
+                {QStringLiteral("moisture"), QStringLiteral("やや湿")},
+                {QStringLiteral("note"), QStringLiteral("保存確認用の寒暖・乾湿メモです。")}
+            },
+            QStringLiteral("寒暖・乾湿評価の保存確認用データです。")
         },
         InterpretationResult{
             QStringLiteral("これは仮の解釈結果です。"),
@@ -1012,6 +1081,14 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.strengthEvaluationStatusMessage,
         QStringLiteral("暫定強弱評価の保存確認用データです。")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.climateEvaluation.value(QStringLiteral("temperature")).toString(),
+        QStringLiteral("寒")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.climateEvaluationStatusMessage,
+        QStringLiteral("寒暖・乾湿評価の保存確認用データです。")
     );
     QCOMPARE(loadedRecord.interpretationResult.summaryText, QStringLiteral("これは仮の解釈結果です。"));
 }
@@ -1082,6 +1159,8 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("五行(木):")));
     QVERIFY(content.contains(QStringLiteral("季節適性:")));
     QVERIFY(content.contains(QStringLiteral("暫定強弱評価:")));
+    QVERIFY(content.contains(QStringLiteral("寒暖傾向:")));
+    QVERIFY(content.contains(QStringLiteral("乾湿傾向:")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
 }
 

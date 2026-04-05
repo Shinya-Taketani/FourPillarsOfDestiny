@@ -66,6 +66,10 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "暫定強弱評価: " << record.chartResult.strengthEvaluation.value(QStringLiteral("label")).toString() << "\n";
     stream << "暫定強弱理由: " << record.chartResult.strengthEvaluation.value(QStringLiteral("reason")).toString() << "\n";
     stream << "暫定強弱状態: " << record.chartResult.strengthEvaluationStatusMessage << "\n";
+    stream << "寒暖傾向: " << record.chartResult.climateEvaluation.value(QStringLiteral("temperature")).toString() << "\n";
+    stream << "乾湿傾向: " << record.chartResult.climateEvaluation.value(QStringLiteral("moisture")).toString() << "\n";
+    stream << "寒暖・乾湿メモ: " << record.chartResult.climateEvaluation.value(QStringLiteral("note")).toString() << "\n";
+    stream << "寒暖・乾湿状態: " << record.chartResult.climateEvaluationStatusMessage << "\n";
     stream << "\n";
     stream << "[InterpretationResult]\n";
     stream << "summaryText: " << record.interpretationResult.summaryText << "\n";

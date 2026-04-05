@@ -19,6 +19,8 @@ struct ChartResult
     QString seasonalEvaluationStatusMessage;
     QVariantMap strengthEvaluation;
     QString strengthEvaluationStatusMessage;
+    QVariantMap climateEvaluation;
+    QString climateEvaluationStatusMessage;
 
     static ChartResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;

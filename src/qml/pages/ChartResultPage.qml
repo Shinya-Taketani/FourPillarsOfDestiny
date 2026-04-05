@@ -19,7 +19,9 @@ Kirigami.Page {
         seasonalEvaluation: {},
         seasonalEvaluationStatusMessage: "",
         strengthEvaluation: {},
-        strengthEvaluationStatusMessage: ""
+        strengthEvaluationStatusMessage: "",
+        climateEvaluation: {},
+        climateEvaluationStatusMessage: ""
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -244,6 +246,30 @@ Kirigami.Page {
                         visible: chartResult.strengthEvaluationStatusMessage.length > 0
                         color: Kirigami.Theme.disabledTextColor
                         text: "暫定強弱状態: " + chartResult.strengthEvaluationStatusMessage
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "寒暖傾向: " + ((chartResult.climateEvaluation && chartResult.climateEvaluation.temperature) ? chartResult.climateEvaluation.temperature : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "乾湿傾向: " + ((chartResult.climateEvaluation && chartResult.climateEvaluation.moisture) ? chartResult.climateEvaluation.moisture : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "寒暖・乾湿メモ: " + ((chartResult.climateEvaluation && chartResult.climateEvaluation.note) ? chartResult.climateEvaluation.note : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.climateEvaluationStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "寒暖・乾湿状態: " + chartResult.climateEvaluationStatusMessage
                     }
                 }
             }
