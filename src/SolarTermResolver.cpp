@@ -1,8 +1,117 @@
 #include "SolarTermResolver.h"
 
 #include <QDate>
+#include <QDateTime>
+#include <QJsonObject>
+#include <QTimeZone>
 
-SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birthInfo) const
+namespace {
+int monthOffsetFromTerm(const QString &termName)
+{
+    if (termName == QStringLiteral("立春")) {
+        return 0;
+    }
+
+    if (termName == QStringLiteral("啓蟄")) {
+        return 1;
+    }
+
+    return -1;
+}
+
+QString earthlyBranchForMonthOffset(int monthOffset)
+{
+    static const QStringList branches{
+        QStringLiteral("寅"),
+        QStringLiteral("卯"),
+        QStringLiteral("辰"),
+        QStringLiteral("巳"),
+        QStringLiteral("午"),
+        QStringLiteral("未"),
+        QStringLiteral("申"),
+        QStringLiteral("酉"),
+        QStringLiteral("戌"),
+        QStringLiteral("亥"),
+        QStringLiteral("子"),
+        QStringLiteral("丑")
+    };
+
+    if (monthOffset < 0 || monthOffset >= branches.size()) {
+        return QString();
+    }
+
+    return branches.at(monthOffset);
+}
+
+QString heavenlyStemAt(int index)
+{
+    static const QStringList stems{
+        QStringLiteral("甲"),
+        QStringLiteral("乙"),
+        QStringLiteral("丙"),
+        QStringLiteral("丁"),
+        QStringLiteral("戊"),
+        QStringLiteral("己"),
+        QStringLiteral("庚"),
+        QStringLiteral("辛"),
+        QStringLiteral("壬"),
+        QStringLiteral("癸")
+    };
+
+    if (index < 0 || index >= stems.size()) {
+        return QString();
+    }
+
+    return stems.at(index);
+}
+
+int firstMonthStemIndexForYearStem(const QString &yearStem)
+{
+    if (yearStem == QStringLiteral("甲") || yearStem == QStringLiteral("己")) {
+        return 2;
+    }
+
+    if (yearStem == QStringLiteral("乙") || yearStem == QStringLiteral("庚")) {
+        return 4;
+    }
+
+    if (yearStem == QStringLiteral("丙") || yearStem == QStringLiteral("辛")) {
+        return 6;
+    }
+
+    if (yearStem == QStringLiteral("丁") || yearStem == QStringLiteral("壬")) {
+        return 8;
+    }
+
+    if (yearStem == QStringLiteral("戊") || yearStem == QStringLiteral("癸")) {
+        return 0;
+    }
+
+    return -1;
+}
+
+QString monthPillarFromYearStem(const QString &yearPillar, int monthOffset)
+{
+    if (yearPillar.isEmpty()) {
+        return QString();
+    }
+
+    const QString yearStem = yearPillar.left(1);
+    const int firstMonthStemIndex = firstMonthStemIndexForYearStem(yearStem);
+    if (firstMonthStemIndex < 0) {
+        return QString();
+    }
+
+    const QString monthBranch = earthlyBranchForMonthOffset(monthOffset);
+    if (monthBranch.isEmpty()) {
+        return QString();
+    }
+
+    return heavenlyStemAt((firstMonthStemIndex + monthOffset) % 10) + monthBranch;
+}
+}
+
+SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birthInfo, const QString &yearPillar) const
 {
     const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
     if (!birthDate.isValid()) {
@@ -28,16 +137,66 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
         return {
             false,
             false,
-            QStringLiteral("月柱未実装"),
+            QStringLiteral("月柱未対応"),
             QStringLiteral("節入りデータは外部 JSON 方式を採用していますが、指定年データが未整備です。")
         };
     }
 
-    // 節入りデータの保持方式は導入済みだが、節入り日時の利用ロジックはまだ未実装。
+    int matchedMonthOffset = -1;
+    QString matchedTermName;
+    const QDateTime birthDateTime(birthDate, QTime(0, 0), QTimeZone::systemTimeZone());
+
+    for (const QJsonValue &entryValue : yearData.entries) {
+        if (!entryValue.isObject()) {
+            continue;
+        }
+
+        const QJsonObject entryObject = entryValue.toObject();
+        const QString termName = entryObject.value(QStringLiteral("term")).toString();
+        const QDateTime termDateTime = QDateTime::fromString(
+            entryObject.value(QStringLiteral("at")).toString(),
+            Qt::ISODate
+        );
+
+        if (!termDateTime.isValid()) {
+            continue;
+        }
+
+        const int monthOffset = monthOffsetFromTerm(termName);
+        if (monthOffset < 0) {
+            continue;
+        }
+
+        if (termDateTime <= birthDateTime) {
+            matchedMonthOffset = monthOffset;
+            matchedTermName = termName;
+        }
+    }
+
+    if (matchedMonthOffset < 0) {
+        return {
+            false,
+            false,
+            QStringLiteral("月柱未対応"),
+            QStringLiteral("節入りサンプルデータの先頭境界より前の日付は、まだ月柱計算に対応していません。")
+        };
+    }
+
+    const QString monthPillar = monthPillarFromYearStem(yearPillar, matchedMonthOffset);
+    if (monthPillar.isEmpty()) {
+        return {
+            false,
+            false,
+            QStringLiteral("月柱未対応"),
+            QStringLiteral("年干から月干を導く限定実装に失敗しました。")
+        };
+    }
+
     return {
-        false,
-        false,
-        QStringLiteral("月柱未実装"),
-        QStringLiteral("節入りデータは読み込み可能ですが、月柱本実装は未対応です。")
+        true,
+        true,
+        monthPillar,
+        QStringLiteral("節入りサンプルデータによる限定実装です。%1 以降の区間として月柱を計算しました。")
+            .arg(matchedTermName)
     };
 }

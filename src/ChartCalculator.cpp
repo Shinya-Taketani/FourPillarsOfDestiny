@@ -87,7 +87,8 @@ QString ChartCalculator::calculateYearPillar(const BirthInfo &birthInfo) const
 
 QString ChartCalculator::calculateMonthPillar(const BirthInfo &birthInfo) const
 {
-    const SolarTermResolution resolution = m_solarTermResolver.resolveMonthPillar(birthInfo);
+    const QString yearPillar = calculateYearPillar(birthInfo);
+    const SolarTermResolution resolution = m_solarTermResolver.resolveMonthPillar(birthInfo, yearPillar);
     return resolution.monthPillar;
 }
 
@@ -122,7 +123,7 @@ QString ChartCalculator::buildDescription(
 ) const
 {
     QStringList lines;
-    const SolarTermResolution monthResolution = m_solarTermResolver.resolveMonthPillar(birthInfo);
+    const SolarTermResolution monthResolution = m_solarTermResolver.resolveMonthPillar(birthInfo, yearPillar);
 
     lines << QStringLiteral("一般四柱推命の共通計算基盤の途中実装です。")
           << QStringLiteral("年柱は暦年ベースで計算しています。立春基準の年切り替えは未対応です。")

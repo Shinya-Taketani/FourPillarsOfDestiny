@@ -16,7 +16,7 @@ struct SolarTermResolution
 class SolarTermResolver
 {
 public:
-    SolarTermResolution resolveMonthPillar(const BirthInfo &birthInfo) const;
+    SolarTermResolution resolveMonthPillar(const BirthInfo &birthInfo, const QString &yearPillar) const;
 
 private:
     SolarTermDataSource m_dataSource;

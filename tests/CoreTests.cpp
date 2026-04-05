@@ -27,10 +27,12 @@ private slots:
     void chartCalculatorReturnsStableResultForSameInput();
     void chartCalculatorHourPillarChangesWithBirthTime();
     void chartCalculatorHandlesMissingBirthTime();
-    void chartCalculatorMarksMonthPillarAsUnimplemented();
+    void chartCalculatorReturnsMonthPillarForSupportedSampleYear();
+    void chartCalculatorChangesMonthPillarAcrossSolarTermBoundary();
+    void chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear();
     void solarTermDataSourceLoadsSampleYearData();
     void solarTermDataSourceHandlesMissingYearData();
-    void solarTermResolverReturnsUnimplementedContract();
+    void solarTermResolverReturnsSupportedSampleContract();
     void chartResultToVariantMapContainsRequiredKeys();
     void birthInfoValidationAcceptsValidInput();
     void birthInfoValidationRejectsEmptyBirthDate();
@@ -146,20 +148,19 @@ void CoreTests::chartCalculatorHandlesMissingBirthTime()
     QCOMPARE(result.hourPillar, QStringLiteral("時柱未計算"));
 }
 
-void CoreTests::chartCalculatorMarksMonthPillarAsUnimplemented()
+void CoreTests::chartCalculatorReturnsMonthPillarForSupportedSampleYear()
 {
     ChartCalculator calculator;
     const BirthInfo birthInfo{
-        QStringLiteral("1990-01-01"),
+        QStringLiteral("1990-02-05"),
         QStringLiteral("13:30"),
         QStringLiteral("男性")
     };
 
     const ChartResult result = calculator.calculate(birthInfo);
 
-    QCOMPARE(result.monthPillar, QStringLiteral("月柱未実装"));
-    QVERIFY(result.description.contains(QStringLiteral("節入り判定責務を分離済み")));
-    QVERIFY(result.description.contains(QStringLiteral("節入りデータは読み込み可能")));
+    QCOMPARE(result.monthPillar, QStringLiteral("戊寅"));
+    QVERIFY(result.description.contains(QStringLiteral("節入りサンプルデータによる限定実装")));
 }
 
 void CoreTests::solarTermDataSourceLoadsSampleYearData()
@@ -186,21 +187,59 @@ void CoreTests::solarTermDataSourceHandlesMissingYearData()
     QVERIFY(yearData.entries.isEmpty());
 }
 
-void CoreTests::solarTermResolverReturnsUnimplementedContract()
+void CoreTests::chartCalculatorChangesMonthPillarAcrossSolarTermBoundary()
 {
-    SolarTermResolver resolver;
-    const BirthInfo birthInfo{
-        QStringLiteral("1990-01-01"),
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1990-03-06"),
         QStringLiteral("13:30"),
         QStringLiteral("男性")
     };
 
-    const SolarTermResolution resolution = resolver.resolveMonthPillar(birthInfo);
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
 
-    QVERIFY(!resolution.isImplemented);
-    QVERIFY(!resolution.canDetermineMonthPillar);
-    QCOMPARE(resolution.monthPillar, QStringLiteral("月柱未実装"));
-    QVERIFY(resolution.statusMessage.contains(QStringLiteral("節入りデータは読み込み可能")));
+    QCOMPARE(beforeResult.monthPillar, QStringLiteral("戊寅"));
+    QCOMPARE(afterResult.monthPillar, QStringLiteral("己卯"));
+    QVERIFY(beforeResult.monthPillar != afterResult.monthPillar);
+}
+
+void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("2099-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.monthPillar, QStringLiteral("月柱未対応"));
+    QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
+}
+
+void CoreTests::solarTermResolverReturnsSupportedSampleContract()
+{
+    SolarTermResolver resolver;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const QString yearPillar = QStringLiteral("庚午");
+
+    const SolarTermResolution resolution = resolver.resolveMonthPillar(birthInfo, yearPillar);
+
+    QVERIFY(resolution.isImplemented);
+    QVERIFY(resolution.canDetermineMonthPillar);
+    QCOMPARE(resolution.monthPillar, QStringLiteral("戊寅"));
+    QVERIFY(resolution.statusMessage.contains(QStringLiteral("節入りサンプルデータによる限定実装")));
 }
 
 void CoreTests::chartResultToVariantMapContainsRequiredKeys()
