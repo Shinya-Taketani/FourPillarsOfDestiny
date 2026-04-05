@@ -27,14 +27,22 @@ private slots:
     void chartCalculatorReturnsStableResultForSameInput();
     void chartCalculatorHourPillarChangesWithBirthTime();
     void chartCalculatorHandlesMissingBirthTime();
+    void chartCalculatorReturnsMonthPillarFor1955SampleYear();
+    void chartCalculatorReturnsMonthPillarFor1971YearStartCase();
     void chartCalculatorReturnsMonthPillarFor1985SampleYear();
+    void chartCalculatorReturnsMonthPillarFor1995SampleYear();
     void chartCalculatorReturnsMonthPillarForSupportedSampleYear();
     void chartCalculatorCalculatesTenGodsForSupportedSampleYear();
+    void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
+    void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcrossSolarTermBoundary();
     void chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear();
     void chartCalculatorProvidesMonthPillarStatusMessage();
+    void solarTermDataSourceLoads1955YearData();
+    void solarTermDataSourceLoads1971YearData();
     void solarTermDataSourceLoads1985YearData();
+    void solarTermDataSourceLoads1995YearData();
     void solarTermDataSourceLoadsSampleYearData();
     void solarTermDataSourceHandlesMissingYearData();
     void solarTermResolverReturnsSupportedSampleContract();
@@ -156,11 +164,56 @@ void CoreTests::chartCalculatorHandlesMissingBirthTime()
     QCOMPARE(result.hourPillar, QStringLiteral("時柱未計算"));
 }
 
+void CoreTests::chartCalculatorReturnsMonthPillarFor1955SampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1955-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.monthPillar, QStringLiteral("戊寅"));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("節入りサンプルデータによる限定実装")));
+}
+
+void CoreTests::chartCalculatorReturnsMonthPillarFor1971YearStartCase()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1971-02-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.monthPillar, QStringLiteral("己丑"));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("前年の最終月区間")));
+}
+
 void CoreTests::chartCalculatorReturnsMonthPillarFor1985SampleYear()
 {
     ChartCalculator calculator;
     const BirthInfo birthInfo{
         QStringLiteral("1985-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.monthPillar, QStringLiteral("戊寅"));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("節入りサンプルデータによる限定実装")));
+}
+
+void CoreTests::chartCalculatorReturnsMonthPillarFor1995SampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1995-02-05"),
         QStringLiteral("13:30"),
         QStringLiteral("男性")
     };
@@ -206,6 +259,50 @@ void CoreTests::chartCalculatorCalculatesTenGodsForSupportedSampleYear()
     QCOMPARE(result.tenGods.value(QStringLiteral("hourPillar")).toString(), QStringLiteral("偏財"));
 }
 
+void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
+{
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1955-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1955-03-06"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
+
+    QCOMPARE(beforeResult.monthPillar, QStringLiteral("戊寅"));
+    QCOMPARE(afterResult.monthPillar, QStringLiteral("己卯"));
+    QVERIFY(beforeResult.monthPillar != afterResult.monthPillar);
+}
+
+void CoreTests::chartCalculatorChangesMonthPillarAcross1971Boundary()
+{
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1971-02-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1971-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
+
+    QCOMPARE(beforeResult.monthPillar, QStringLiteral("己丑"));
+    QCOMPARE(afterResult.monthPillar, QStringLiteral("庚寅"));
+    QVERIFY(beforeResult.monthPillar != afterResult.monthPillar);
+}
+
 void CoreTests::chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary()
 {
     ChartCalculator calculator;
@@ -228,6 +325,30 @@ void CoreTests::chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary()
     QVERIFY(beforeResult.monthPillar != afterResult.monthPillar);
 }
 
+void CoreTests::solarTermDataSourceLoads1955YearData()
+{
+    SolarTermDataSource dataSource;
+
+    const SolarTermYearData yearData = dataSource.loadYearData(1955);
+
+    QVERIFY(yearData.dataSourceAvailable);
+    QVERIFY(yearData.hasYearData);
+    QCOMPARE(yearData.year, 1955);
+    QVERIFY(!yearData.entries.isEmpty());
+}
+
+void CoreTests::solarTermDataSourceLoads1971YearData()
+{
+    SolarTermDataSource dataSource;
+
+    const SolarTermYearData yearData = dataSource.loadYearData(1971);
+
+    QVERIFY(yearData.dataSourceAvailable);
+    QVERIFY(yearData.hasYearData);
+    QCOMPARE(yearData.year, 1971);
+    QVERIFY(!yearData.entries.isEmpty());
+}
+
 void CoreTests::solarTermDataSourceLoads1985YearData()
 {
     SolarTermDataSource dataSource;
@@ -237,6 +358,18 @@ void CoreTests::solarTermDataSourceLoads1985YearData()
     QVERIFY(yearData.dataSourceAvailable);
     QVERIFY(yearData.hasYearData);
     QCOMPARE(yearData.year, 1985);
+    QVERIFY(!yearData.entries.isEmpty());
+}
+
+void CoreTests::solarTermDataSourceLoads1995YearData()
+{
+    SolarTermDataSource dataSource;
+
+    const SolarTermYearData yearData = dataSource.loadYearData(1995);
+
+    QVERIFY(yearData.dataSourceAvailable);
+    QVERIFY(yearData.hasYearData);
+    QCOMPARE(yearData.year, 1995);
     QVERIFY(!yearData.entries.isEmpty());
 }
 
@@ -256,11 +389,11 @@ void CoreTests::solarTermDataSourceHandlesMissingYearData()
 {
     SolarTermDataSource dataSource;
 
-    const SolarTermYearData yearData = dataSource.loadYearData(2099);
+    const SolarTermYearData yearData = dataSource.loadYearData(1949);
 
     QVERIFY(yearData.dataSourceAvailable);
     QVERIFY(!yearData.hasYearData);
-    QCOMPARE(yearData.year, 2099);
+    QCOMPARE(yearData.year, 1949);
     QVERIFY(yearData.entries.isEmpty());
 }
 
@@ -290,7 +423,7 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
 {
     ChartCalculator calculator;
     const BirthInfo birthInfo{
-        QStringLiteral("2099-02-05"),
+        QStringLiteral("1949-02-05"),
         QStringLiteral("13:30"),
         QStringLiteral("男性")
     };
@@ -307,15 +440,15 @@ void CoreTests::chartCalculatorProvidesMonthPillarStatusMessage()
 {
     ChartCalculator calculator;
     const BirthInfo birthInfo{
-        QStringLiteral("1990-01-01"),
+        QStringLiteral("1971-02-01"),
         QStringLiteral("13:30"),
         QStringLiteral("男性")
     };
 
     const ChartResult result = calculator.calculate(birthInfo);
 
-    QCOMPARE(result.monthPillar, QStringLiteral("月柱未対応"));
-    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("先頭境界より前")));
+    QCOMPARE(result.monthPillar, QStringLiteral("己丑"));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("前年の最終月区間")));
 }
 
 void CoreTests::solarTermResolverReturnsSupportedSampleContract()

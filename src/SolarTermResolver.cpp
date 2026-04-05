@@ -65,6 +65,36 @@ QString heavenlyStemAt(int index)
     return stems.at(index);
 }
 
+QString earthlyBranchAt(int index)
+{
+    static const QStringList branches{
+        QStringLiteral("子"),
+        QStringLiteral("丑"),
+        QStringLiteral("寅"),
+        QStringLiteral("卯"),
+        QStringLiteral("辰"),
+        QStringLiteral("巳"),
+        QStringLiteral("午"),
+        QStringLiteral("未"),
+        QStringLiteral("申"),
+        QStringLiteral("酉"),
+        QStringLiteral("戌"),
+        QStringLiteral("亥")
+    };
+
+    if (index < 0 || index >= branches.size()) {
+        return QString();
+    }
+
+    return branches.at(index);
+}
+
+int positiveModulo(int value, int divisor)
+{
+    const int remainder = value % divisor;
+    return remainder < 0 ? remainder + divisor : remainder;
+}
+
 int firstMonthStemIndexForYearStem(const QString &yearStem)
 {
     if (yearStem == QStringLiteral("甲") || yearStem == QStringLiteral("己")) {
@@ -108,6 +138,12 @@ QString monthPillarFromYearStem(const QString &yearPillar, int monthOffset)
     }
 
     return heavenlyStemAt((firstMonthStemIndex + monthOffset) % 10) + monthBranch;
+}
+
+QString yearPillarForGregorianYear(int year)
+{
+    const int offset = positiveModulo(year - 1984, 60);
+    return heavenlyStemAt(offset % 10) + earthlyBranchAt(offset % 12);
 }
 }
 
@@ -174,11 +210,32 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
     }
 
     if (matchedMonthOffset < 0) {
+        const SolarTermYearData previousYearData = m_dataSource.loadYearData(birthDate.year() - 1);
+        if (!previousYearData.dataSourceAvailable || !previousYearData.hasYearData) {
+            return {
+                false,
+                false,
+                QStringLiteral("月柱未対応"),
+                QStringLiteral("年初の節入り前ですが、前年データが未整備のため月柱計算に対応していません。")
+            };
+        }
+
+        const QString previousYearPillar = yearPillarForGregorianYear(birthDate.year() - 1);
+        const QString monthPillar = monthPillarFromYearStem(previousYearPillar, 11);
+        if (monthPillar.isEmpty()) {
+            return {
+                false,
+                false,
+                QStringLiteral("月柱未対応"),
+                QStringLiteral("前年基準の年初月柱計算に失敗しました。")
+            };
+        }
+
         return {
-            false,
-            false,
-            QStringLiteral("月柱未対応"),
-            QStringLiteral("節入りサンプルデータの先頭境界より前の日付は、まだ月柱計算に対応していません。")
+            true,
+            true,
+            monthPillar,
+            QStringLiteral("年初の最初の節入り前のため、前年の最終月区間として暫定計算しました。")
         };
     }
 
