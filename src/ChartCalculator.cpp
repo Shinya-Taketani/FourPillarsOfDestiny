@@ -303,6 +303,21 @@ QString seasonalSuitability(FiveElement dayElement, Season season)
     }
 }
 
+FiveElement generatingElementFor(FiveElement element)
+{
+    return static_cast<FiveElement>(positiveModulo(static_cast<int>(element) - 1, 5));
+}
+
+FiveElement generatedElementFrom(FiveElement element)
+{
+    return static_cast<FiveElement>((static_cast<int>(element) + 1) % 5);
+}
+
+FiveElement controllingElementFor(FiveElement element)
+{
+    return static_cast<FiveElement>(positiveModulo(static_cast<int>(element) + 3, 5));
+}
+
 QString tenGodName(int dayStemIndex, int targetStemIndex)
 {
     if (dayStemIndex < 0 || targetStemIndex < 0) {
@@ -392,6 +407,13 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         dayPillar,
         &seasonalEvaluationStatusMessage
     );
+    QString strengthEvaluationStatusMessage;
+    const QVariantMap strengthEvaluation = calculateStrengthEvaluation(
+        dayPillar,
+        fiveElements,
+        seasonalEvaluation,
+        &strengthEvaluationStatusMessage
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -412,7 +434,9 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         fiveElements,
         fiveElementDistributionStatusMessage,
         seasonalEvaluation,
-        seasonalEvaluationStatusMessage
+        seasonalEvaluationStatusMessage,
+        strengthEvaluation,
+        strengthEvaluationStatusMessage
     };
 }
 
@@ -623,6 +647,79 @@ QVariantMap ChartCalculator::calculateSeasonalEvaluation(
     };
 }
 
+QVariantMap ChartCalculator::calculateStrengthEvaluation(
+    const QString &dayPillar,
+    const QVariantMap &fiveElements,
+    const QVariantMap &seasonalEvaluation,
+    QString *statusMessage
+) const
+{
+    const int dayStemIndex = heavenlyStemIndex(dayPillar);
+    const QString seasonalSuitabilityLabel = seasonalEvaluation.value(QStringLiteral("suitability")).toString();
+
+    if (dayStemIndex < 0) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("日干を取得できないため、暫定強弱評価は未対応です。");
+        }
+
+        return {
+            {QStringLiteral("label"), QStringLiteral("未対応")},
+            {QStringLiteral("reason"), QStringLiteral("日干を取得できません。")},
+            {QStringLiteral("score"), 0}
+        };
+    }
+
+    if (seasonalSuitabilityLabel == QStringLiteral("未対応")) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("月柱未対応のため、暫定強弱評価は未対応です。");
+        }
+
+        return {
+            {QStringLiteral("label"), QStringLiteral("未対応")},
+            {QStringLiteral("reason"), QStringLiteral("月支による季節評価を取得できません。")},
+            {QStringLiteral("score"), 0}
+        };
+    }
+
+    const FiveElement dayElement = fiveElementForStem(dayStemIndex);
+    const FiveElement supportiveElement = generatingElementFor(dayElement);
+    const FiveElement drainingElement = generatedElementFrom(dayElement);
+    const FiveElement controllingElement = controllingElementFor(dayElement);
+
+    const int selfCount = fiveElements.value(fiveElementKey(dayElement)).toInt();
+    const int supportiveCount = fiveElements.value(fiveElementKey(supportiveElement)).toInt();
+    const int drainingCount = fiveElements.value(fiveElementKey(drainingElement)).toInt();
+    const int controllingCount = fiveElements.value(fiveElementKey(controllingElement)).toInt();
+
+    int score = (selfCount + supportiveCount) - (drainingCount + controllingCount);
+    if (seasonalSuitabilityLabel == QStringLiteral("有利")) {
+        score += 1;
+    } else if (seasonalSuitabilityLabel == QStringLiteral("不利")) {
+        score -= 1;
+    }
+
+    QString label = QStringLiteral("中立寄り");
+    if (score >= 2) {
+        label = QStringLiteral("やや強め");
+    } else if (score <= -2) {
+        label = QStringLiteral("やや弱め");
+    }
+
+    const QString reason = QStringLiteral(
+        "同五行 %1 件、生扶五行 %2 件、泄耗・剋の側 %3 件、季節評価 %4 をもとにした暫定判定です。"
+    ).arg(selfCount).arg(supportiveCount).arg(drainingCount + controllingCount).arg(seasonalSuitabilityLabel);
+
+    if (statusMessage) {
+        *statusMessage = QStringLiteral("五行分布と季節評価を使った暫定的な強弱評価です。");
+    }
+
+    return {
+        {QStringLiteral("label"), label},
+        {QStringLiteral("reason"), reason},
+        {QStringLiteral("score"), score}
+    };
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -642,7 +739,8 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("通変星は日干を基準に、年干・月干・時干の天干どうしのみ最小実装しています。")
           << QStringLiteral("蔵干は各支に対応する一般的な一覧のみ最小実装しています。")
           << QStringLiteral("五行分布は四柱天干・地支・蔵干を単純件数で最小集計しています。")
-          << QStringLiteral("季節評価は月支ベースで春夏秋冬と日干適性を最小判定しています。");
+          << QStringLiteral("季節評価は月支ベースで春夏秋冬と日干適性を最小判定しています。")
+          << QStringLiteral("強弱評価は五行分布と季節評価を使った暫定ラベルです。正式な身強身弱判定ではありません。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")

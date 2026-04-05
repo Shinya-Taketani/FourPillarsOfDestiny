@@ -42,6 +42,12 @@ private:
         const QString &dayPillar,
         QString *statusMessage
     ) const;
+    QVariantMap calculateStrengthEvaluation(
+        const QString &dayPillar,
+        const QVariantMap &fiveElements,
+        const QVariantMap &seasonalEvaluation,
+        QString *statusMessage
+    ) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,

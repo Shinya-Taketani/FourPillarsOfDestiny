@@ -63,6 +63,9 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "月支季節: " << record.chartResult.seasonalEvaluation.value(QStringLiteral("season")).toString() << "\n";
     stream << "季節適性: " << record.chartResult.seasonalEvaluation.value(QStringLiteral("suitability")).toString() << "\n";
     stream << "季節評価状態: " << record.chartResult.seasonalEvaluationStatusMessage << "\n";
+    stream << "暫定強弱評価: " << record.chartResult.strengthEvaluation.value(QStringLiteral("label")).toString() << "\n";
+    stream << "暫定強弱理由: " << record.chartResult.strengthEvaluation.value(QStringLiteral("reason")).toString() << "\n";
+    stream << "暫定強弱状態: " << record.chartResult.strengthEvaluationStatusMessage << "\n";
     stream << "\n";
     stream << "[InterpretationResult]\n";
     stream << "summaryText: " << record.interpretationResult.summaryText << "\n";

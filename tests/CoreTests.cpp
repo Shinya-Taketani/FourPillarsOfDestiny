@@ -36,6 +36,7 @@ private slots:
     void chartCalculatorCalculatesHiddenStemsForSupportedSampleYear();
     void chartCalculatorCalculatesFiveElementsForSupportedSampleYear();
     void chartCalculatorCalculatesSeasonalEvaluationForSupportedSampleYear();
+    void chartCalculatorCalculatesStrengthEvaluationForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
@@ -140,6 +141,11 @@ void CoreTests::chartCalculatorReturnsStableResultForSameInput()
     QCOMPARE(
         firstResult.seasonalEvaluationStatusMessage,
         secondResult.seasonalEvaluationStatusMessage
+    );
+    QCOMPARE(firstResult.strengthEvaluation, secondResult.strengthEvaluation);
+    QCOMPARE(
+        firstResult.strengthEvaluationStatusMessage,
+        secondResult.strengthEvaluationStatusMessage
     );
 }
 
@@ -330,6 +336,22 @@ void CoreTests::chartCalculatorCalculatesSeasonalEvaluationForSupportedSampleYea
     QVERIFY(result.seasonalEvaluationStatusMessage.contains(QStringLiteral("月支ベース")));
 }
 
+void CoreTests::chartCalculatorCalculatesStrengthEvaluationForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.strengthEvaluation.value(QStringLiteral("label")).toString(), QStringLiteral("やや強め"));
+    QVERIFY(result.strengthEvaluation.value(QStringLiteral("reason")).toString().contains(QStringLiteral("暫定判定")));
+    QVERIFY(result.strengthEvaluationStatusMessage.contains(QStringLiteral("暫定的")));
+}
+
 void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
 {
     ChartCalculator calculator;
@@ -512,6 +534,8 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
     QCOMPARE(result.seasonalEvaluation.value(QStringLiteral("season")).toString(), QStringLiteral("未対応"));
     QCOMPARE(result.seasonalEvaluation.value(QStringLiteral("suitability")).toString(), QStringLiteral("未対応"));
     QVERIFY(result.seasonalEvaluationStatusMessage.contains(QStringLiteral("月柱未対応")));
+    QCOMPARE(result.strengthEvaluation.value(QStringLiteral("label")).toString(), QStringLiteral("未対応"));
+    QVERIFY(result.strengthEvaluationStatusMessage.contains(QStringLiteral("月柱未対応")));
     QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
 }
 
@@ -582,7 +606,13 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("season"), QStringLiteral("春")},
             {QStringLiteral("suitability"), QStringLiteral("有利")}
         },
-        QStringLiteral("季節評価の最小判定です。")
+        QStringLiteral("季節評価の最小判定です。"),
+        {
+            {QStringLiteral("label"), QStringLiteral("やや強め")},
+            {QStringLiteral("reason"), QStringLiteral("暫定理由です。")},
+            {QStringLiteral("score"), 2}
+        },
+        QStringLiteral("暫定強弱評価です。")
     };
 
     const QVariantMap resultMap = result.toVariantMap();
@@ -600,6 +630,8 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("fiveElementDistributionStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("seasonalEvaluation")));
     QVERIFY(resultMap.contains(QStringLiteral("seasonalEvaluationStatusMessage")));
+    QVERIFY(resultMap.contains(QStringLiteral("strengthEvaluation")));
+    QVERIFY(resultMap.contains(QStringLiteral("strengthEvaluationStatusMessage")));
     QCOMPARE(resultMap.value(QStringLiteral("monthPillarStatusMessage")).toString(), QStringLiteral("月柱は限定実装です。"));
     QCOMPARE(
         resultMap.value(QStringLiteral("tenGods")).toMap().value(QStringLiteral("yearPillar")).toString(),
@@ -618,6 +650,14 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("seasonalEvaluationStatusMessage")).toString(),
         QStringLiteral("季節評価の最小判定です。")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("strengthEvaluation")).toMap().value(QStringLiteral("label")).toString(),
+        QStringLiteral("やや強め")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("strengthEvaluationStatusMessage")).toString(),
+        QStringLiteral("暫定強弱評価です。")
     );
 }
 
@@ -919,7 +959,13 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                 {QStringLiteral("season"), QStringLiteral("冬")},
                 {QStringLiteral("suitability"), QStringLiteral("中立")}
             },
-            QStringLiteral("季節評価の保存確認用データです。")
+            QStringLiteral("季節評価の保存確認用データです。"),
+            {
+                {QStringLiteral("label"), QStringLiteral("中立寄り")},
+                {QStringLiteral("reason"), QStringLiteral("保存確認用の暫定理由です。")},
+                {QStringLiteral("score"), 0}
+            },
+            QStringLiteral("暫定強弱評価の保存確認用データです。")
         },
         InterpretationResult{
             QStringLiteral("これは仮の解釈結果です。"),
@@ -958,6 +1004,14 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.seasonalEvaluationStatusMessage,
         QStringLiteral("季節評価の保存確認用データです。")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.strengthEvaluation.value(QStringLiteral("label")).toString(),
+        QStringLiteral("中立寄り")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.strengthEvaluationStatusMessage,
+        QStringLiteral("暫定強弱評価の保存確認用データです。")
     );
     QCOMPARE(loadedRecord.interpretationResult.summaryText, QStringLiteral("これは仮の解釈結果です。"));
 }
@@ -1027,6 +1081,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("蔵干(年支):")));
     QVERIFY(content.contains(QStringLiteral("五行(木):")));
     QVERIFY(content.contains(QStringLiteral("季節適性:")));
+    QVERIFY(content.contains(QStringLiteral("暫定強弱評価:")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
 }
 

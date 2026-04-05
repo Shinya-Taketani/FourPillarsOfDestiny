@@ -17,7 +17,9 @@ Kirigami.Page {
         fiveElements: {},
         fiveElementDistributionStatusMessage: "",
         seasonalEvaluation: {},
-        seasonalEvaluationStatusMessage: ""
+        seasonalEvaluationStatusMessage: "",
+        strengthEvaluation: {},
+        strengthEvaluationStatusMessage: ""
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -223,6 +225,25 @@ Kirigami.Page {
                         visible: chartResult.seasonalEvaluationStatusMessage.length > 0
                         color: Kirigami.Theme.disabledTextColor
                         text: "季節評価状態: " + chartResult.seasonalEvaluationStatusMessage
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "暫定強弱評価: " + ((chartResult.strengthEvaluation && chartResult.strengthEvaluation.label) ? chartResult.strengthEvaluation.label : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "暫定強弱理由: " + ((chartResult.strengthEvaluation && chartResult.strengthEvaluation.reason) ? chartResult.strengthEvaluation.reason : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.strengthEvaluationStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "暫定強弱状態: " + chartResult.strengthEvaluationStatusMessage
                     }
                 }
             }
