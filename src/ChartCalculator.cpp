@@ -103,6 +103,43 @@ int earthlyBranchIndex(const QString &pillar)
     return branches.indexOf(pillar.mid(1, 1));
 }
 
+QStringList hiddenStemsForBranchIndex(int branchIndex)
+{
+    switch (branchIndex) {
+    case 0:
+        return {QStringLiteral("癸")};
+    case 1:
+        return {QStringLiteral("己"), QStringLiteral("癸"), QStringLiteral("辛")};
+    case 2:
+        return {QStringLiteral("甲"), QStringLiteral("丙"), QStringLiteral("戊")};
+    case 3:
+        return {QStringLiteral("乙")};
+    case 4:
+        return {QStringLiteral("戊"), QStringLiteral("乙"), QStringLiteral("癸")};
+    case 5:
+        return {QStringLiteral("丙"), QStringLiteral("戊"), QStringLiteral("庚")};
+    case 6:
+        return {QStringLiteral("丁"), QStringLiteral("己")};
+    case 7:
+        return {QStringLiteral("己"), QStringLiteral("丁"), QStringLiteral("乙")};
+    case 8:
+        return {QStringLiteral("庚"), QStringLiteral("壬"), QStringLiteral("戊")};
+    case 9:
+        return {QStringLiteral("辛")};
+    case 10:
+        return {QStringLiteral("戊"), QStringLiteral("辛"), QStringLiteral("丁")};
+    case 11:
+        return {QStringLiteral("壬"), QStringLiteral("甲")};
+    default:
+        return {QStringLiteral("未対応")};
+    }
+}
+
+QStringList hiddenStemsForPillar(const QString &pillar)
+{
+    return hiddenStemsForBranchIndex(earthlyBranchIndex(pillar));
+}
+
 bool isYangStem(int stemIndex)
 {
     return stemIndex >= 0 && stemIndex % 2 == 0;
@@ -199,6 +236,12 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         dayPillar,
         hourPillar
     );
+    const QVariantMap hiddenStems = calculateHiddenStems(
+        yearPillar,
+        monthResolution.monthPillar,
+        dayPillar,
+        hourPillar
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -214,7 +257,8 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         hourPillar,
         description,
         monthResolution.statusMessage,
-        tenGods
+        tenGods,
+        hiddenStems
     };
 }
 
@@ -305,6 +349,21 @@ QVariantMap ChartCalculator::calculateTenGods(
     };
 }
 
+QVariantMap ChartCalculator::calculateHiddenStems(
+    const QString &yearPillar,
+    const QString &monthPillar,
+    const QString &dayPillar,
+    const QString &hourPillar
+) const
+{
+    return {
+        {QStringLiteral("yearPillar"), hiddenStemsForPillar(yearPillar)},
+        {QStringLiteral("monthPillar"), hiddenStemsForPillar(monthPillar)},
+        {QStringLiteral("dayPillar"), hiddenStemsForPillar(dayPillar)},
+        {QStringLiteral("hourPillar"), hiddenStemsForPillar(hourPillar)}
+    };
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -321,7 +380,8 @@ QString ChartCalculator::buildDescription(
           << monthResolution.statusMessage
           << QStringLiteral("日柱は暦日ベースの最小実装です。地方時補正や日界の厳密判定は未対応です。")
           << QStringLiteral("時柱は日干と出生時刻から最小実装で計算しています。")
-          << QStringLiteral("通変星は日干を基準に、年干・月干・時干の天干どうしのみ最小実装しています。");
+          << QStringLiteral("通変星は日干を基準に、年干・月干・時干の天干どうしのみ最小実装しています。")
+          << QStringLiteral("蔵干は各支に対応する一般的な一覧のみ最小実装しています。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")

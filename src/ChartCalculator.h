@@ -23,6 +23,12 @@ private:
         const QString &dayPillar,
         const QString &hourPillar
     ) const;
+    QVariantMap calculateHiddenStems(
+        const QString &yearPillar,
+        const QString &monthPillar,
+        const QString &dayPillar,
+        const QString &hourPillar
+    ) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,

@@ -33,6 +33,7 @@ private slots:
     void chartCalculatorReturnsMonthPillarFor1995SampleYear();
     void chartCalculatorReturnsMonthPillarForSupportedSampleYear();
     void chartCalculatorCalculatesTenGodsForSupportedSampleYear();
+    void chartCalculatorCalculatesHiddenStemsForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
@@ -127,6 +128,7 @@ void CoreTests::chartCalculatorReturnsStableResultForSameInput()
     QCOMPARE(firstResult.dayPillar, secondResult.dayPillar);
     QCOMPARE(firstResult.hourPillar, secondResult.hourPillar);
     QCOMPARE(firstResult.tenGods, secondResult.tenGods);
+    QCOMPARE(firstResult.hiddenStems, secondResult.hiddenStems);
 }
 
 void CoreTests::chartCalculatorHourPillarChangesWithBirthTime()
@@ -257,6 +259,27 @@ void CoreTests::chartCalculatorCalculatesTenGodsForSupportedSampleYear()
     QCOMPARE(result.tenGods.value(QStringLiteral("monthPillar")).toString(), QStringLiteral("印綬"));
     QCOMPARE(result.tenGods.value(QStringLiteral("dayPillar")).toString(), QStringLiteral("日主"));
     QCOMPARE(result.tenGods.value(QStringLiteral("hourPillar")).toString(), QStringLiteral("偏財"));
+}
+
+void CoreTests::chartCalculatorCalculatesHiddenStemsForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+    const QStringList expectedYearHiddenStems{QStringLiteral("丁"), QStringLiteral("己")};
+    const QStringList expectedMonthHiddenStems{QStringLiteral("甲"), QStringLiteral("丙"), QStringLiteral("戊")};
+    const QStringList expectedDayHiddenStems{QStringLiteral("己"), QStringLiteral("癸"), QStringLiteral("辛")};
+    const QStringList expectedHourHiddenStems{QStringLiteral("己"), QStringLiteral("丁"), QStringLiteral("乙")};
+
+    QCOMPARE(result.hiddenStems.value(QStringLiteral("yearPillar")).toStringList(), expectedYearHiddenStems);
+    QCOMPARE(result.hiddenStems.value(QStringLiteral("monthPillar")).toStringList(), expectedMonthHiddenStems);
+    QCOMPARE(result.hiddenStems.value(QStringLiteral("dayPillar")).toStringList(), expectedDayHiddenStems);
+    QCOMPARE(result.hiddenStems.value(QStringLiteral("hourPillar")).toStringList(), expectedHourHiddenStems);
 }
 
 void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
@@ -433,6 +456,10 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
     QCOMPARE(result.monthPillar, QStringLiteral("月柱未対応"));
     QCOMPARE(result.monthPillarStatusMessage, QStringLiteral("節入りデータは外部 JSON 方式を採用していますが、指定年データが未整備です。"));
     QCOMPARE(result.tenGods.value(QStringLiteral("monthPillar")).toString(), QStringLiteral("未対応"));
+    QCOMPARE(
+        result.hiddenStems.value(QStringLiteral("monthPillar")).toStringList(),
+        QStringList{QStringLiteral("未対応")}
+    );
     QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
 }
 
@@ -483,10 +510,17 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("monthPillar"), QStringLiteral("未実装")},
             {QStringLiteral("dayPillar"), QStringLiteral("未実装")},
             {QStringLiteral("hourPillar"), QStringLiteral("未実装")}
+        },
+        {
+            {QStringLiteral("yearPillar"), QStringList{QStringLiteral("甲")}},
+            {QStringLiteral("monthPillar"), QStringList{QStringLiteral("乙"), QStringLiteral("癸")}},
+            {QStringLiteral("dayPillar"), QStringList{QStringLiteral("丙")}},
+            {QStringLiteral("hourPillar"), QStringList{QStringLiteral("丁"), QStringLiteral("辛")}}
         }
     };
 
     const QVariantMap resultMap = result.toVariantMap();
+    const QStringList expectedMonthHiddenStems{QStringLiteral("乙"), QStringLiteral("癸")};
 
     QVERIFY(resultMap.contains(QStringLiteral("yearPillar")));
     QVERIFY(resultMap.contains(QStringLiteral("monthPillar")));
@@ -495,11 +529,13 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("description")));
     QVERIFY(resultMap.contains(QStringLiteral("monthPillarStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("tenGods")));
+    QVERIFY(resultMap.contains(QStringLiteral("hiddenStems")));
     QCOMPARE(resultMap.value(QStringLiteral("monthPillarStatusMessage")).toString(), QStringLiteral("月柱は限定実装です。"));
     QCOMPARE(
         resultMap.value(QStringLiteral("tenGods")).toMap().value(QStringLiteral("yearPillar")).toString(),
         QStringLiteral("未実装")
     );
+    QCOMPARE(resultMap.value(QStringLiteral("hiddenStems")).toMap().value(QStringLiteral("monthPillar")).toStringList(), expectedMonthHiddenStems);
 }
 
 void CoreTests::birthInfoValidationAcceptsValidInput()
@@ -780,6 +816,12 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                 {QStringLiteral("monthPillar"), QStringLiteral("未実装")},
                 {QStringLiteral("dayPillar"), QStringLiteral("未実装")},
                 {QStringLiteral("hourPillar"), QStringLiteral("未実装")}
+            },
+            {
+                {QStringLiteral("yearPillar"), QStringList{QStringLiteral("癸")}},
+                {QStringLiteral("monthPillar"), QStringList{QStringLiteral("己"), QStringLiteral("癸"), QStringLiteral("辛")}},
+                {QStringLiteral("dayPillar"), QStringList{QStringLiteral("甲"), QStringLiteral("丙"), QStringLiteral("戊")}},
+                {QStringLiteral("hourPillar"), QStringList{QStringLiteral("乙")}}
             }
         },
         InterpretationResult{
@@ -797,6 +839,7 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QString errorMessage;
     QVERIFY(storage.load(filePath, &loadedRecord, &errorMessage));
     QVERIFY(errorMessage.isEmpty());
+    const QStringList expectedMonthHiddenStems{QStringLiteral("己"), QStringLiteral("癸"), QStringLiteral("辛")};
     QCOMPARE(loadedRecord.birthInfo.birthDate, QStringLiteral("1992-03-04"));
     QCOMPARE(loadedRecord.birthInfo.gender, QStringLiteral("男性"));
     QCOMPARE(loadedRecord.chartResult.yearPillar, QStringLiteral("甲子"));
@@ -805,6 +848,7 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
         loadedRecord.chartResult.tenGods.value(QStringLiteral("monthPillar")).toString(),
         QStringLiteral("未実装")
     );
+    QCOMPARE(loadedRecord.chartResult.hiddenStems.value(QStringLiteral("monthPillar")).toStringList(), expectedMonthHiddenStems);
     QCOMPARE(loadedRecord.interpretationResult.summaryText, QStringLiteral("これは仮の解釈結果です。"));
 }
 
@@ -870,6 +914,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     const QString content = QString::fromUtf8(file.readAll());
     QVERIFY(content.contains(QStringLiteral("生年月日: 1990-01-01")));
     QVERIFY(content.contains(QStringLiteral("年柱: 甲子")));
+    QVERIFY(content.contains(QStringLiteral("蔵干(年支):")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
 }
 

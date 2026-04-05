@@ -9,7 +9,8 @@ ChartResult ChartResult::fromVariantMap(const QVariantMap &map)
         map.value(QStringLiteral("hourPillar")).toString(),
         map.value(QStringLiteral("description")).toString(),
         map.value(QStringLiteral("monthPillarStatusMessage")).toString(),
-        map.value(QStringLiteral("tenGods")).toMap()
+        map.value(QStringLiteral("tenGods")).toMap(),
+        map.value(QStringLiteral("hiddenStems")).toMap()
     };
 }
 
@@ -22,6 +23,7 @@ QVariantMap ChartResult::toVariantMap() const
         {QStringLiteral("hourPillar"), hourPillar},
         {QStringLiteral("description"), description},
         {QStringLiteral("monthPillarStatusMessage"), monthPillarStatusMessage},
-        {QStringLiteral("tenGods"), tenGods}
+        {QStringLiteral("tenGods"), tenGods},
+        {QStringLiteral("hiddenStems"), hiddenStems}
     };
 }

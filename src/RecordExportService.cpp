@@ -9,6 +9,17 @@
 #include <QTextStream>
 
 namespace {
+QString formatStemList(const QVariant &value)
+{
+    const QStringList values = value.toStringList();
+    if (!values.isEmpty()) {
+        return values.join(QStringLiteral(" "));
+    }
+
+    const QString text = value.toString();
+    return text.isEmpty() ? QStringLiteral("未対応") : text;
+}
+
 QString buildTextContent(const SavedChartRecord &record)
 {
     QString content;
@@ -34,6 +45,10 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "通変星(月柱): " << record.chartResult.tenGods.value(QStringLiteral("monthPillar")).toString() << "\n";
     stream << "通変星(日柱): " << record.chartResult.tenGods.value(QStringLiteral("dayPillar")).toString() << "\n";
     stream << "通変星(時柱): " << record.chartResult.tenGods.value(QStringLiteral("hourPillar")).toString() << "\n";
+    stream << "蔵干(年支): " << formatStemList(record.chartResult.hiddenStems.value(QStringLiteral("yearPillar"))) << "\n";
+    stream << "蔵干(月支): " << formatStemList(record.chartResult.hiddenStems.value(QStringLiteral("monthPillar"))) << "\n";
+    stream << "蔵干(日支): " << formatStemList(record.chartResult.hiddenStems.value(QStringLiteral("dayPillar"))) << "\n";
+    stream << "蔵干(時支): " << formatStemList(record.chartResult.hiddenStems.value(QStringLiteral("hourPillar"))) << "\n";
     stream << "\n";
     stream << "[InterpretationResult]\n";
     stream << "summaryText: " << record.interpretationResult.summaryText << "\n";

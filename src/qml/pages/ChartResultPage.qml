@@ -12,7 +12,8 @@ Kirigami.Page {
         hourPillar: "",
         description: "",
         monthPillarStatusMessage: "",
-        tenGods: {}
+        tenGods: {},
+        hiddenStems: {}
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -21,6 +22,22 @@ Kirigami.Page {
     })
     property string saveMessage: ""
     property string exportMessage: ""
+
+    function formatHiddenStems(value) {
+        if (value === undefined || value === null) {
+            return "未対応"
+        }
+
+        if (typeof value === "string") {
+            return value.length > 0 ? value : "未対応"
+        }
+
+        if (value.length !== undefined) {
+            return value.length > 0 ? value.join(" ") : "未対応"
+        }
+
+        return "未対応"
+    }
 
     Column {
         anchors.fill: parent
@@ -103,6 +120,22 @@ Kirigami.Page {
 
                 Label {
                     text: "通変星(時柱): " + ((chartResult.tenGods && chartResult.tenGods.hourPillar) ? chartResult.tenGods.hourPillar : "未実装")
+                }
+
+                Label {
+                    text: "蔵干(年支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.yearPillar : null)
+                }
+
+                Label {
+                    text: "蔵干(月支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.monthPillar : null)
+                }
+
+                Label {
+                    text: "蔵干(日支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.dayPillar : null)
+                }
+
+                Label {
+                    text: "蔵干(時支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.hourPillar : null)
                 }
             }
         }
