@@ -53,6 +53,14 @@ private:
         const QVariantMap &seasonalEvaluation,
         QString *statusMessage
     ) const;
+    QVariantMap calculateUsefulGodCandidates(
+        const QString &dayPillar,
+        const QVariantMap &fiveElements,
+        const QVariantMap &seasonalEvaluation,
+        const QVariantMap &strengthEvaluation,
+        const QVariantMap &climateEvaluation,
+        QString *statusMessage
+    ) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,

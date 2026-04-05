@@ -38,11 +38,13 @@ private slots:
     void chartCalculatorCalculatesSeasonalEvaluationForSupportedSampleYear();
     void chartCalculatorCalculatesStrengthEvaluationForSupportedSampleYear();
     void chartCalculatorCalculatesClimateEvaluationForSupportedSampleYear();
+    void chartCalculatorCalculatesUsefulGodCandidatesForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcrossSolarTermBoundary();
     void chartCalculatorChangesClimateEvaluationAcross1971Boundary();
+    void chartCalculatorChangesUsefulGodCandidatesAcross1971Boundary();
     void chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear();
     void chartCalculatorProvidesMonthPillarStatusMessage();
     void solarTermDataSourceLoads1955YearData();
@@ -148,6 +150,16 @@ void CoreTests::chartCalculatorReturnsStableResultForSameInput()
     QCOMPARE(
         firstResult.strengthEvaluationStatusMessage,
         secondResult.strengthEvaluationStatusMessage
+    );
+    QCOMPARE(firstResult.climateEvaluation, secondResult.climateEvaluation);
+    QCOMPARE(
+        firstResult.climateEvaluationStatusMessage,
+        secondResult.climateEvaluationStatusMessage
+    );
+    QCOMPARE(firstResult.usefulGodCandidates, secondResult.usefulGodCandidates);
+    QCOMPARE(
+        firstResult.usefulGodCandidatesStatusMessage,
+        secondResult.usefulGodCandidatesStatusMessage
     );
 }
 
@@ -372,6 +384,25 @@ void CoreTests::chartCalculatorCalculatesClimateEvaluationForSupportedSampleYear
     QVERIFY(result.climateEvaluationStatusMessage.contains(QStringLiteral("月支ベース")));
 }
 
+void CoreTests::chartCalculatorCalculatesUsefulGodCandidatesForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+    const QStringList candidates = result.usefulGodCandidates.value(QStringLiteral("candidates")).toStringList();
+
+    QCOMPARE(candidates.size(), 3);
+    QCOMPARE(candidates.first(), QStringLiteral("水"));
+    QVERIFY(result.usefulGodCandidates.value(QStringLiteral("reason")).toString().contains(QStringLiteral("五行分布")));
+    QVERIFY(result.usefulGodCandidates.value(QStringLiteral("note")).toString().contains(QStringLiteral("断定")));
+    QVERIFY(result.usefulGodCandidatesStatusMessage.contains(QStringLiteral("暫定候補")));
+}
+
 void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
 {
     ChartCalculator calculator;
@@ -554,6 +585,26 @@ void CoreTests::chartCalculatorChangesClimateEvaluationAcross1971Boundary()
     QVERIFY(beforeResult.climateEvaluation != afterResult.climateEvaluation);
 }
 
+void CoreTests::chartCalculatorChangesUsefulGodCandidatesAcross1971Boundary()
+{
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1971-02-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1971-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
+
+    QVERIFY(beforeResult.usefulGodCandidates != afterResult.usefulGodCandidates);
+}
+
 void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
 {
     ChartCalculator calculator;
@@ -581,6 +632,11 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
     QCOMPARE(result.climateEvaluation.value(QStringLiteral("temperature")).toString(), QStringLiteral("未対応"));
     QCOMPARE(result.climateEvaluation.value(QStringLiteral("moisture")).toString(), QStringLiteral("未対応"));
     QVERIFY(result.climateEvaluationStatusMessage.contains(QStringLiteral("月柱未対応")));
+    QCOMPARE(
+        result.usefulGodCandidates.value(QStringLiteral("candidates")).toStringList(),
+        QStringList{QStringLiteral("未対応")}
+    );
+    QVERIFY(result.usefulGodCandidatesStatusMessage.contains(QStringLiteral("未対応")));
     QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
 }
 
@@ -664,11 +720,22 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("moisture"), QStringLiteral("やや湿")},
             {QStringLiteral("note"), QStringLiteral("調候前提の簡易評価です。")}
         },
-        QStringLiteral("寒暖・乾湿評価です。")
+        QStringLiteral("寒暖・乾湿評価です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("水"), QStringLiteral("金"), QStringLiteral("木")}},
+            {QStringLiteral("reason"), QStringLiteral("暫定候補理由です。")},
+            {QStringLiteral("note"), QStringLiteral("断定しない参考候補です。")}
+        },
+        QStringLiteral("用神候補の暫定表示です。")
     };
 
     const QVariantMap resultMap = result.toVariantMap();
     const QStringList expectedMonthHiddenStems{QStringLiteral("乙"), QStringLiteral("癸")};
+    const QStringList expectedUsefulGodCandidates{
+        QStringLiteral("水"),
+        QStringLiteral("金"),
+        QStringLiteral("木")
+    };
 
     QVERIFY(resultMap.contains(QStringLiteral("yearPillar")));
     QVERIFY(resultMap.contains(QStringLiteral("monthPillar")));
@@ -686,6 +753,8 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("strengthEvaluationStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("climateEvaluation")));
     QVERIFY(resultMap.contains(QStringLiteral("climateEvaluationStatusMessage")));
+    QVERIFY(resultMap.contains(QStringLiteral("usefulGodCandidates")));
+    QVERIFY(resultMap.contains(QStringLiteral("usefulGodCandidatesStatusMessage")));
     QCOMPARE(resultMap.value(QStringLiteral("monthPillarStatusMessage")).toString(), QStringLiteral("月柱は限定実装です。"));
     QCOMPARE(
         resultMap.value(QStringLiteral("tenGods")).toMap().value(QStringLiteral("yearPillar")).toString(),
@@ -720,6 +789,14 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("climateEvaluationStatusMessage")).toString(),
         QStringLiteral("寒暖・乾湿評価です。")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("usefulGodCandidates")).toMap().value(QStringLiteral("candidates")).toStringList(),
+        expectedUsefulGodCandidates
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("usefulGodCandidatesStatusMessage")).toString(),
+        QStringLiteral("用神候補の暫定表示です。")
     );
 }
 
@@ -1034,7 +1111,13 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                 {QStringLiteral("moisture"), QStringLiteral("やや湿")},
                 {QStringLiteral("note"), QStringLiteral("保存確認用の寒暖・乾湿メモです。")}
             },
-            QStringLiteral("寒暖・乾湿評価の保存確認用データです。")
+            QStringLiteral("寒暖・乾湿評価の保存確認用データです。"),
+            {
+                {QStringLiteral("candidates"), QStringList{QStringLiteral("火"), QStringLiteral("木"), QStringLiteral("土")}},
+                {QStringLiteral("reason"), QStringLiteral("保存確認用の用神候補理由です。")},
+                {QStringLiteral("note"), QStringLiteral("保存確認用の暫定候補注記です。")}
+            },
+            QStringLiteral("用神候補の保存確認用データです。")
         },
         InterpretationResult{
             QStringLiteral("これは仮の解釈結果です。"),
@@ -1052,6 +1135,11 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QVERIFY(storage.load(filePath, &loadedRecord, &errorMessage));
     QVERIFY(errorMessage.isEmpty());
     const QStringList expectedMonthHiddenStems{QStringLiteral("己"), QStringLiteral("癸"), QStringLiteral("辛")};
+    const QStringList expectedUsefulGodCandidates{
+        QStringLiteral("火"),
+        QStringLiteral("木"),
+        QStringLiteral("土")
+    };
     QCOMPARE(loadedRecord.birthInfo.birthDate, QStringLiteral("1992-03-04"));
     QCOMPARE(loadedRecord.birthInfo.gender, QStringLiteral("男性"));
     QCOMPARE(loadedRecord.chartResult.yearPillar, QStringLiteral("甲子"));
@@ -1089,6 +1177,14 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.climateEvaluationStatusMessage,
         QStringLiteral("寒暖・乾湿評価の保存確認用データです。")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.usefulGodCandidates.value(QStringLiteral("candidates")).toStringList(),
+        expectedUsefulGodCandidates
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.usefulGodCandidatesStatusMessage,
+        QStringLiteral("用神候補の保存確認用データです。")
     );
     QCOMPARE(loadedRecord.interpretationResult.summaryText, QStringLiteral("これは仮の解釈結果です。"));
 }
@@ -1161,6 +1257,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("暫定強弱評価:")));
     QVERIFY(content.contains(QStringLiteral("寒暖傾向:")));
     QVERIFY(content.contains(QStringLiteral("乾湿傾向:")));
+    QVERIFY(content.contains(QStringLiteral("用神候補:")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
 }
 

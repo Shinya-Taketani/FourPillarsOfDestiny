@@ -70,6 +70,10 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "乾湿傾向: " << record.chartResult.climateEvaluation.value(QStringLiteral("moisture")).toString() << "\n";
     stream << "寒暖・乾湿メモ: " << record.chartResult.climateEvaluation.value(QStringLiteral("note")).toString() << "\n";
     stream << "寒暖・乾湿状態: " << record.chartResult.climateEvaluationStatusMessage << "\n";
+    stream << "用神候補: " << record.chartResult.usefulGodCandidates.value(QStringLiteral("candidates")).toStringList().join(QStringLiteral(" ")) << "\n";
+    stream << "用神候補理由: " << record.chartResult.usefulGodCandidates.value(QStringLiteral("reason")).toString() << "\n";
+    stream << "用神候補注記: " << record.chartResult.usefulGodCandidates.value(QStringLiteral("note")).toString() << "\n";
+    stream << "用神候補状態: " << record.chartResult.usefulGodCandidatesStatusMessage << "\n";
     stream << "\n";
     stream << "[InterpretationResult]\n";
     stream << "summaryText: " << record.interpretationResult.summaryText << "\n";

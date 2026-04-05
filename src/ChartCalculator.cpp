@@ -1,6 +1,7 @@
 #include "ChartCalculator.h"
 
 #include <QDate>
+#include <algorithm>
 #include <QTime>
 
 namespace {
@@ -430,6 +431,24 @@ QString moistureLabelForBranch(int branchIndex)
         return QStringLiteral("中庸");
     }
 }
+
+QString fiveElementDisplayName(FiveElement element)
+{
+    switch (element) {
+    case FiveElement::Wood:
+        return QStringLiteral("木");
+    case FiveElement::Fire:
+        return QStringLiteral("火");
+    case FiveElement::Earth:
+        return QStringLiteral("土");
+    case FiveElement::Metal:
+        return QStringLiteral("金");
+    case FiveElement::Water:
+        return QStringLiteral("水");
+    }
+
+    return QStringLiteral("土");
+}
 }
 
 ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
@@ -478,6 +497,15 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         seasonalEvaluation,
         &climateEvaluationStatusMessage
     );
+    QString usefulGodCandidatesStatusMessage;
+    const QVariantMap usefulGodCandidates = calculateUsefulGodCandidates(
+        dayPillar,
+        fiveElements,
+        seasonalEvaluation,
+        strengthEvaluation,
+        climateEvaluation,
+        &usefulGodCandidatesStatusMessage
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -502,7 +530,9 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         strengthEvaluation,
         strengthEvaluationStatusMessage,
         climateEvaluation,
-        climateEvaluationStatusMessage
+        climateEvaluationStatusMessage,
+        usefulGodCandidates,
+        usefulGodCandidatesStatusMessage
     };
 }
 
@@ -827,6 +857,134 @@ QVariantMap ChartCalculator::calculateClimateEvaluation(
     };
 }
 
+QVariantMap ChartCalculator::calculateUsefulGodCandidates(
+    const QString &dayPillar,
+    const QVariantMap &fiveElements,
+    const QVariantMap &seasonalEvaluation,
+    const QVariantMap &strengthEvaluation,
+    const QVariantMap &climateEvaluation,
+    QString *statusMessage
+) const
+{
+    const int dayStemIndex = heavenlyStemIndex(dayPillar);
+    const QString seasonalSuitability = seasonalEvaluation.value(QStringLiteral("suitability")).toString();
+    const QString strengthLabel = strengthEvaluation.value(QStringLiteral("label")).toString();
+    const QString temperature = climateEvaluation.value(QStringLiteral("temperature")).toString();
+    const QString moisture = climateEvaluation.value(QStringLiteral("moisture")).toString();
+
+    if (dayStemIndex < 0 || seasonalSuitability == QStringLiteral("未対応")
+        || temperature == QStringLiteral("未対応") || moisture == QStringLiteral("未対応")) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("月柱または日干の情報不足のため、用神候補は未対応です。");
+        }
+
+        return {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("未対応")}},
+            {QStringLiteral("reason"), QStringLiteral("季節評価または寒暖・乾湿評価を十分に取得できません。")},
+            {QStringLiteral("note"), QStringLiteral("暫定候補を算出できません。")}
+        };
+    }
+
+    struct CandidateScore
+    {
+        FiveElement element;
+        int score;
+    };
+
+    CandidateScore candidateScores[]{
+        {FiveElement::Wood, 0},
+        {FiveElement::Fire, 0},
+        {FiveElement::Earth, 0},
+        {FiveElement::Metal, 0},
+        {FiveElement::Water, 0}
+    };
+
+    const int woodCount = fiveElements.value(QStringLiteral("wood")).toInt();
+    const int fireCount = fiveElements.value(QStringLiteral("fire")).toInt();
+    const int earthCount = fiveElements.value(QStringLiteral("earth")).toInt();
+    const int metalCount = fiveElements.value(QStringLiteral("metal")).toInt();
+    const int waterCount = fiveElements.value(QStringLiteral("water")).toInt();
+    const int maxCount = std::max({woodCount, fireCount, earthCount, metalCount, waterCount});
+
+    for (CandidateScore &candidate : candidateScores) {
+        const int count = fiveElements.value(fiveElementKey(candidate.element)).toInt();
+        candidate.score += maxCount - count;
+    }
+
+    QStringList reasons;
+    reasons << QStringLiteral("五行分布の不足傾向を基準にしています。");
+
+    if (temperature == QStringLiteral("寒")) {
+        candidateScores[static_cast<int>(FiveElement::Fire)].score += 3;
+        candidateScores[static_cast<int>(FiveElement::Wood)].score += 1;
+        reasons << QStringLiteral("寒さを和らげる方向として火を上げています。");
+    } else if (temperature == QStringLiteral("涼")) {
+        candidateScores[static_cast<int>(FiveElement::Fire)].score += 2;
+        reasons << QStringLiteral("涼寄りのため火をやや上げています。");
+    } else if (temperature == QStringLiteral("暖")) {
+        candidateScores[static_cast<int>(FiveElement::Water)].score += 2;
+        reasons << QStringLiteral("暖寄りのため水をやや上げています。");
+    } else if (temperature == QStringLiteral("熱")) {
+        candidateScores[static_cast<int>(FiveElement::Water)].score += 3;
+        reasons << QStringLiteral("熱を冷ます方向として水を上げています。");
+    }
+
+    if (moisture == QStringLiteral("乾")) {
+        candidateScores[static_cast<int>(FiveElement::Water)].score += 3;
+        reasons << QStringLiteral("乾きが強いため水を上げています。");
+    } else if (moisture == QStringLiteral("やや乾")) {
+        candidateScores[static_cast<int>(FiveElement::Water)].score += 2;
+        reasons << QStringLiteral("やや乾き寄りのため水をやや上げています。");
+    } else if (moisture == QStringLiteral("湿")) {
+        candidateScores[static_cast<int>(FiveElement::Fire)].score += 2;
+        candidateScores[static_cast<int>(FiveElement::Earth)].score += 2;
+        reasons << QStringLiteral("湿りを動かす方向として火と土を上げています。");
+    } else if (moisture == QStringLiteral("やや湿")) {
+        candidateScores[static_cast<int>(FiveElement::Fire)].score += 1;
+        candidateScores[static_cast<int>(FiveElement::Earth)].score += 1;
+        reasons << QStringLiteral("やや湿り寄りのため火と土を補助候補にしています。");
+    }
+
+    const FiveElement dayElement = fiveElementForStem(dayStemIndex);
+    const FiveElement supportiveElement = generatingElementFor(dayElement);
+    const FiveElement drainingElement = generatedElementFrom(dayElement);
+    const FiveElement controllingElement = controllingElementFor(dayElement);
+
+    if (strengthLabel == QStringLiteral("やや弱め")) {
+        candidateScores[static_cast<int>(dayElement)].score += 2;
+        candidateScores[static_cast<int>(supportiveElement)].score += 2;
+        reasons << QStringLiteral("やや弱め判定のため日干を助ける側を上げています。");
+    } else if (strengthLabel == QStringLiteral("やや強め")) {
+        candidateScores[static_cast<int>(drainingElement)].score += 2;
+        candidateScores[static_cast<int>(controllingElement)].score += 2;
+        reasons << QStringLiteral("やや強め判定のため洩らす側と抑える側を上げています。");
+    } else {
+        reasons << QStringLiteral("強弱は中立寄りとして極端な補正を避けています。");
+    }
+
+    std::sort(std::begin(candidateScores), std::end(candidateScores), [](const CandidateScore &left, const CandidateScore &right) {
+        if (left.score == right.score) {
+            return static_cast<int>(left.element) < static_cast<int>(right.element);
+        }
+        return left.score > right.score;
+    });
+
+    QStringList candidates;
+    for (int index = 0; index < 3; ++index) {
+        candidates << fiveElementDisplayName(candidateScores[index].element);
+    }
+
+    if (statusMessage) {
+        *statusMessage = QStringLiteral("五行分布・季節・寒暖乾湿・暫定強弱から作った断定しない暫定候補です。");
+    }
+
+    return {
+        {QStringLiteral("candidates"), candidates},
+        {QStringLiteral("reason"), reasons.join(QStringLiteral(" "))},
+        {QStringLiteral("note"), QStringLiteral("用神を断定せず、補いたい方向の参考候補を表示しています。")}
+    };
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -848,7 +1006,8 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("五行分布は四柱天干・地支・蔵干を単純件数で最小集計しています。")
           << QStringLiteral("季節評価は月支ベースで春夏秋冬と日干適性を最小判定しています。")
           << QStringLiteral("強弱評価は五行分布と季節評価を使った暫定ラベルです。正式な身強身弱判定ではありません。")
-          << QStringLiteral("寒暖・乾湿評価は月支ベースの調候前提情報を最小実装しています。");
+          << QStringLiteral("寒暖・乾湿評価は月支ベースの調候前提情報を最小実装しています。")
+          << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")
