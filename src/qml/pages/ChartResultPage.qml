@@ -51,229 +51,270 @@ Kirigami.Page {
         return chartResult.fiveElements[key]
     }
 
-    Column {
+    ScrollView {
+        id: scrollView
         anchors.fill: parent
-        anchors.margins: 24
-        spacing: 16
+        clip: true
 
-        Label {
-            text: "命式結果"
-            font.pixelSize: 24
-            font.bold: true
-        }
+        Column {
+            width: scrollView.availableWidth
+            spacing: 16
 
-        Label {
-            text: "仮表示"
-            color: Kirigami.Theme.disabledTextColor
-        }
-
-        Frame {
-            width: parent.width
-
-            Column {
+            Item {
                 width: parent.width
-                spacing: 12
-
-                Label {
-                    text: "年柱: " + chartResult.yearPillar
-                }
-
-                Label {
-                    text: "月柱: " + (chartResult.monthPillar.length > 0 ? chartResult.monthPillar : "未対応")
-                }
-
-                Label {
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    visible: chartResult.monthPillarStatusMessage.length > 0
-                    color: Kirigami.Theme.disabledTextColor
-                    text: "月柱状態: " + chartResult.monthPillarStatusMessage
-                }
-
-                Label {
-                    text: "日柱: " + chartResult.dayPillar
-                }
-
-                Label {
-                    text: "時柱: " + chartResult.hourPillar
-                }
-
-                Label {
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    text: chartResult.description
-                }
+                height: 24
             }
-        }
 
-        Frame {
-            width: parent.width
-
-            Column {
+            Label {
                 width: parent.width
-                spacing: 12
-
-                Label {
-                    text: "詳細命式"
-                    font.bold: true
-                }
-
-                Label {
-                    text: "通変星(年柱): " + ((chartResult.tenGods && chartResult.tenGods.yearPillar) ? chartResult.tenGods.yearPillar : "未実装")
-                }
-
-                Label {
-                    text: "通変星(月柱): " + ((chartResult.tenGods && chartResult.tenGods.monthPillar) ? chartResult.tenGods.monthPillar : "未実装")
-                }
-
-                Label {
-                    text: "通変星(日柱): " + ((chartResult.tenGods && chartResult.tenGods.dayPillar) ? chartResult.tenGods.dayPillar : "未実装")
-                }
-
-                Label {
-                    text: "通変星(時柱): " + ((chartResult.tenGods && chartResult.tenGods.hourPillar) ? chartResult.tenGods.hourPillar : "未実装")
-                }
-
-                Label {
-                    text: "蔵干(年支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.yearPillar : null)
-                }
-
-                Label {
-                    text: "蔵干(月支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.monthPillar : null)
-                }
-
-                Label {
-                    text: "蔵干(日支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.dayPillar : null)
-                }
-
-                Label {
-                    text: "蔵干(時支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.hourPillar : null)
-                }
-
-                Label {
-                    text: "五行(木): " + formatFiveElementCount("wood")
-                }
-
-                Label {
-                    text: "五行(火): " + formatFiveElementCount("fire")
-                }
-
-                Label {
-                    text: "五行(土): " + formatFiveElementCount("earth")
-                }
-
-                Label {
-                    text: "五行(金): " + formatFiveElementCount("metal")
-                }
-
-                Label {
-                    text: "五行(水): " + formatFiveElementCount("water")
-                }
-
-                Label {
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    visible: chartResult.fiveElementDistributionStatusMessage.length > 0
-                    color: Kirigami.Theme.disabledTextColor
-                    text: "五行集計状態: " + chartResult.fiveElementDistributionStatusMessage
-                }
-
-                Label {
-                    text: "月支季節: " + ((chartResult.seasonalEvaluation && chartResult.seasonalEvaluation.season) ? chartResult.seasonalEvaluation.season : "未対応")
-                }
-
-                Label {
-                    text: "季節適性: " + ((chartResult.seasonalEvaluation && chartResult.seasonalEvaluation.suitability) ? chartResult.seasonalEvaluation.suitability : "未対応")
-                }
-
-                Label {
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    visible: chartResult.seasonalEvaluationStatusMessage.length > 0
-                    color: Kirigami.Theme.disabledTextColor
-                    text: "季節評価状態: " + chartResult.seasonalEvaluationStatusMessage
-                }
+                text: "命式結果"
+                font.pixelSize: 24
+                font.bold: true
             }
-        }
 
-        Frame {
-            width: parent.width
-
-            Column {
+            Label {
                 width: parent.width
-                spacing: 12
+                text: "仮表示"
+                color: Kirigami.Theme.disabledTextColor
+            }
 
-                Label {
-                    text: "解釈メモ"
-                    font.bold: true
-                }
+            Frame {
+                width: parent.width
 
-                Label {
+                Column {
                     width: parent.width
-                    wrapMode: Text.WordWrap
-                    text: interpretationResult.summaryText
-                }
+                    spacing: 12
 
-                Label {
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    text: interpretationResult.detailText
-                }
+                    Label {
+                        width: parent.width
+                        text: "年柱: " + chartResult.yearPillar
+                    }
 
-                Label {
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    color: Kirigami.Theme.disabledTextColor
-                    text: interpretationResult.cautionText
+                    Label {
+                        width: parent.width
+                        text: "月柱: " + (chartResult.monthPillar.length > 0 ? chartResult.monthPillar : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.monthPillarStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "月柱状態: " + chartResult.monthPillarStatusMessage
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "日柱: " + chartResult.dayPillar
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "時柱: " + chartResult.hourPillar
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: chartResult.description
+                    }
                 }
             }
-        }
 
-        Button {
-            text: "保存"
-            onClicked: {
-                appController.saveCurrentRecord()
-                saveMessage = appController.lastSaveMessage()
+            Frame {
+                width: parent.width
+
+                Column {
+                    width: parent.width
+                    spacing: 12
+
+                    Label {
+                        width: parent.width
+                        text: "詳細命式"
+                        font.bold: true
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "通変星(年柱): " + ((chartResult.tenGods && chartResult.tenGods.yearPillar) ? chartResult.tenGods.yearPillar : "未実装")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "通変星(月柱): " + ((chartResult.tenGods && chartResult.tenGods.monthPillar) ? chartResult.tenGods.monthPillar : "未実装")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "通変星(日柱): " + ((chartResult.tenGods && chartResult.tenGods.dayPillar) ? chartResult.tenGods.dayPillar : "未実装")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "通変星(時柱): " + ((chartResult.tenGods && chartResult.tenGods.hourPillar) ? chartResult.tenGods.hourPillar : "未実装")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "蔵干(年支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.yearPillar : null)
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "蔵干(月支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.monthPillar : null)
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "蔵干(日支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.dayPillar : null)
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "蔵干(時支): " + formatHiddenStems(chartResult.hiddenStems ? chartResult.hiddenStems.hourPillar : null)
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "五行(木): " + formatFiveElementCount("wood")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "五行(火): " + formatFiveElementCount("fire")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "五行(土): " + formatFiveElementCount("earth")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "五行(金): " + formatFiveElementCount("metal")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "五行(水): " + formatFiveElementCount("water")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.fiveElementDistributionStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "五行集計状態: " + chartResult.fiveElementDistributionStatusMessage
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "月支季節: " + ((chartResult.seasonalEvaluation && chartResult.seasonalEvaluation.season) ? chartResult.seasonalEvaluation.season : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "季節適性: " + ((chartResult.seasonalEvaluation && chartResult.seasonalEvaluation.suitability) ? chartResult.seasonalEvaluation.suitability : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.seasonalEvaluationStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "季節評価状態: " + chartResult.seasonalEvaluationStatusMessage
+                    }
+                }
             }
-        }
 
-        Row {
-            spacing: 12
+            Frame {
+                width: parent.width
+
+                Column {
+                    width: parent.width
+                    spacing: 12
+
+                    Label {
+                        width: parent.width
+                        text: "解釈メモ"
+                        font.bold: true
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: interpretationResult.summaryText
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: interpretationResult.detailText
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        color: Kirigami.Theme.disabledTextColor
+                        text: interpretationResult.cautionText
+                    }
+                }
+            }
 
             Button {
-                text: "テキスト出力"
+                width: parent.width
+                text: "保存"
                 onClicked: {
-                    appController.exportCurrentRecordAsText()
-                    exportMessage = appController.lastExportMessage()
+                    appController.saveCurrentRecord()
+                    saveMessage = appController.lastSaveMessage()
                 }
+            }
+
+            Row {
+                width: parent.width
+                spacing: 12
+
+                Button {
+                    text: "テキスト出力"
+                    onClicked: {
+                        appController.exportCurrentRecordAsText()
+                        exportMessage = appController.lastExportMessage()
+                    }
+                }
+
+                Button {
+                    text: "JSON出力"
+                    onClicked: {
+                        appController.exportCurrentRecordAsJson()
+                        exportMessage = appController.lastExportMessage()
+                    }
+                }
+            }
+
+            Label {
+                width: parent.width
+                visible: saveMessage.length > 0
+                wrapMode: Text.WordWrap
+                text: saveMessage
+            }
+
+            Label {
+                width: parent.width
+                visible: exportMessage.length > 0
+                wrapMode: Text.WordWrap
+                text: exportMessage
             }
 
             Button {
-                text: "JSON出力"
-                onClicked: {
-                    appController.exportCurrentRecordAsJson()
-                    exportMessage = appController.lastExportMessage()
-                }
+                width: parent.width
+                text: "入力画面へ戻る"
+                onClicked: applicationWindow().pageStack.pop()
             }
-        }
 
-        Label {
-            width: parent.width
-            visible: saveMessage.length > 0
-            wrapMode: Text.WordWrap
-            text: saveMessage
-        }
-
-        Label {
-            width: parent.width
-            visible: exportMessage.length > 0
-            wrapMode: Text.WordWrap
-            text: exportMessage
-        }
-
-        Button {
-            text: "入力画面へ戻る"
-            onClicked: applicationWindow().pageStack.pop()
+            Item {
+                width: parent.width
+                height: 24
+            }
         }
     }
 }
