@@ -15,7 +15,9 @@ Kirigami.Page {
         tenGods: {},
         hiddenStems: {},
         fiveElements: {},
-        fiveElementDistributionStatusMessage: ""
+        fiveElementDistributionStatusMessage: "",
+        seasonalEvaluation: {},
+        seasonalEvaluationStatusMessage: ""
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -174,6 +176,22 @@ Kirigami.Page {
                     visible: chartResult.fiveElementDistributionStatusMessage.length > 0
                     color: Kirigami.Theme.disabledTextColor
                     text: "五行集計状態: " + chartResult.fiveElementDistributionStatusMessage
+                }
+
+                Label {
+                    text: "月支季節: " + ((chartResult.seasonalEvaluation && chartResult.seasonalEvaluation.season) ? chartResult.seasonalEvaluation.season : "未対応")
+                }
+
+                Label {
+                    text: "季節適性: " + ((chartResult.seasonalEvaluation && chartResult.seasonalEvaluation.suitability) ? chartResult.seasonalEvaluation.suitability : "未対応")
+                }
+
+                Label {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    visible: chartResult.seasonalEvaluationStatusMessage.length > 0
+                    color: Kirigami.Theme.disabledTextColor
+                    text: "季節評価状態: " + chartResult.seasonalEvaluationStatusMessage
                 }
             }
         }

@@ -13,6 +13,14 @@ enum class FiveElement
     Water = 4
 };
 
+enum class Season
+{
+    Spring = 0,
+    Summer = 1,
+    Autumn = 2,
+    Winter = 3
+};
+
 QString heavenlyStemAt(int index)
 {
     static const QStringList stems{
@@ -218,6 +226,83 @@ void incrementFiveElementCount(QVariantMap *counts, FiveElement element)
     counts->insert(key, currentValue + 1);
 }
 
+Season seasonForBranch(int branchIndex)
+{
+    switch (branchIndex) {
+    case 2:
+    case 3:
+    case 4:
+        return Season::Spring;
+    case 5:
+    case 6:
+    case 7:
+        return Season::Summer;
+    case 8:
+    case 9:
+    case 10:
+        return Season::Autumn;
+    case 11:
+    case 0:
+    case 1:
+        return Season::Winter;
+    default:
+        return Season::Spring;
+    }
+}
+
+QString seasonLabel(Season season)
+{
+    switch (season) {
+    case Season::Spring:
+        return QStringLiteral("春");
+    case Season::Summer:
+        return QStringLiteral("夏");
+    case Season::Autumn:
+        return QStringLiteral("秋");
+    case Season::Winter:
+        return QStringLiteral("冬");
+    }
+
+    return QStringLiteral("春");
+}
+
+FiveElement dominantElementForSeason(Season season)
+{
+    switch (season) {
+    case Season::Spring:
+        return FiveElement::Wood;
+    case Season::Summer:
+        return FiveElement::Fire;
+    case Season::Autumn:
+        return FiveElement::Metal;
+    case Season::Winter:
+        return FiveElement::Water;
+    }
+
+    return FiveElement::Wood;
+}
+
+QString seasonalSuitability(FiveElement dayElement, Season season)
+{
+    const int relation = positiveModulo(
+        static_cast<int>(dominantElementForSeason(season)) - static_cast<int>(dayElement),
+        5
+    );
+
+    switch (relation) {
+    case 0:
+    case 4:
+        return QStringLiteral("有利");
+    case 1:
+        return QStringLiteral("中立");
+    case 2:
+    case 3:
+        return QStringLiteral("不利");
+    default:
+        return QStringLiteral("中立");
+    }
+}
+
 QString tenGodName(int dayStemIndex, int targetStemIndex)
 {
     if (dayStemIndex < 0 || targetStemIndex < 0) {
@@ -301,6 +386,12 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         hiddenStems,
         &fiveElementDistributionStatusMessage
     );
+    QString seasonalEvaluationStatusMessage;
+    const QVariantMap seasonalEvaluation = calculateSeasonalEvaluation(
+        monthResolution.monthPillar,
+        dayPillar,
+        &seasonalEvaluationStatusMessage
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -319,7 +410,9 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         tenGods,
         hiddenStems,
         fiveElements,
-        fiveElementDistributionStatusMessage
+        fiveElementDistributionStatusMessage,
+        seasonalEvaluation,
+        seasonalEvaluationStatusMessage
     };
 }
 
@@ -483,6 +576,53 @@ QVariantMap ChartCalculator::calculateFiveElements(
     return counts;
 }
 
+QVariantMap ChartCalculator::calculateSeasonalEvaluation(
+    const QString &monthPillar,
+    const QString &dayPillar,
+    QString *statusMessage
+) const
+{
+    const int monthBranchIndex = earthlyBranchIndex(monthPillar);
+    const int dayStemIndex = heavenlyStemIndex(dayPillar);
+
+    if (monthBranchIndex < 0) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("月柱未対応のため、季節評価は未対応です。");
+        }
+
+        return {
+            {QStringLiteral("monthBranch"), QStringLiteral("未対応")},
+            {QStringLiteral("season"), QStringLiteral("未対応")},
+            {QStringLiteral("suitability"), QStringLiteral("未対応")}
+        };
+    }
+
+    if (dayStemIndex < 0) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("日干を取得できないため、季節適性は未対応です。");
+        }
+
+        return {
+            {QStringLiteral("monthBranch"), earthlyBranchAt(monthBranchIndex)},
+            {QStringLiteral("season"), seasonLabel(seasonForBranch(monthBranchIndex))},
+            {QStringLiteral("suitability"), QStringLiteral("未対応")}
+        };
+    }
+
+    const Season season = seasonForBranch(monthBranchIndex);
+    const QString suitability = seasonalSuitability(fiveElementForStem(dayStemIndex), season);
+
+    if (statusMessage) {
+        *statusMessage = QStringLiteral("月支ベースの季節評価による最小判定です。");
+    }
+
+    return {
+        {QStringLiteral("monthBranch"), earthlyBranchAt(monthBranchIndex)},
+        {QStringLiteral("season"), seasonLabel(season)},
+        {QStringLiteral("suitability"), suitability}
+    };
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -501,7 +641,8 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("時柱は日干と出生時刻から最小実装で計算しています。")
           << QStringLiteral("通変星は日干を基準に、年干・月干・時干の天干どうしのみ最小実装しています。")
           << QStringLiteral("蔵干は各支に対応する一般的な一覧のみ最小実装しています。")
-          << QStringLiteral("五行分布は四柱天干・地支・蔵干を単純件数で最小集計しています。");
+          << QStringLiteral("五行分布は四柱天干・地支・蔵干を単純件数で最小集計しています。")
+          << QStringLiteral("季節評価は月支ベースで春夏秋冬と日干適性を最小判定しています。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")

@@ -12,7 +12,9 @@ ChartResult ChartResult::fromVariantMap(const QVariantMap &map)
         map.value(QStringLiteral("tenGods")).toMap(),
         map.value(QStringLiteral("hiddenStems")).toMap(),
         map.value(QStringLiteral("fiveElements")).toMap(),
-        map.value(QStringLiteral("fiveElementDistributionStatusMessage")).toString()
+        map.value(QStringLiteral("fiveElementDistributionStatusMessage")).toString(),
+        map.value(QStringLiteral("seasonalEvaluation")).toMap(),
+        map.value(QStringLiteral("seasonalEvaluationStatusMessage")).toString()
     };
 }
 
@@ -28,6 +30,8 @@ QVariantMap ChartResult::toVariantMap() const
         {QStringLiteral("tenGods"), tenGods},
         {QStringLiteral("hiddenStems"), hiddenStems},
         {QStringLiteral("fiveElements"), fiveElements},
-        {QStringLiteral("fiveElementDistributionStatusMessage"), fiveElementDistributionStatusMessage}
+        {QStringLiteral("fiveElementDistributionStatusMessage"), fiveElementDistributionStatusMessage},
+        {QStringLiteral("seasonalEvaluation"), seasonalEvaluation},
+        {QStringLiteral("seasonalEvaluationStatusMessage"), seasonalEvaluationStatusMessage}
     };
 }

@@ -35,6 +35,7 @@ private slots:
     void chartCalculatorCalculatesTenGodsForSupportedSampleYear();
     void chartCalculatorCalculatesHiddenStemsForSupportedSampleYear();
     void chartCalculatorCalculatesFiveElementsForSupportedSampleYear();
+    void chartCalculatorCalculatesSeasonalEvaluationForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
@@ -134,6 +135,11 @@ void CoreTests::chartCalculatorReturnsStableResultForSameInput()
     QCOMPARE(
         firstResult.fiveElementDistributionStatusMessage,
         secondResult.fiveElementDistributionStatusMessage
+    );
+    QCOMPARE(firstResult.seasonalEvaluation, secondResult.seasonalEvaluation);
+    QCOMPARE(
+        firstResult.seasonalEvaluationStatusMessage,
+        secondResult.seasonalEvaluationStatusMessage
     );
 }
 
@@ -305,6 +311,23 @@ void CoreTests::chartCalculatorCalculatesFiveElementsForSupportedSampleYear()
     QCOMPARE(result.fiveElements.value(QStringLiteral("metal")).toInt(), 3);
     QCOMPARE(result.fiveElements.value(QStringLiteral("water")).toInt(), 1);
     QVERIFY(result.fiveElementDistributionStatusMessage.contains(QStringLiteral("単純件数")));
+}
+
+void CoreTests::chartCalculatorCalculatesSeasonalEvaluationForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.seasonalEvaluation.value(QStringLiteral("monthBranch")).toString(), QStringLiteral("寅"));
+    QCOMPARE(result.seasonalEvaluation.value(QStringLiteral("season")).toString(), QStringLiteral("春"));
+    QCOMPARE(result.seasonalEvaluation.value(QStringLiteral("suitability")).toString(), QStringLiteral("不利"));
+    QVERIFY(result.seasonalEvaluationStatusMessage.contains(QStringLiteral("月支ベース")));
 }
 
 void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
@@ -486,6 +509,9 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
         QStringList{QStringLiteral("未対応")}
     );
     QVERIFY(result.fiveElementDistributionStatusMessage.contains(QStringLiteral("月柱")));
+    QCOMPARE(result.seasonalEvaluation.value(QStringLiteral("season")).toString(), QStringLiteral("未対応"));
+    QCOMPARE(result.seasonalEvaluation.value(QStringLiteral("suitability")).toString(), QStringLiteral("未対応"));
+    QVERIFY(result.seasonalEvaluationStatusMessage.contains(QStringLiteral("月柱未対応")));
     QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
 }
 
@@ -550,7 +576,13 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("metal"), 4},
             {QStringLiteral("water"), 5}
         },
-        QStringLiteral("五行分布の最小集計です。")
+        QStringLiteral("五行分布の最小集計です。"),
+        {
+            {QStringLiteral("monthBranch"), QStringLiteral("寅")},
+            {QStringLiteral("season"), QStringLiteral("春")},
+            {QStringLiteral("suitability"), QStringLiteral("有利")}
+        },
+        QStringLiteral("季節評価の最小判定です。")
     };
 
     const QVariantMap resultMap = result.toVariantMap();
@@ -566,6 +598,8 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("hiddenStems")));
     QVERIFY(resultMap.contains(QStringLiteral("fiveElements")));
     QVERIFY(resultMap.contains(QStringLiteral("fiveElementDistributionStatusMessage")));
+    QVERIFY(resultMap.contains(QStringLiteral("seasonalEvaluation")));
+    QVERIFY(resultMap.contains(QStringLiteral("seasonalEvaluationStatusMessage")));
     QCOMPARE(resultMap.value(QStringLiteral("monthPillarStatusMessage")).toString(), QStringLiteral("月柱は限定実装です。"));
     QCOMPARE(
         resultMap.value(QStringLiteral("tenGods")).toMap().value(QStringLiteral("yearPillar")).toString(),
@@ -576,6 +610,14 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("fiveElementDistributionStatusMessage")).toString(),
         QStringLiteral("五行分布の最小集計です。")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("seasonalEvaluation")).toMap().value(QStringLiteral("season")).toString(),
+        QStringLiteral("春")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("seasonalEvaluationStatusMessage")).toString(),
+        QStringLiteral("季節評価の最小判定です。")
     );
 }
 
@@ -871,7 +913,13 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                 {QStringLiteral("metal"), 1},
                 {QStringLiteral("water"), 3}
             },
-            QStringLiteral("月柱まで含めた最小集計です。")
+            QStringLiteral("月柱まで含めた最小集計です。"),
+            {
+                {QStringLiteral("monthBranch"), QStringLiteral("丑")},
+                {QStringLiteral("season"), QStringLiteral("冬")},
+                {QStringLiteral("suitability"), QStringLiteral("中立")}
+            },
+            QStringLiteral("季節評価の保存確認用データです。")
         },
         InterpretationResult{
             QStringLiteral("これは仮の解釈結果です。"),
@@ -902,6 +950,14 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.fiveElementDistributionStatusMessage,
         QStringLiteral("月柱まで含めた最小集計です。")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.seasonalEvaluation.value(QStringLiteral("season")).toString(),
+        QStringLiteral("冬")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.seasonalEvaluationStatusMessage,
+        QStringLiteral("季節評価の保存確認用データです。")
     );
     QCOMPARE(loadedRecord.interpretationResult.summaryText, QStringLiteral("これは仮の解釈結果です。"));
 }
@@ -970,6 +1026,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("年柱: 甲子")));
     QVERIFY(content.contains(QStringLiteral("蔵干(年支):")));
     QVERIFY(content.contains(QStringLiteral("五行(木):")));
+    QVERIFY(content.contains(QStringLiteral("季節適性:")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
 }
 

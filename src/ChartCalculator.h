@@ -37,6 +37,11 @@ private:
         const QVariantMap &hiddenStems,
         QString *statusMessage
     ) const;
+    QVariantMap calculateSeasonalEvaluation(
+        const QString &monthPillar,
+        const QString &dayPillar,
+        QString *statusMessage
+    ) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,

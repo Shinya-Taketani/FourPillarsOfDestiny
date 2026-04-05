@@ -60,6 +60,9 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "五行(金): " << formatElementCount(record.chartResult.fiveElements.value(QStringLiteral("metal"))) << "\n";
     stream << "五行(水): " << formatElementCount(record.chartResult.fiveElements.value(QStringLiteral("water"))) << "\n";
     stream << "五行集計状態: " << record.chartResult.fiveElementDistributionStatusMessage << "\n";
+    stream << "月支季節: " << record.chartResult.seasonalEvaluation.value(QStringLiteral("season")).toString() << "\n";
+    stream << "季節適性: " << record.chartResult.seasonalEvaluation.value(QStringLiteral("suitability")).toString() << "\n";
+    stream << "季節評価状態: " << record.chartResult.seasonalEvaluationStatusMessage << "\n";
     stream << "\n";
     stream << "[InterpretationResult]\n";
     stream << "summaryText: " << record.interpretationResult.summaryText << "\n";

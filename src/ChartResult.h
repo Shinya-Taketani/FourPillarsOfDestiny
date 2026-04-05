@@ -15,6 +15,8 @@ struct ChartResult
     QVariantMap hiddenStems;
     QVariantMap fiveElements;
     QString fiveElementDistributionStatusMessage;
+    QVariantMap seasonalEvaluation;
+    QString seasonalEvaluationStatusMessage;
 
     static ChartResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;
