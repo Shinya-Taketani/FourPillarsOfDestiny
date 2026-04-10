@@ -39,12 +39,14 @@ private slots:
     void chartCalculatorCalculatesStrengthEvaluationForSupportedSampleYear();
     void chartCalculatorCalculatesClimateEvaluationForSupportedSampleYear();
     void chartCalculatorCalculatesUsefulGodCandidatesForSupportedSampleYear();
+    void chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcrossSolarTermBoundary();
     void chartCalculatorChangesClimateEvaluationAcross1971Boundary();
     void chartCalculatorChangesUsefulGodCandidatesAcross1971Boundary();
+    void chartCalculatorChangesPatternCandidatesAcross1971Boundary();
     void chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear();
     void chartCalculatorProvidesMonthPillarStatusMessage();
     void solarTermDataSourceLoads1955YearData();
@@ -160,6 +162,11 @@ void CoreTests::chartCalculatorReturnsStableResultForSameInput()
     QCOMPARE(
         firstResult.usefulGodCandidatesStatusMessage,
         secondResult.usefulGodCandidatesStatusMessage
+    );
+    QCOMPARE(firstResult.patternCandidates, secondResult.patternCandidates);
+    QCOMPARE(
+        firstResult.patternCandidatesStatusMessage,
+        secondResult.patternCandidatesStatusMessage
     );
 }
 
@@ -403,6 +410,27 @@ void CoreTests::chartCalculatorCalculatesUsefulGodCandidatesForSupportedSampleYe
     QVERIFY(result.usefulGodCandidatesStatusMessage.contains(QStringLiteral("暫定候補")));
 }
 
+void CoreTests::chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+    const QStringList candidates = result.patternCandidates.value(QStringLiteral("candidates")).toStringList();
+
+    QCOMPARE(candidates.size(), 3);
+    QCOMPARE(candidates.at(0), QStringLiteral("印綬格"));
+    QCOMPARE(candidates.at(1), QStringLiteral("正財格"));
+    QCOMPARE(candidates.at(2), QStringLiteral("正官格"));
+    QVERIFY(result.patternCandidates.value(QStringLiteral("reason")).toString().contains(QStringLiteral("月干通変星")));
+    QVERIFY(result.patternCandidates.value(QStringLiteral("note")).toString().contains(QStringLiteral("断定")));
+    QVERIFY(result.patternCandidatesStatusMessage.contains(QStringLiteral("暫定候補")));
+}
+
 void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
 {
     ChartCalculator calculator;
@@ -605,6 +633,26 @@ void CoreTests::chartCalculatorChangesUsefulGodCandidatesAcross1971Boundary()
     QVERIFY(beforeResult.usefulGodCandidates != afterResult.usefulGodCandidates);
 }
 
+void CoreTests::chartCalculatorChangesPatternCandidatesAcross1971Boundary()
+{
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1971-02-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1971-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
+
+    QVERIFY(beforeResult.patternCandidates != afterResult.patternCandidates);
+}
+
 void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
 {
     ChartCalculator calculator;
@@ -637,6 +685,11 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
         QStringList{QStringLiteral("未対応")}
     );
     QVERIFY(result.usefulGodCandidatesStatusMessage.contains(QStringLiteral("未対応")));
+    QCOMPARE(
+        result.patternCandidates.value(QStringLiteral("candidates")).toStringList(),
+        QStringList{QStringLiteral("未対応")}
+    );
+    QVERIFY(result.patternCandidatesStatusMessage.contains(QStringLiteral("未対応")));
     QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
 }
 
@@ -726,7 +779,13 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("reason"), QStringLiteral("暫定候補理由です。")},
             {QStringLiteral("note"), QStringLiteral("断定しない参考候補です。")}
         },
-        QStringLiteral("用神候補の暫定表示です。")
+        QStringLiteral("用神候補の暫定表示です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("印綬格"), QStringLiteral("正財格"), QStringLiteral("正官格")}},
+            {QStringLiteral("reason"), QStringLiteral("格局候補の暫定理由です。")},
+            {QStringLiteral("note"), QStringLiteral("断定しない格局候補です。")}
+        },
+        QStringLiteral("格局候補の暫定表示です。")
     };
 
     const QVariantMap resultMap = result.toVariantMap();
@@ -735,6 +794,11 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
         QStringLiteral("水"),
         QStringLiteral("金"),
         QStringLiteral("木")
+    };
+    const QStringList expectedPatternCandidates{
+        QStringLiteral("印綬格"),
+        QStringLiteral("正財格"),
+        QStringLiteral("正官格")
     };
 
     QVERIFY(resultMap.contains(QStringLiteral("yearPillar")));
@@ -755,6 +819,8 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("climateEvaluationStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("usefulGodCandidates")));
     QVERIFY(resultMap.contains(QStringLiteral("usefulGodCandidatesStatusMessage")));
+    QVERIFY(resultMap.contains(QStringLiteral("patternCandidates")));
+    QVERIFY(resultMap.contains(QStringLiteral("patternCandidatesStatusMessage")));
     QCOMPARE(resultMap.value(QStringLiteral("monthPillarStatusMessage")).toString(), QStringLiteral("月柱は限定実装です。"));
     QCOMPARE(
         resultMap.value(QStringLiteral("tenGods")).toMap().value(QStringLiteral("yearPillar")).toString(),
@@ -797,6 +863,14 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("usefulGodCandidatesStatusMessage")).toString(),
         QStringLiteral("用神候補の暫定表示です。")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("patternCandidates")).toMap().value(QStringLiteral("candidates")).toStringList(),
+        expectedPatternCandidates
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("patternCandidatesStatusMessage")).toString(),
+        QStringLiteral("格局候補の暫定表示です。")
     );
 }
 
@@ -1117,7 +1191,13 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                 {QStringLiteral("reason"), QStringLiteral("保存確認用の用神候補理由です。")},
                 {QStringLiteral("note"), QStringLiteral("保存確認用の暫定候補注記です。")}
             },
-            QStringLiteral("用神候補の保存確認用データです。")
+            QStringLiteral("用神候補の保存確認用データです。"),
+            {
+                {QStringLiteral("candidates"), QStringList{QStringLiteral("偏財格"), QStringLiteral("食神格"), QStringLiteral("偏官格")}},
+                {QStringLiteral("reason"), QStringLiteral("保存確認用の格局候補理由です。")},
+                {QStringLiteral("note"), QStringLiteral("保存確認用の格局候補注記です。")}
+            },
+            QStringLiteral("格局候補の保存確認用データです。")
         },
         InterpretationResult{
             QStringLiteral("これは仮の解釈結果です。"),
@@ -1139,6 +1219,11 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
         QStringLiteral("火"),
         QStringLiteral("木"),
         QStringLiteral("土")
+    };
+    const QStringList expectedPatternCandidates{
+        QStringLiteral("偏財格"),
+        QStringLiteral("食神格"),
+        QStringLiteral("偏官格")
     };
     QCOMPARE(loadedRecord.birthInfo.birthDate, QStringLiteral("1992-03-04"));
     QCOMPARE(loadedRecord.birthInfo.gender, QStringLiteral("男性"));
@@ -1185,6 +1270,14 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.usefulGodCandidatesStatusMessage,
         QStringLiteral("用神候補の保存確認用データです。")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.patternCandidates.value(QStringLiteral("candidates")).toStringList(),
+        expectedPatternCandidates
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.patternCandidatesStatusMessage,
+        QStringLiteral("格局候補の保存確認用データです。")
     );
     QCOMPARE(loadedRecord.interpretationResult.summaryText, QStringLiteral("これは仮の解釈結果です。"));
 }
@@ -1258,6 +1351,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("寒暖傾向:")));
     QVERIFY(content.contains(QStringLiteral("乾湿傾向:")));
     QVERIFY(content.contains(QStringLiteral("用神候補:")));
+    QVERIFY(content.contains(QStringLiteral("格局候補:")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
 }
 

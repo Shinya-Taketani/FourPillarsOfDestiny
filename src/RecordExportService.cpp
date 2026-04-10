@@ -74,6 +74,10 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "用神候補理由: " << record.chartResult.usefulGodCandidates.value(QStringLiteral("reason")).toString() << "\n";
     stream << "用神候補注記: " << record.chartResult.usefulGodCandidates.value(QStringLiteral("note")).toString() << "\n";
     stream << "用神候補状態: " << record.chartResult.usefulGodCandidatesStatusMessage << "\n";
+    stream << "格局候補: " << record.chartResult.patternCandidates.value(QStringLiteral("candidates")).toStringList().join(QStringLiteral(" ")) << "\n";
+    stream << "格局候補理由: " << record.chartResult.patternCandidates.value(QStringLiteral("reason")).toString() << "\n";
+    stream << "格局候補注記: " << record.chartResult.patternCandidates.value(QStringLiteral("note")).toString() << "\n";
+    stream << "格局候補状態: " << record.chartResult.patternCandidatesStatusMessage << "\n";
     stream << "\n";
     stream << "[InterpretationResult]\n";
     stream << "summaryText: " << record.interpretationResult.summaryText << "\n";

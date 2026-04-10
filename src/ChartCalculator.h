@@ -61,6 +61,15 @@ private:
         const QVariantMap &climateEvaluation,
         QString *statusMessage
     ) const;
+    QVariantMap calculatePatternCandidates(
+        const QString &monthPillar,
+        const QString &dayPillar,
+        const QVariantMap &tenGods,
+        const QVariantMap &hiddenStems,
+        const QVariantMap &fiveElements,
+        const QVariantMap &strengthEvaluation,
+        QString *statusMessage
+    ) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,

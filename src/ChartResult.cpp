@@ -20,7 +20,9 @@ ChartResult ChartResult::fromVariantMap(const QVariantMap &map)
         map.value(QStringLiteral("climateEvaluation")).toMap(),
         map.value(QStringLiteral("climateEvaluationStatusMessage")).toString(),
         map.value(QStringLiteral("usefulGodCandidates")).toMap(),
-        map.value(QStringLiteral("usefulGodCandidatesStatusMessage")).toString()
+        map.value(QStringLiteral("usefulGodCandidatesStatusMessage")).toString(),
+        map.value(QStringLiteral("patternCandidates")).toMap(),
+        map.value(QStringLiteral("patternCandidatesStatusMessage")).toString()
     };
 }
 
@@ -44,6 +46,8 @@ QVariantMap ChartResult::toVariantMap() const
         {QStringLiteral("climateEvaluation"), climateEvaluation},
         {QStringLiteral("climateEvaluationStatusMessage"), climateEvaluationStatusMessage},
         {QStringLiteral("usefulGodCandidates"), usefulGodCandidates},
-        {QStringLiteral("usefulGodCandidatesStatusMessage"), usefulGodCandidatesStatusMessage}
+        {QStringLiteral("usefulGodCandidatesStatusMessage"), usefulGodCandidatesStatusMessage},
+        {QStringLiteral("patternCandidates"), patternCandidates},
+        {QStringLiteral("patternCandidatesStatusMessage"), patternCandidatesStatusMessage}
     };
 }

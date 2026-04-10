@@ -23,7 +23,9 @@ Kirigami.Page {
         climateEvaluation: {},
         climateEvaluationStatusMessage: "",
         usefulGodCandidates: {},
-        usefulGodCandidatesStatusMessage: ""
+        usefulGodCandidatesStatusMessage: "",
+        patternCandidates: {},
+        patternCandidatesStatusMessage: ""
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -298,6 +300,32 @@ Kirigami.Page {
                         visible: chartResult.usefulGodCandidatesStatusMessage.length > 0
                         color: Kirigami.Theme.disabledTextColor
                         text: "用神候補状態: " + chartResult.usefulGodCandidatesStatusMessage
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "格局候補: " + formatHiddenStems(chartResult.patternCandidates ? chartResult.patternCandidates.candidates : null)
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "格局候補理由: " + ((chartResult.patternCandidates && chartResult.patternCandidates.reason) ? chartResult.patternCandidates.reason : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "格局候補注記: " + ((chartResult.patternCandidates && chartResult.patternCandidates.note) ? chartResult.patternCandidates.note : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.patternCandidatesStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "格局候補状態: " + chartResult.patternCandidatesStatusMessage
                     }
                 }
             }

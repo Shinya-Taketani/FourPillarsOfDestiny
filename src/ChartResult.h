@@ -23,6 +23,8 @@ struct ChartResult
     QString climateEvaluationStatusMessage;
     QVariantMap usefulGodCandidates;
     QString usefulGodCandidatesStatusMessage;
+    QVariantMap patternCandidates;
+    QString patternCandidatesStatusMessage;
 
     static ChartResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;

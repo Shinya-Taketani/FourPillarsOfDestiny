@@ -449,6 +449,36 @@ QString fiveElementDisplayName(FiveElement element)
 
     return QStringLiteral("土");
 }
+
+QString patternNameForTenGod(const QString &tenGod)
+{
+    if (tenGod == QStringLiteral("正官")) {
+        return QStringLiteral("正官格");
+    }
+    if (tenGod == QStringLiteral("偏官")) {
+        return QStringLiteral("偏官格");
+    }
+    if (tenGod == QStringLiteral("正財")) {
+        return QStringLiteral("正財格");
+    }
+    if (tenGod == QStringLiteral("偏財")) {
+        return QStringLiteral("偏財格");
+    }
+    if (tenGod == QStringLiteral("食神")) {
+        return QStringLiteral("食神格");
+    }
+    if (tenGod == QStringLiteral("傷官")) {
+        return QStringLiteral("傷官格");
+    }
+    if (tenGod == QStringLiteral("印綬")) {
+        return QStringLiteral("印綬格");
+    }
+    if (tenGod == QStringLiteral("偏印")) {
+        return QStringLiteral("偏印格");
+    }
+
+    return QString();
+}
 }
 
 ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
@@ -506,6 +536,16 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         climateEvaluation,
         &usefulGodCandidatesStatusMessage
     );
+    QString patternCandidatesStatusMessage;
+    const QVariantMap patternCandidates = calculatePatternCandidates(
+        monthResolution.monthPillar,
+        dayPillar,
+        tenGods,
+        hiddenStems,
+        fiveElements,
+        strengthEvaluation,
+        &patternCandidatesStatusMessage
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -532,7 +572,9 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         climateEvaluation,
         climateEvaluationStatusMessage,
         usefulGodCandidates,
-        usefulGodCandidatesStatusMessage
+        usefulGodCandidatesStatusMessage,
+        patternCandidates,
+        patternCandidatesStatusMessage
     };
 }
 
@@ -985,6 +1027,120 @@ QVariantMap ChartCalculator::calculateUsefulGodCandidates(
     };
 }
 
+QVariantMap ChartCalculator::calculatePatternCandidates(
+    const QString &monthPillar,
+    const QString &dayPillar,
+    const QVariantMap &tenGods,
+    const QVariantMap &hiddenStems,
+    const QVariantMap &fiveElements,
+    const QVariantMap &strengthEvaluation,
+    QString *statusMessage
+) const
+{
+    const int monthBranchIndex = earthlyBranchIndex(monthPillar);
+    const int dayStemIndex = heavenlyStemIndex(dayPillar);
+    const QString monthTenGod = tenGods.value(QStringLiteral("monthPillar")).toString();
+    const QStringList monthHiddenStems = hiddenStems.value(QStringLiteral("monthPillar")).toStringList();
+
+    if (monthBranchIndex < 0 || dayStemIndex < 0 || monthTenGod == QStringLiteral("未対応")) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("月柱または日干の情報不足のため、格局候補は未対応です。");
+        }
+
+        return {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("未対応")}},
+            {QStringLiteral("reason"), QStringLiteral("月干通変星または月令参照に必要な情報を取得できません。")},
+            {QStringLiteral("note"), QStringLiteral("格局候補を暫定表示できません。")}
+        };
+    }
+
+    QStringList candidates;
+    QStringList reasons;
+
+    const QString primaryPattern = patternNameForTenGod(monthTenGod);
+    if (!primaryPattern.isEmpty()) {
+        candidates << primaryPattern;
+        reasons << QStringLiteral("月干通変星 %1 を月柱の主候補として参照しています。").arg(monthTenGod);
+    }
+
+    for (const QString &hiddenStem : monthHiddenStems) {
+        const int hiddenStemIndex = heavenlyStemIndex(hiddenStem);
+        if (hiddenStemIndex < 0) {
+            continue;
+        }
+
+        const QString hiddenTenGod = tenGodName(dayStemIndex, hiddenStemIndex);
+        const QString hiddenPattern = patternNameForTenGod(hiddenTenGod);
+        if (hiddenPattern.isEmpty() || candidates.contains(hiddenPattern)) {
+            continue;
+        }
+
+        candidates << hiddenPattern;
+        reasons << QStringLiteral("月支蔵干 %1 の通変星 %2 を月令の参考候補にしています。")
+                       .arg(hiddenStem, hiddenTenGod);
+
+        if (candidates.size() >= 3) {
+            break;
+        }
+    }
+
+    if (candidates.isEmpty()) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("月干通変星から格局候補を作れないため、格局候補は未対応です。");
+        }
+
+        return {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("未対応")}},
+            {QStringLiteral("reason"), QStringLiteral("月干通変星と月支蔵干から対象となる格局候補を抽出できません。")},
+            {QStringLiteral("note"), QStringLiteral("現段階では参考候補を出せません。")}
+        };
+    }
+
+    const QString strengthLabel = strengthEvaluation.value(QStringLiteral("label")).toString();
+    if (!strengthLabel.isEmpty() && strengthLabel != QStringLiteral("未対応")) {
+        reasons << QStringLiteral("暫定強弱評価 %1 を補助情報として併記しています。").arg(strengthLabel);
+    }
+
+    int dominantCount = -1;
+    QString dominantElement;
+    const QStringList elementKeys{
+        QStringLiteral("wood"),
+        QStringLiteral("fire"),
+        QStringLiteral("earth"),
+        QStringLiteral("metal"),
+        QStringLiteral("water")
+    };
+    const QVariantMap elementNames{
+        {QStringLiteral("wood"), QStringLiteral("木")},
+        {QStringLiteral("fire"), QStringLiteral("火")},
+        {QStringLiteral("earth"), QStringLiteral("土")},
+        {QStringLiteral("metal"), QStringLiteral("金")},
+        {QStringLiteral("water"), QStringLiteral("水")}
+    };
+
+    for (const QString &key : elementKeys) {
+        const int count = fiveElements.value(key).toInt();
+        if (count > dominantCount) {
+            dominantCount = count;
+            dominantElement = elementNames.value(key).toString();
+        }
+    }
+
+    if (!dominantElement.isEmpty()) {
+        reasons << QStringLiteral("五行分布では %1 が比較的多く、候補理由の補助情報としています。").arg(dominantElement);
+    }
+
+    if (statusMessage) {
+        *statusMessage = QStringLiteral("月干通変星と月令の簡易参照から作った断定しない暫定候補です。");
+    }
+
+    return {
+        {QStringLiteral("candidates"), candidates.mid(0, 3)},
+        {QStringLiteral("reason"), reasons.join(QStringLiteral(" "))},
+        {QStringLiteral("note"), QStringLiteral("格局を断定せず、月柱中心の参考候補を表示しています。")}
+    };
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -1007,7 +1163,8 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("季節評価は月支ベースで春夏秋冬と日干適性を最小判定しています。")
           << QStringLiteral("強弱評価は五行分布と季節評価を使った暫定ラベルです。正式な身強身弱判定ではありません。")
           << QStringLiteral("寒暖・乾湿評価は月支ベースの調候前提情報を最小実装しています。")
-          << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。");
+          << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
+          << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")
