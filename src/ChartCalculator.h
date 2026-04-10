@@ -74,6 +74,10 @@ private:
         const QString &monthPillar,
         QString *statusMessage
     ) const;
+    QVariantList calculateAnnualFortunes(
+        const BirthInfo &birthInfo,
+        QString *statusMessage
+    ) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,

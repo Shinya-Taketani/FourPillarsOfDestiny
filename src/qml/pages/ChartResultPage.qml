@@ -27,7 +27,9 @@ Kirigami.Page {
         patternCandidates: {},
         patternCandidatesStatusMessage: "",
         majorFortunes: [],
-        majorFortunesStatusMessage: ""
+        majorFortunesStatusMessage: "",
+        annualFortunes: [],
+        annualFortunesStatusMessage: ""
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -357,6 +359,35 @@ Kirigami.Page {
                         visible: chartResult.majorFortunesStatusMessage.length > 0
                         color: Kirigami.Theme.disabledTextColor
                         text: "大運状態: " + chartResult.majorFortunesStatusMessage
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "流年一覧"
+                        font.bold: true
+                    }
+
+                    Repeater {
+                        model: chartResult.annualFortunes ? chartResult.annualFortunes : []
+
+                        delegate: Label {
+                            required property var modelData
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                            text: (modelData.year ? modelData.year + "年" : "未対応")
+                                  + " / "
+                                  + (modelData.pillar ? modelData.pillar : "未対応")
+                                  + " / "
+                                  + (modelData.note ? modelData.note : "")
+                        }
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.annualFortunesStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "流年状態: " + chartResult.annualFortunesStatusMessage
                     }
                 }
             }

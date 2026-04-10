@@ -41,6 +41,7 @@ private slots:
     void chartCalculatorCalculatesUsefulGodCandidatesForSupportedSampleYear();
     void chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear();
     void chartCalculatorCalculatesMajorFortunesForSupportedSampleYear();
+    void chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
@@ -49,6 +50,7 @@ private slots:
     void chartCalculatorChangesUsefulGodCandidatesAcross1971Boundary();
     void chartCalculatorChangesPatternCandidatesAcross1971Boundary();
     void chartCalculatorChangesMajorFortunesAcross1971Boundary();
+    void chartCalculatorChangesAnnualFortunesAcross1971Boundary();
     void chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear();
     void chartCalculatorProvidesMonthPillarStatusMessage();
     void solarTermDataSourceLoads1955YearData();
@@ -174,6 +176,11 @@ void CoreTests::chartCalculatorReturnsStableResultForSameInput()
     QCOMPARE(
         firstResult.majorFortunesStatusMessage,
         secondResult.majorFortunesStatusMessage
+    );
+    QCOMPARE(firstResult.annualFortunes, secondResult.annualFortunes);
+    QCOMPARE(
+        firstResult.annualFortunesStatusMessage,
+        secondResult.annualFortunesStatusMessage
     );
 }
 
@@ -459,6 +466,27 @@ void CoreTests::chartCalculatorCalculatesMajorFortunesForSupportedSampleYear()
     QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("仮骨格")));
 }
 
+void CoreTests::chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+    const QVariantList annualFortunes = result.annualFortunes;
+
+    QCOMPARE(annualFortunes.size(), 12);
+    QCOMPARE(annualFortunes.at(0).toMap().value(QStringLiteral("year")).toInt(), 1990);
+    QCOMPARE(annualFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("庚午"));
+    QCOMPARE(annualFortunes.at(1).toMap().value(QStringLiteral("year")).toInt(), 1991);
+    QCOMPARE(annualFortunes.at(1).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("辛未"));
+    QVERIFY(annualFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("参考表示")));
+    QVERIFY(result.annualFortunesStatusMessage.contains(QStringLiteral("仮骨格")));
+}
+
 void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
 {
     ChartCalculator calculator;
@@ -701,6 +729,26 @@ void CoreTests::chartCalculatorChangesMajorFortunesAcross1971Boundary()
     QVERIFY(beforeResult.majorFortunes != afterResult.majorFortunes);
 }
 
+void CoreTests::chartCalculatorChangesAnnualFortunesAcross1971Boundary()
+{
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1971-02-01"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1972-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
+
+    QVERIFY(beforeResult.annualFortunes != afterResult.annualFortunes);
+}
+
 void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
 {
     ChartCalculator calculator;
@@ -741,6 +789,10 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
     QCOMPARE(result.majorFortunes.size(), 1);
     QCOMPARE(result.majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("未対応"));
     QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("未対応")));
+    QCOMPARE(result.annualFortunes.size(), 12);
+    QCOMPARE(result.annualFortunes.at(0).toMap().value(QStringLiteral("year")).toInt(), 1949);
+    QCOMPARE(result.annualFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("己丑"));
+    QVERIFY(result.annualFortunesStatusMessage.contains(QStringLiteral("仮骨格")));
     QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
 }
 
@@ -847,7 +899,15 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
                 {QStringLiteral("note"), QStringLiteral("大運表示骨格の仮データです。")}
             }
         },
-        QStringLiteral("大運表示の仮骨格です。")
+        QStringLiteral("大運表示の仮骨格です。"),
+        QVariantList{
+            QVariantMap{
+                {QStringLiteral("year"), 1990},
+                {QStringLiteral("pillar"), QStringLiteral("庚午")},
+                {QStringLiteral("note"), QStringLiteral("流年表示骨格の仮データです。")}
+            }
+        },
+        QStringLiteral("流年表示の仮骨格です。")
     };
 
     const QVariantMap resultMap = result.toVariantMap();
@@ -885,6 +945,8 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("patternCandidatesStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("majorFortunes")));
     QVERIFY(resultMap.contains(QStringLiteral("majorFortunesStatusMessage")));
+    QVERIFY(resultMap.contains(QStringLiteral("annualFortunes")));
+    QVERIFY(resultMap.contains(QStringLiteral("annualFortunesStatusMessage")));
     QCOMPARE(resultMap.value(QStringLiteral("monthPillarStatusMessage")).toString(), QStringLiteral("月柱は限定実装です。"));
     QCOMPARE(
         resultMap.value(QStringLiteral("tenGods")).toMap().value(QStringLiteral("yearPillar")).toString(),
@@ -943,6 +1005,14 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("majorFortunesStatusMessage")).toString(),
         QStringLiteral("大運表示の仮骨格です。")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("annualFortunes")).toList().at(0).toMap().value(QStringLiteral("pillar")).toString(),
+        QStringLiteral("庚午")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("annualFortunesStatusMessage")).toString(),
+        QStringLiteral("流年表示の仮骨格です。")
     );
 }
 
@@ -1288,7 +1358,20 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                     {QStringLiteral("note"), QStringLiteral("保存確認用の大運仮表示です。")}
                 }
             },
-            QStringLiteral("大運表示の保存確認用データです。")
+            QStringLiteral("大運表示の保存確認用データです。"),
+            QVariantList{
+                QVariantMap{
+                    {QStringLiteral("year"), 1992},
+                    {QStringLiteral("pillar"), QStringLiteral("壬申")},
+                    {QStringLiteral("note"), QStringLiteral("保存確認用の流年仮表示です。")}
+                },
+                QVariantMap{
+                    {QStringLiteral("year"), 1993},
+                    {QStringLiteral("pillar"), QStringLiteral("癸酉")},
+                    {QStringLiteral("note"), QStringLiteral("保存確認用の流年仮表示です。")}
+                }
+            },
+            QStringLiteral("流年表示の保存確認用データです。")
         },
         InterpretationResult{
             QStringLiteral("これは仮の解釈結果です。"),
@@ -1379,6 +1462,15 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
         loadedRecord.chartResult.majorFortunesStatusMessage,
         QStringLiteral("大運表示の保存確認用データです。")
     );
+    QCOMPARE(loadedRecord.chartResult.annualFortunes.size(), 2);
+    QCOMPARE(
+        loadedRecord.chartResult.annualFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(),
+        QStringLiteral("壬申")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.annualFortunesStatusMessage,
+        QStringLiteral("流年表示の保存確認用データです。")
+    );
     QCOMPARE(loadedRecord.interpretationResult.summaryText, QStringLiteral("これは仮の解釈結果です。"));
 }
 
@@ -1453,6 +1545,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("用神候補:")));
     QVERIFY(content.contains(QStringLiteral("格局候補:")));
     QVERIFY(content.contains(QStringLiteral("大運一覧:")));
+    QVERIFY(content.contains(QStringLiteral("流年一覧:")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
 }
 

@@ -562,6 +562,11 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         monthResolution.monthPillar,
         &majorFortunesStatusMessage
     );
+    QString annualFortunesStatusMessage;
+    const QVariantList annualFortunes = calculateAnnualFortunes(
+        birthInfo,
+        &annualFortunesStatusMessage
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -592,7 +597,9 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         patternCandidates,
         patternCandidatesStatusMessage,
         majorFortunes,
-        majorFortunesStatusMessage
+        majorFortunesStatusMessage,
+        annualFortunes,
+        annualFortunesStatusMessage
     };
 }
 
@@ -1202,6 +1209,45 @@ QVariantList ChartCalculator::calculateMajorFortunes(
     return fortunes;
 }
 
+QVariantList ChartCalculator::calculateAnnualFortunes(
+    const BirthInfo &birthInfo,
+    QString *statusMessage
+) const
+{
+    const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
+    if (!birthDate.isValid()) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("生年月日を取得できないため、流年一覧は未対応です。");
+        }
+
+        return {
+            QVariantMap{
+                {QStringLiteral("year"), 0},
+                {QStringLiteral("pillar"), QStringLiteral("未対応")},
+                {QStringLiteral("note"), QStringLiteral("生年月日を取得できないため、流年表示骨格を生成できません。")}
+            }
+        };
+    }
+
+    QVariantList fortunes;
+    const int startYear = birthDate.year();
+    for (int offset = 0; offset < 12; ++offset) {
+        const int year = startYear + offset;
+        fortunes.append(QVariantMap{
+            {QStringLiteral("year"), year},
+            {QStringLiteral("pillar"), heavenlyStemAt(positiveModulo(year - 1984, 60) % 10)
+                                           + earthlyBranchAt(positiveModulo(year - 1984, 60) % 12)},
+            {QStringLiteral("note"), QStringLiteral("流年解釈は未実装のため、西暦年から求めた干支の参考表示です。")}
+        });
+    }
+
+    if (statusMessage) {
+        *statusMessage = QStringLiteral("出生年から 12 年分を並べた流年表示の仮骨格です。流年解釈は未実装です。");
+    }
+
+    return fortunes;
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -1226,7 +1272,8 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("寒暖・乾湿評価は月支ベースの調候前提情報を最小実装しています。")
           << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
           << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。")
-          << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢と順逆は未実装です。");
+          << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢と順逆は未実装です。")
+          << QStringLiteral("流年一覧は出生年から並べた最小表示骨格です。流年解釈は未実装です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")

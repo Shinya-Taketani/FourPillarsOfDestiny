@@ -28,6 +28,8 @@ struct ChartResult
     QString patternCandidatesStatusMessage;
     QVariantList majorFortunes;
     QString majorFortunesStatusMessage;
+    QVariantList annualFortunes;
+    QString annualFortunesStatusMessage;
 
     static ChartResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;
