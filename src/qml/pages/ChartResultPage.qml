@@ -29,7 +29,9 @@ Kirigami.Page {
         majorFortunes: [],
         majorFortunesStatusMessage: "",
         annualFortunes: [],
-        annualFortunesStatusMessage: ""
+        annualFortunesStatusMessage: "",
+        majorFortuneDirection: {},
+        majorFortuneDirectionStatusMessage: ""
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -336,6 +338,28 @@ Kirigami.Page {
                         width: parent.width
                         text: "大運一覧"
                         font.bold: true
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "順逆: " + ((chartResult.majorFortuneDirection && chartResult.majorFortuneDirection.direction)
+                                           ? chartResult.majorFortuneDirection.direction : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "順逆注記: " + ((chartResult.majorFortuneDirection && chartResult.majorFortuneDirection.note)
+                                             ? chartResult.majorFortuneDirection.note : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.majorFortuneDirectionStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "順逆状態: " + chartResult.majorFortuneDirectionStatusMessage
                     }
 
                     Label {

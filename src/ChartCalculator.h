@@ -79,6 +79,10 @@ private:
         const BirthInfo &birthInfo,
         QString *statusMessage
     ) const;
+    QVariantMap calculateMajorFortuneDirection(
+        const BirthInfo &birthInfo,
+        QString *statusMessage
+    ) const;
     int calculateTentativeFortuneStartAge(const BirthInfo &birthInfo) const;
     QString buildDescription(
         const BirthInfo &birthInfo,

@@ -117,6 +117,10 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "格局候補理由: " << record.chartResult.patternCandidates.value(QStringLiteral("reason")).toString() << "\n";
     stream << "格局候補注記: " << record.chartResult.patternCandidates.value(QStringLiteral("note")).toString() << "\n";
     stream << "格局候補状態: " << record.chartResult.patternCandidatesStatusMessage << "\n";
+    stream << "順逆: " << record.chartResult.majorFortuneDirection.value(QStringLiteral("direction")).toString() << "\n";
+    stream << "順逆理由: " << record.chartResult.majorFortuneDirection.value(QStringLiteral("reason")).toString() << "\n";
+    stream << "順逆注記: " << record.chartResult.majorFortuneDirection.value(QStringLiteral("note")).toString() << "\n";
+    stream << "順逆状態: " << record.chartResult.majorFortuneDirectionStatusMessage << "\n";
     stream << "大運一覧:\n" << formatMajorFortunes(record.chartResult.majorFortunes) << "\n";
     stream << "大運状態: " << record.chartResult.majorFortunesStatusMessage << "\n";
     stream << "流年一覧:\n" << formatAnnualFortunes(record.chartResult.annualFortunes) << "\n";

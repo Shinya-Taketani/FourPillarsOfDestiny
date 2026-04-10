@@ -568,6 +568,11 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         birthInfo,
         &annualFortunesStatusMessage
     );
+    QString majorFortuneDirectionStatusMessage;
+    const QVariantMap majorFortuneDirection = calculateMajorFortuneDirection(
+        birthInfo,
+        &majorFortuneDirectionStatusMessage
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -600,7 +605,9 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         majorFortunes,
         majorFortunesStatusMessage,
         annualFortunes,
-        annualFortunesStatusMessage
+        annualFortunesStatusMessage,
+        majorFortuneDirection,
+        majorFortuneDirectionStatusMessage
     };
 }
 
@@ -1268,6 +1275,46 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
     return fortunes;
 }
 
+QVariantMap ChartCalculator::calculateMajorFortuneDirection(
+    const BirthInfo &birthInfo,
+    QString *statusMessage
+) const
+{
+    if (birthInfo.gender == QStringLiteral("男性")) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("性別入力のみを使った暫定表示です。年干陰陽や節入り差は未考慮です。");
+        }
+
+        return {
+            {QStringLiteral("direction"), QStringLiteral("順行")},
+            {QStringLiteral("reason"), QStringLiteral("性別入力が男性のため、共通基盤の暫定値として順行を設定しています。")},
+            {QStringLiteral("note"), QStringLiteral("厳密な男女順逆判定ではなく、参考表示です。")}
+        };
+    }
+
+    if (birthInfo.gender == QStringLiteral("女性")) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("性別入力のみを使った暫定表示です。年干陰陽や節入り差は未考慮です。");
+        }
+
+        return {
+            {QStringLiteral("direction"), QStringLiteral("逆行")},
+            {QStringLiteral("reason"), QStringLiteral("性別入力が女性のため、共通基盤の暫定値として逆行を設定しています。")},
+            {QStringLiteral("note"), QStringLiteral("厳密な男女順逆判定ではなく、参考表示です。")}
+        };
+    }
+
+    if (statusMessage) {
+        *statusMessage = QStringLiteral("性別入力だけでは厳密判定を行わないため、順逆は未対応です。");
+    }
+
+    return {
+        {QStringLiteral("direction"), QStringLiteral("未対応")},
+        {QStringLiteral("reason"), QStringLiteral("順逆判定に使う本来の条件をまだ実装していません。")},
+        {QStringLiteral("note"), QStringLiteral("現段階では参考表示を出せないため未対応としています。")}
+    };
+}
+
 int ChartCalculator::calculateTentativeFortuneStartAge(const BirthInfo &birthInfo) const
 {
     const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
@@ -1304,6 +1351,7 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
           << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。")
           << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢は出生月日ベースの参考値、順逆は未実装です。")
+          << QStringLiteral("大運の順逆は性別入力だけを使った暫定表示または未対応です。")
           << QStringLiteral("流年一覧は出生年から並べた最小表示骨格です。流年解釈は未実装です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
