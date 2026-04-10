@@ -338,6 +338,13 @@ Kirigami.Page {
                         font.bold: true
                     }
 
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "開始年齢帯は参考値です。厳密な起運計算と順逆は未実装です。"
+                    }
+
                     Repeater {
                         model: chartResult.majorFortunes ? chartResult.majorFortunes : []
 
