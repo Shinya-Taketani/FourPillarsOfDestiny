@@ -559,6 +559,7 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
     );
     QString majorFortunesStatusMessage;
     const QVariantList majorFortunes = calculateMajorFortunes(
+        birthInfo,
         monthResolution.monthPillar,
         &majorFortunesStatusMessage
     );
@@ -1167,6 +1168,7 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
 }
 
 QVariantList ChartCalculator::calculateMajorFortunes(
+    const BirthInfo &birthInfo,
     const QString &monthPillar,
     QString *statusMessage
 ) const
@@ -1188,9 +1190,27 @@ QVariantList ChartCalculator::calculateMajorFortunes(
         };
     }
 
+    const int tentativeStartAge = calculateTentativeFortuneStartAge(birthInfo);
+    if (tentativeStartAge < 0) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("生年月日を取得できないため、大運一覧は未対応です。");
+        }
+
+        return {
+            QVariantMap{
+                {QStringLiteral("index"), 0},
+                {QStringLiteral("startAge"), -1},
+                {QStringLiteral("endAge"), -1},
+                {QStringLiteral("label"), QStringLiteral("未対応")},
+                {QStringLiteral("pillar"), QStringLiteral("未対応")},
+                {QStringLiteral("note"), QStringLiteral("生年月日を取得できないため、起運年齢の参考値を生成できません。")}
+            }
+        };
+    }
+
     QVariantList fortunes;
     for (int index = 0; index < 8; ++index) {
-        const int startAge = 1 + index * 10;
+        const int startAge = tentativeStartAge + index * 10;
         const int endAge = startAge + 9;
         fortunes.append(QVariantMap{
             {QStringLiteral("index"), index + 1},
@@ -1198,12 +1218,12 @@ QVariantList ChartCalculator::calculateMajorFortunes(
             {QStringLiteral("endAge"), endAge},
             {QStringLiteral("label"), QStringLiteral("%1〜%2歳").arg(startAge).arg(endAge)},
             {QStringLiteral("pillar"), pillarAtOffset(monthPillar, index)},
-            {QStringLiteral("note"), QStringLiteral("起運年齢と順逆は未実装のため、月柱起点の仮表示です。")}
+            {QStringLiteral("note"), QStringLiteral("起運年齢は出生月日から便宜的に求めた参考値です。順逆は未実装です。")}
         });
     }
 
     if (statusMessage) {
-        *statusMessage = QStringLiteral("月柱起点で並べた大運表示の仮骨格です。起運年齢と順逆は未実装です。");
+        *statusMessage = QStringLiteral("月柱起点で並べた大運表示の仮骨格です。起運年齢は出生月日ベースの参考値、順逆は未実装です。");
     }
 
     return fortunes;
@@ -1248,6 +1268,17 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
     return fortunes;
 }
 
+int ChartCalculator::calculateTentativeFortuneStartAge(const BirthInfo &birthInfo) const
+{
+    const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
+    if (!birthDate.isValid()) {
+        return -1;
+    }
+
+    // 厳密な節入り差計算の前段として、出生月日から 3〜10 歳へ丸めた参考値を返す。
+    return 3 + positiveModulo(birthDate.month() + (birthDate.day() >= 15 ? 1 : 0), 8);
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -1272,7 +1303,7 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("寒暖・乾湿評価は月支ベースの調候前提情報を最小実装しています。")
           << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
           << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。")
-          << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢と順逆は未実装です。")
+          << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢は出生月日ベースの参考値、順逆は未実装です。")
           << QStringLiteral("流年一覧は出生年から並べた最小表示骨格です。流年解釈は未実装です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {

@@ -71,6 +71,7 @@ private:
         QString *statusMessage
     ) const;
     QVariantList calculateMajorFortunes(
+        const BirthInfo &birthInfo,
         const QString &monthPillar,
         QString *statusMessage
     ) const;
@@ -78,6 +79,7 @@ private:
         const BirthInfo &birthInfo,
         QString *statusMessage
     ) const;
+    int calculateTentativeFortuneStartAge(const BirthInfo &birthInfo) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,

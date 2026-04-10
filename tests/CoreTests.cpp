@@ -458,12 +458,13 @@ void CoreTests::chartCalculatorCalculatesMajorFortunesForSupportedSampleYear()
     const QVariantList majorFortunes = result.majorFortunes;
 
     QCOMPARE(majorFortunes.size(), 8);
-    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toInt(), 1);
-    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("endAge")).toInt(), 10);
+    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toInt(), 5);
+    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("endAge")).toInt(), 14);
     QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("戊寅"));
+    QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("startAge")).toInt(), 15);
     QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("己卯"));
-    QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("仮表示")));
-    QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("仮骨格")));
+    QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("参考値")));
+    QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("参考値")));
 }
 
 void CoreTests::chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear()
@@ -892,14 +893,14 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
         QVariantList{
             QVariantMap{
                 {QStringLiteral("index"), 1},
-                {QStringLiteral("startAge"), 1},
-                {QStringLiteral("endAge"), 10},
-                {QStringLiteral("label"), QStringLiteral("1〜10歳")},
+                {QStringLiteral("startAge"), 5},
+                {QStringLiteral("endAge"), 14},
+                {QStringLiteral("label"), QStringLiteral("5〜14歳")},
                 {QStringLiteral("pillar"), QStringLiteral("戊寅")},
-                {QStringLiteral("note"), QStringLiteral("大運表示骨格の仮データです。")}
+                {QStringLiteral("note"), QStringLiteral("起運年齢参考値つきの大運仮データです。")}
             }
         },
-        QStringLiteral("大運表示の仮骨格です。"),
+        QStringLiteral("大運表示の仮骨格です。起運年齢は参考値です。"),
         QVariantList{
             QVariantMap{
                 {QStringLiteral("year"), 1990},
@@ -1003,8 +1004,12 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
         QStringLiteral("戊寅")
     );
     QCOMPARE(
+        resultMap.value(QStringLiteral("majorFortunes")).toList().at(0).toMap().value(QStringLiteral("startAge")).toInt(),
+        5
+    );
+    QCOMPARE(
         resultMap.value(QStringLiteral("majorFortunesStatusMessage")).toString(),
-        QStringLiteral("大運表示の仮骨格です。")
+        QStringLiteral("大運表示の仮骨格です。起運年齢は参考値です。")
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("annualFortunes")).toList().at(0).toMap().value(QStringLiteral("pillar")).toString(),
@@ -1343,22 +1348,22 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
             QVariantList{
                 QVariantMap{
                     {QStringLiteral("index"), 1},
-                    {QStringLiteral("startAge"), 1},
-                    {QStringLiteral("endAge"), 10},
-                    {QStringLiteral("label"), QStringLiteral("1〜10歳")},
+                    {QStringLiteral("startAge"), 6},
+                    {QStringLiteral("endAge"), 15},
+                    {QStringLiteral("label"), QStringLiteral("6〜15歳")},
                     {QStringLiteral("pillar"), QStringLiteral("己丑")},
-                    {QStringLiteral("note"), QStringLiteral("保存確認用の大運仮表示です。")}
+                    {QStringLiteral("note"), QStringLiteral("保存確認用の起運年齢参考値つき大運です。")}
                 },
                 QVariantMap{
                     {QStringLiteral("index"), 2},
-                    {QStringLiteral("startAge"), 11},
-                    {QStringLiteral("endAge"), 20},
-                    {QStringLiteral("label"), QStringLiteral("11〜20歳")},
+                    {QStringLiteral("startAge"), 16},
+                    {QStringLiteral("endAge"), 25},
+                    {QStringLiteral("label"), QStringLiteral("16〜25歳")},
                     {QStringLiteral("pillar"), QStringLiteral("庚寅")},
-                    {QStringLiteral("note"), QStringLiteral("保存確認用の大運仮表示です。")}
+                    {QStringLiteral("note"), QStringLiteral("保存確認用の起運年齢参考値つき大運です。")}
                 }
             },
-            QStringLiteral("大運表示の保存確認用データです。"),
+            QStringLiteral("大運表示の保存確認用データです。起運年齢は参考値です。"),
             QVariantList{
                 QVariantMap{
                     {QStringLiteral("year"), 1992},
@@ -1459,8 +1464,12 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
         QStringLiteral("己丑")
     );
     QCOMPARE(
+        loadedRecord.chartResult.majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toInt(),
+        6
+    );
+    QCOMPARE(
         loadedRecord.chartResult.majorFortunesStatusMessage,
-        QStringLiteral("大運表示の保存確認用データです。")
+        QStringLiteral("大運表示の保存確認用データです。起運年齢は参考値です。")
     );
     QCOMPARE(loadedRecord.chartResult.annualFortunes.size(), 2);
     QCOMPARE(
