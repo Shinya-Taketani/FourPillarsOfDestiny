@@ -42,6 +42,7 @@ private slots:
     void chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear();
     void chartCalculatorCalculatesMajorFortuneDirectionForSupportedSampleYear();
     void chartCalculatorReturnsUndeterminedMajorFortuneDirectionForUnspecifiedGender();
+    void chartCalculatorCalculatesSolarTermDifferencePreparationForSupportedSampleYear();
     void chartCalculatorCalculatesMajorFortunesForSupportedSampleYear();
     void chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
@@ -183,6 +184,14 @@ void CoreTests::chartCalculatorReturnsStableResultForSameInput()
     QCOMPARE(
         firstResult.majorFortuneDirectionStatusMessage,
         secondResult.majorFortuneDirectionStatusMessage
+    );
+    QCOMPARE(
+        firstResult.solarTermDifferencePreparation,
+        secondResult.solarTermDifferencePreparation
+    );
+    QCOMPARE(
+        firstResult.solarTermDifferencePreparationStatusMessage,
+        secondResult.solarTermDifferencePreparationStatusMessage
     );
     QCOMPARE(firstResult.annualFortunes, secondResult.annualFortunes);
     QCOMPARE(
@@ -489,6 +498,39 @@ void CoreTests::chartCalculatorReturnsUndeterminedMajorFortuneDirectionForUnspec
         QStringLiteral("未対応")
     );
     QVERIFY(result.majorFortuneDirectionStatusMessage.contains(QStringLiteral("未対応")));
+}
+
+void CoreTests::chartCalculatorCalculatesSolarTermDifferencePreparationForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(
+        result.solarTermDifferencePreparation.value(QStringLiteral("referenceTerm")).toString(),
+        QStringLiteral("立春")
+    );
+    QCOMPARE(
+        result.solarTermDifferencePreparation.value(QStringLiteral("referenceDirection")).toString(),
+        QStringLiteral("直前節入り")
+    );
+    QCOMPARE(
+        result.solarTermDifferencePreparation.value(QStringLiteral("differenceMinutes")).toLongLong(),
+        2250
+    );
+    QCOMPARE(
+        result.solarTermDifferencePreparation.value(QStringLiteral("differenceDays")).toString(),
+        QStringLiteral("1.56")
+    );
+    QVERIFY(
+        result.solarTermDifferencePreparation.value(QStringLiteral("note")).toString().contains(QStringLiteral("参考情報"))
+    );
+    QVERIFY(result.solarTermDifferencePreparationStatusMessage.contains(QStringLiteral("精密化準備")));
 }
 
 void CoreTests::chartCalculatorCalculatesMajorFortunesForSupportedSampleYear()
@@ -838,6 +880,11 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
         QStringLiteral("順行")
     );
     QVERIFY(result.majorFortuneDirectionStatusMessage.contains(QStringLiteral("暫定表示")));
+    QCOMPARE(
+        result.solarTermDifferencePreparation.value(QStringLiteral("referenceTerm")).toString(),
+        QStringLiteral("未対応")
+    );
+    QVERIFY(result.solarTermDifferencePreparationStatusMessage.contains(QStringLiteral("未対応")));
     QCOMPARE(result.majorFortunes.size(), 1);
     QCOMPARE(result.majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("未対応"));
     QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("未対応")));
@@ -965,7 +1012,18 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("reason"), QStringLiteral("順逆の暫定理由です。")},
             {QStringLiteral("note"), QStringLiteral("順逆の参考表示です。")}
         },
-        QStringLiteral("順逆の暫定表示です。")
+        QStringLiteral("順逆の暫定表示です。"),
+        {
+            {QStringLiteral("birthDateTime"), QStringLiteral("1990-02-05T13:30:00+09:00")},
+            {QStringLiteral("referenceTerm"), QStringLiteral("立春")},
+            {QStringLiteral("referenceDirection"), QStringLiteral("直前節入り")},
+            {QStringLiteral("referenceDateTime"), QStringLiteral("1990-02-04T00:00:00+09:00")},
+            {QStringLiteral("differenceMinutes"), 2250},
+            {QStringLiteral("absoluteDifferenceMinutes"), 2250},
+            {QStringLiteral("differenceDays"), QStringLiteral("1.56")},
+            {QStringLiteral("note"), QStringLiteral("節入り差の参考情報です。")}
+        },
+        QStringLiteral("節入り差準備の暫定表示です。")
     };
 
     const QVariantMap resultMap = result.toVariantMap();
@@ -1003,6 +1061,8 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QVERIFY(resultMap.contains(QStringLiteral("patternCandidatesStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("majorFortuneDirection")));
     QVERIFY(resultMap.contains(QStringLiteral("majorFortuneDirectionStatusMessage")));
+    QVERIFY(resultMap.contains(QStringLiteral("solarTermDifferencePreparation")));
+    QVERIFY(resultMap.contains(QStringLiteral("solarTermDifferencePreparationStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("majorFortunes")));
     QVERIFY(resultMap.contains(QStringLiteral("majorFortunesStatusMessage")));
     QVERIFY(resultMap.contains(QStringLiteral("annualFortunes")));
@@ -1065,6 +1125,14 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("majorFortuneDirectionStatusMessage")).toString(),
         QStringLiteral("順逆の暫定表示です。")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("solarTermDifferencePreparation")).toMap().value(QStringLiteral("referenceTerm")).toString(),
+        QStringLiteral("立春")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("solarTermDifferencePreparationStatusMessage")).toString(),
+        QStringLiteral("節入り差準備の暫定表示です。")
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("majorFortunes")).toList().at(0).toMap().value(QStringLiteral("pillar")).toString(),
@@ -1449,7 +1517,18 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                 {QStringLiteral("reason"), QStringLiteral("保存確認用の順逆理由です。")},
                 {QStringLiteral("note"), QStringLiteral("保存確認用の順逆参考表示です。")}
             },
-            QStringLiteral("順逆の保存確認用データです。")
+            QStringLiteral("順逆の保存確認用データです。"),
+            {
+                {QStringLiteral("birthDateTime"), QStringLiteral("1992-03-04T10:20:00+09:00")},
+                {QStringLiteral("referenceTerm"), QStringLiteral("啓蟄")},
+                {QStringLiteral("referenceDirection"), QStringLiteral("直後節入り")},
+                {QStringLiteral("referenceDateTime"), QStringLiteral("1992-03-06T00:00:00+09:00")},
+                {QStringLiteral("differenceMinutes"), -2260},
+                {QStringLiteral("absoluteDifferenceMinutes"), 2260},
+                {QStringLiteral("differenceDays"), QStringLiteral("1.57")},
+                {QStringLiteral("note"), QStringLiteral("保存確認用の節入り差参考情報です。")}
+            },
+            QStringLiteral("節入り差準備の保存確認用データです。")
         },
         InterpretationResult{
             QStringLiteral("これは仮の解釈結果です。"),
@@ -1538,6 +1617,14 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.majorFortuneDirectionStatusMessage,
         QStringLiteral("順逆の保存確認用データです。")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.solarTermDifferencePreparation.value(QStringLiteral("referenceTerm")).toString(),
+        QStringLiteral("啓蟄")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.solarTermDifferencePreparationStatusMessage,
+        QStringLiteral("節入り差準備の保存確認用データです。")
     );
     QCOMPARE(loadedRecord.chartResult.majorFortunes.size(), 2);
     QCOMPARE(
@@ -1635,6 +1722,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("用神候補:")));
     QVERIFY(content.contains(QStringLiteral("格局候補:")));
     QVERIFY(content.contains(QStringLiteral("順逆:")));
+    QVERIFY(content.contains(QStringLiteral("出生日時(節入り差準備):")));
     QVERIFY(content.contains(QStringLiteral("大運一覧:")));
     QVERIFY(content.contains(QStringLiteral("流年一覧:")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));

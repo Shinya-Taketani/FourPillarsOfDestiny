@@ -28,7 +28,9 @@ ChartResult ChartResult::fromVariantMap(const QVariantMap &map)
         map.value(QStringLiteral("annualFortunes")).toList(),
         map.value(QStringLiteral("annualFortunesStatusMessage")).toString(),
         map.value(QStringLiteral("majorFortuneDirection")).toMap(),
-        map.value(QStringLiteral("majorFortuneDirectionStatusMessage")).toString()
+        map.value(QStringLiteral("majorFortuneDirectionStatusMessage")).toString(),
+        map.value(QStringLiteral("solarTermDifferencePreparation")).toMap(),
+        map.value(QStringLiteral("solarTermDifferencePreparationStatusMessage")).toString()
     };
 }
 
@@ -60,6 +62,8 @@ QVariantMap ChartResult::toVariantMap() const
         {QStringLiteral("annualFortunes"), annualFortunes},
         {QStringLiteral("annualFortunesStatusMessage"), annualFortunesStatusMessage},
         {QStringLiteral("majorFortuneDirection"), majorFortuneDirection},
-        {QStringLiteral("majorFortuneDirectionStatusMessage"), majorFortuneDirectionStatusMessage}
+        {QStringLiteral("majorFortuneDirectionStatusMessage"), majorFortuneDirectionStatusMessage},
+        {QStringLiteral("solarTermDifferencePreparation"), solarTermDifferencePreparation},
+        {QStringLiteral("solarTermDifferencePreparationStatusMessage"), solarTermDifferencePreparationStatusMessage}
     };
 }

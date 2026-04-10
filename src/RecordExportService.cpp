@@ -121,6 +121,13 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "順逆理由: " << record.chartResult.majorFortuneDirection.value(QStringLiteral("reason")).toString() << "\n";
     stream << "順逆注記: " << record.chartResult.majorFortuneDirection.value(QStringLiteral("note")).toString() << "\n";
     stream << "順逆状態: " << record.chartResult.majorFortuneDirectionStatusMessage << "\n";
+    stream << "出生日時(節入り差準備): " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("birthDateTime")).toString() << "\n";
+    stream << "参照節入り: " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("referenceTerm")).toString() << "\n";
+    stream << "参照方向: " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("referenceDirection")).toString() << "\n";
+    stream << "参照節入り日時: " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("referenceDateTime")).toString() << "\n";
+    stream << "節入り日時差(日): " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("differenceDays")).toString() << "\n";
+    stream << "節入り差注記: " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("note")).toString() << "\n";
+    stream << "節入り差状態: " << record.chartResult.solarTermDifferencePreparationStatusMessage << "\n";
     stream << "大運一覧:\n" << formatMajorFortunes(record.chartResult.majorFortunes) << "\n";
     stream << "大運状態: " << record.chartResult.majorFortunesStatusMessage << "\n";
     stream << "流年一覧:\n" << formatAnnualFortunes(record.chartResult.annualFortunes) << "\n";

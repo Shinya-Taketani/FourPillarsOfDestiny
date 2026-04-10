@@ -13,10 +13,24 @@ struct SolarTermResolution
     QString statusMessage;
 };
 
+struct SolarTermDifferenceResolution
+{
+    bool isImplemented;
+    bool canDetermineDifference;
+    QString birthDateTimeIso;
+    QString referenceTermName;
+    QString referenceDirection;
+    QString referenceDateTimeIso;
+    qint64 differenceMinutes;
+    qint64 absoluteDifferenceMinutes;
+    QString statusMessage;
+};
+
 class SolarTermResolver
 {
 public:
     SolarTermResolution resolveMonthPillar(const BirthInfo &birthInfo, const QString &yearPillar) const;
+    SolarTermDifferenceResolution resolveNearestSolarTermDifference(const BirthInfo &birthInfo) const;
 
 private:
     SolarTermDataSource m_dataSource;

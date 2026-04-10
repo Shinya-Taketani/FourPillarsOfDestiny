@@ -32,6 +32,8 @@ struct ChartResult
     QString annualFortunesStatusMessage;
     QVariantMap majorFortuneDirection;
     QString majorFortuneDirectionStatusMessage;
+    QVariantMap solarTermDifferencePreparation;
+    QString solarTermDifferencePreparationStatusMessage;
 
     static ChartResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;

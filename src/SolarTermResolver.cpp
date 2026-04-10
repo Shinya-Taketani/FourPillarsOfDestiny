@@ -1,11 +1,20 @@
 #include "SolarTermResolver.h"
 
+#include <cstdlib>
+#include <limits>
 #include <QDate>
 #include <QDateTime>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QTimeZone>
 
 namespace {
+struct SolarTermMoment
+{
+    QString termName;
+    QDateTime at;
+};
+
 int monthOffsetFromTerm(const QString &termName)
 {
     if (termName == QStringLiteral("立春")) {
@@ -145,6 +154,50 @@ QString yearPillarForGregorianYear(int year)
     const int offset = positiveModulo(year - 1984, 60);
     return heavenlyStemAt(offset % 10) + earthlyBranchAt(offset % 12);
 }
+
+QList<SolarTermMoment> solarTermMomentsFromYearData(const SolarTermYearData &yearData)
+{
+    QList<SolarTermMoment> moments;
+    for (const QJsonValue &entryValue : yearData.entries) {
+        if (!entryValue.isObject()) {
+            continue;
+        }
+
+        const QJsonObject entryObject = entryValue.toObject();
+        const QString termName = entryObject.value(QStringLiteral("term")).toString();
+        const QDateTime termDateTime = QDateTime::fromString(
+            entryObject.value(QStringLiteral("at")).toString(),
+            Qt::ISODate
+        );
+
+        if (termName.isEmpty() || !termDateTime.isValid()) {
+            continue;
+        }
+
+        moments.append({termName, termDateTime});
+    }
+
+    return moments;
+}
+
+QDateTime birthDateTimeForComparison(const BirthInfo &birthInfo, const QList<SolarTermMoment> &moments)
+{
+    const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
+    if (!birthDate.isValid()) {
+        return {};
+    }
+
+    QTime birthTime = QTime::fromString(birthInfo.birthTime, QStringLiteral("HH:mm"));
+    if (!birthTime.isValid()) {
+        birthTime = QTime(0, 0);
+    }
+
+    if (!moments.isEmpty()) {
+        return QDateTime(birthDate, birthTime, moments.first().at.timeZone());
+    }
+
+    return QDateTime(birthDate, birthTime, QTimeZone::systemTimeZone());
+}
 }
 
 SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birthInfo, const QString &yearPillar) const
@@ -255,5 +308,149 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
         monthPillar,
         QStringLiteral("節入りサンプルデータによる限定実装です。%1 以降の区間として月柱を計算しました。")
             .arg(matchedTermName)
+    };
+}
+
+SolarTermDifferenceResolution SolarTermResolver::resolveNearestSolarTermDifference(const BirthInfo &birthInfo) const
+{
+    const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
+    if (!birthDate.isValid()) {
+        return {
+            false,
+            false,
+            QString(),
+            QStringLiteral("未対応"),
+            QStringLiteral("未対応"),
+            QString(),
+            0,
+            0,
+            QStringLiteral("生年月日が不正のため、節入り差の前処理に対応していません。")
+        };
+    }
+
+    QList<SolarTermMoment> candidates;
+    QStringList missingYears;
+
+    for (int year = birthDate.year() - 1; year <= birthDate.year() + 1; ++year) {
+        const SolarTermYearData yearData = m_dataSource.loadYearData(year);
+        if (!yearData.dataSourceAvailable) {
+            return {
+                false,
+                false,
+                QString(),
+                QStringLiteral("未対応"),
+                QStringLiteral("未対応"),
+                QString(),
+                0,
+                0,
+                QStringLiteral("節入りデータを参照できないため、節入り差の前処理に対応していません。")
+            };
+        }
+
+        if (!yearData.hasYearData) {
+            missingYears << QString::number(year);
+            continue;
+        }
+
+        candidates.append(solarTermMomentsFromYearData(yearData));
+    }
+
+    if (candidates.isEmpty()) {
+        return {
+            false,
+            false,
+            QString(),
+            QStringLiteral("未対応"),
+            QStringLiteral("未対応"),
+            QString(),
+            0,
+            0,
+            QStringLiteral("節入り時刻データが未整備のため、節入り差の前処理に対応していません。")
+        };
+    }
+
+    const QDateTime birthDateTime = birthDateTimeForComparison(birthInfo, candidates);
+    if (!birthDateTime.isValid()) {
+        return {
+            false,
+            false,
+            QString(),
+            QStringLiteral("未対応"),
+            QStringLiteral("未対応"),
+            QString(),
+            0,
+            0,
+            QStringLiteral("出生日時を組み立てられないため、節入り差の前処理に対応していません。")
+        };
+    }
+
+    int nearestIndex = -1;
+    qint64 nearestAbsoluteDifference = std::numeric_limits<qint64>::max();
+
+    for (int index = 0; index < candidates.size(); ++index) {
+        const qint64 differenceMinutes = candidates.at(index).at.secsTo(birthDateTime) / 60;
+        const qint64 absoluteDifference = std::llabs(differenceMinutes);
+        if (absoluteDifference < nearestAbsoluteDifference) {
+            nearestAbsoluteDifference = absoluteDifference;
+            nearestIndex = index;
+        }
+    }
+
+    if (nearestIndex < 0) {
+        return {
+            false,
+            false,
+            birthDateTime.toString(Qt::ISODate),
+            QStringLiteral("未対応"),
+            QStringLiteral("未対応"),
+            QString(),
+            0,
+            0,
+            QStringLiteral("参照対象となる節入り日時を特定できませんでした。")
+        };
+    }
+
+    const SolarTermMoment nearestMoment = candidates.at(nearestIndex);
+    const qint64 differenceMinutes = nearestMoment.at.secsTo(birthDateTime) / 60;
+    const qint64 maximumSupportedDifferenceMinutes = 60LL * 24LL * 60LL;
+    if (nearestAbsoluteDifference > maximumSupportedDifferenceMinutes) {
+        return {
+            true,
+            false,
+            birthDateTime.toString(Qt::ISODate),
+            QStringLiteral("未対応"),
+            QStringLiteral("未対応"),
+            QString(),
+            0,
+            0,
+            QStringLiteral("近傍の節入り日時データが不足しているため、節入り差の参考値は未対応です。")
+        };
+    }
+
+    const QString direction = differenceMinutes >= 0
+        ? QStringLiteral("直前節入り")
+        : QStringLiteral("直後節入り");
+
+    QString statusMessage = QStringLiteral(
+        "出生日時と最寄り節入り日時との差分を保持するための精密化準備です。起運換算は未実装です。"
+    );
+    if (!missingYears.isEmpty()) {
+        statusMessage += QStringLiteral(" 近傍年の一部データが未整備です: %1。")
+                             .arg(missingYears.join(QStringLiteral("、")));
+    }
+    if (!QTime::fromString(birthInfo.birthTime, QStringLiteral("HH:mm")).isValid()) {
+        statusMessage += QStringLiteral(" 出生時刻が不正または未入力のため 00:00 を仮採用しています。");
+    }
+
+    return {
+        true,
+        true,
+        birthDateTime.toString(Qt::ISODate),
+        nearestMoment.termName,
+        direction,
+        nearestMoment.at.toString(Qt::ISODate),
+        differenceMinutes,
+        nearestAbsoluteDifference,
+        statusMessage
     };
 }

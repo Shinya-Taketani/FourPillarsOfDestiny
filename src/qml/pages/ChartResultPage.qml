@@ -31,7 +31,9 @@ Kirigami.Page {
         annualFortunes: [],
         annualFortunesStatusMessage: "",
         majorFortuneDirection: {},
-        majorFortuneDirectionStatusMessage: ""
+        majorFortuneDirectionStatusMessage: "",
+        solarTermDifferencePreparation: {},
+        solarTermDifferencePreparationStatusMessage: ""
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -360,6 +362,52 @@ Kirigami.Page {
                         visible: chartResult.majorFortuneDirectionStatusMessage.length > 0
                         color: Kirigami.Theme.disabledTextColor
                         text: "順逆状態: " + chartResult.majorFortuneDirectionStatusMessage
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "節入り差準備"
+                        font.bold: true
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "出生日時: " + ((chartResult.solarTermDifferencePreparation && chartResult.solarTermDifferencePreparation.birthDateTime)
+                                           ? chartResult.solarTermDifferencePreparation.birthDateTime : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "参照節入り: "
+                              + ((chartResult.solarTermDifferencePreparation && chartResult.solarTermDifferencePreparation.referenceTerm)
+                                 ? chartResult.solarTermDifferencePreparation.referenceTerm : "未対応")
+                              + " / "
+                              + ((chartResult.solarTermDifferencePreparation && chartResult.solarTermDifferencePreparation.referenceDirection)
+                                 ? chartResult.solarTermDifferencePreparation.referenceDirection : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "節入り日時差(日): " + ((chartResult.solarTermDifferencePreparation && chartResult.solarTermDifferencePreparation.differenceDays)
+                                                ? chartResult.solarTermDifferencePreparation.differenceDays : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "節入り差注記: " + ((chartResult.solarTermDifferencePreparation && chartResult.solarTermDifferencePreparation.note)
+                                              ? chartResult.solarTermDifferencePreparation.note : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.solarTermDifferencePreparationStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "節入り差状態: " + chartResult.solarTermDifferencePreparationStatusMessage
                     }
 
                     Label {
