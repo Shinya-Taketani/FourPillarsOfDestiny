@@ -25,6 +25,26 @@ QString formatElementCount(const QVariant &value)
     return value.isValid() ? value.toString() : QStringLiteral("0");
 }
 
+QString formatMajorFortunes(const QVariantList &majorFortunes)
+{
+    QStringList lines;
+    for (const QVariant &fortuneValue : majorFortunes) {
+        const QVariantMap fortune = fortuneValue.toMap();
+        lines << QStringLiteral(
+                     "  [%1] %2 / %3 / %4"
+                 ).arg(fortune.value(QStringLiteral("index")).toInt())
+                  .arg(fortune.value(QStringLiteral("label")).toString())
+                  .arg(fortune.value(QStringLiteral("pillar")).toString())
+                  .arg(fortune.value(QStringLiteral("note")).toString());
+    }
+
+    if (lines.isEmpty()) {
+        return QStringLiteral("  未対応");
+    }
+
+    return lines.join(QLatin1Char('\n'));
+}
+
 QString buildTextContent(const SavedChartRecord &record)
 {
     QString content;
@@ -78,6 +98,8 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "格局候補理由: " << record.chartResult.patternCandidates.value(QStringLiteral("reason")).toString() << "\n";
     stream << "格局候補注記: " << record.chartResult.patternCandidates.value(QStringLiteral("note")).toString() << "\n";
     stream << "格局候補状態: " << record.chartResult.patternCandidatesStatusMessage << "\n";
+    stream << "大運一覧:\n" << formatMajorFortunes(record.chartResult.majorFortunes) << "\n";
+    stream << "大運状態: " << record.chartResult.majorFortunesStatusMessage << "\n";
     stream << "\n";
     stream << "[InterpretationResult]\n";
     stream << "summaryText: " << record.interpretationResult.summaryText << "\n";

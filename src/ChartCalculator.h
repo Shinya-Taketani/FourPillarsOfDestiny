@@ -70,6 +70,10 @@ private:
         const QVariantMap &strengthEvaluation,
         QString *statusMessage
     ) const;
+    QVariantList calculateMajorFortunes(
+        const QString &monthPillar,
+        QString *statusMessage
+    ) const;
     QString buildDescription(
         const BirthInfo &birthInfo,
         const QString &yearPillar,

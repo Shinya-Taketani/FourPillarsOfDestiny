@@ -25,7 +25,9 @@ Kirigami.Page {
         usefulGodCandidates: {},
         usefulGodCandidatesStatusMessage: "",
         patternCandidates: {},
-        patternCandidatesStatusMessage: ""
+        patternCandidatesStatusMessage: "",
+        majorFortunes: [],
+        majorFortunesStatusMessage: ""
     })
     property var interpretationResult: ({
         summaryText: "",
@@ -326,6 +328,35 @@ Kirigami.Page {
                         visible: chartResult.patternCandidatesStatusMessage.length > 0
                         color: Kirigami.Theme.disabledTextColor
                         text: "格局候補状態: " + chartResult.patternCandidatesStatusMessage
+                    }
+
+                    Label {
+                        width: parent.width
+                        text: "大運一覧"
+                        font.bold: true
+                    }
+
+                    Repeater {
+                        model: chartResult.majorFortunes ? chartResult.majorFortunes : []
+
+                        delegate: Label {
+                            required property var modelData
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                            text: (modelData.label ? modelData.label : "未対応")
+                                  + " / "
+                                  + (modelData.pillar ? modelData.pillar : "未対応")
+                                  + " / "
+                                  + (modelData.note ? modelData.note : "")
+                        }
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: chartResult.majorFortunesStatusMessage.length > 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "大運状態: " + chartResult.majorFortunesStatusMessage
                     }
                 }
             }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QVariantList>
 #include <QVariantMap>
 
 struct ChartResult
@@ -25,6 +26,8 @@ struct ChartResult
     QString usefulGodCandidatesStatusMessage;
     QVariantMap patternCandidates;
     QString patternCandidatesStatusMessage;
+    QVariantList majorFortunes;
+    QString majorFortunesStatusMessage;
 
     static ChartResult fromVariantMap(const QVariantMap &map);
     QVariantMap toVariantMap() const;

@@ -479,6 +479,17 @@ QString patternNameForTenGod(const QString &tenGod)
 
     return QString();
 }
+
+QString pillarAtOffset(const QString &pillar, int offset)
+{
+    const int stemIndex = heavenlyStemIndex(pillar);
+    const int branchIndex = earthlyBranchIndex(pillar);
+    if (stemIndex < 0 || branchIndex < 0) {
+        return QStringLiteral("未対応");
+    }
+
+    return heavenlyStemAt((stemIndex + offset) % 10) + earthlyBranchAt((branchIndex + offset) % 12);
+}
 }
 
 ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
@@ -546,6 +557,11 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         strengthEvaluation,
         &patternCandidatesStatusMessage
     );
+    QString majorFortunesStatusMessage;
+    const QVariantList majorFortunes = calculateMajorFortunes(
+        monthResolution.monthPillar,
+        &majorFortunesStatusMessage
+    );
     const QString description = buildDescription(
         birthInfo,
         yearPillar,
@@ -574,7 +590,9 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         usefulGodCandidates,
         usefulGodCandidatesStatusMessage,
         patternCandidates,
-        patternCandidatesStatusMessage
+        patternCandidatesStatusMessage,
+        majorFortunes,
+        majorFortunesStatusMessage
     };
 }
 
@@ -1141,6 +1159,49 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
     };
 }
 
+QVariantList ChartCalculator::calculateMajorFortunes(
+    const QString &monthPillar,
+    QString *statusMessage
+) const
+{
+    if (earthlyBranchIndex(monthPillar) < 0 || heavenlyStemIndex(monthPillar) < 0) {
+        if (statusMessage) {
+            *statusMessage = QStringLiteral("月柱未対応のため、大運一覧は未対応です。");
+        }
+
+        return {
+            QVariantMap{
+                {QStringLiteral("index"), 0},
+                {QStringLiteral("startAge"), -1},
+                {QStringLiteral("endAge"), -1},
+                {QStringLiteral("label"), QStringLiteral("未対応")},
+                {QStringLiteral("pillar"), QStringLiteral("未対応")},
+                {QStringLiteral("note"), QStringLiteral("月柱を取得できないため、大運表示骨格を生成できません。")}
+            }
+        };
+    }
+
+    QVariantList fortunes;
+    for (int index = 0; index < 8; ++index) {
+        const int startAge = 1 + index * 10;
+        const int endAge = startAge + 9;
+        fortunes.append(QVariantMap{
+            {QStringLiteral("index"), index + 1},
+            {QStringLiteral("startAge"), startAge},
+            {QStringLiteral("endAge"), endAge},
+            {QStringLiteral("label"), QStringLiteral("%1〜%2歳").arg(startAge).arg(endAge)},
+            {QStringLiteral("pillar"), pillarAtOffset(monthPillar, index)},
+            {QStringLiteral("note"), QStringLiteral("起運年齢と順逆は未実装のため、月柱起点の仮表示です。")}
+        });
+    }
+
+    if (statusMessage) {
+        *statusMessage = QStringLiteral("月柱起点で並べた大運表示の仮骨格です。起運年齢と順逆は未実装です。");
+    }
+
+    return fortunes;
+}
+
 QString ChartCalculator::buildDescription(
     const BirthInfo &birthInfo,
     const QString &yearPillar,
@@ -1164,7 +1225,8 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("強弱評価は五行分布と季節評価を使った暫定ラベルです。正式な身強身弱判定ではありません。")
           << QStringLiteral("寒暖・乾湿評価は月支ベースの調候前提情報を最小実装しています。")
           << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
-          << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。");
+          << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。")
+          << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢と順逆は未実装です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")
