@@ -9,6 +9,10 @@
       "enabledForRegression": false,
       "source": "verification_answer_key",
       "confidence": "external",
+      "expectedDifferenceCategory": "possible_day_boundary_rule_gap",
+      "expectedAction": "keep_as_spec_gap",
+      "ruleHint": "day_boundary_23_00",
+      "reviewStatus": "pending",
       "notes": "『泰山流四柱推命学掌中暦』由来のケース。現実装では日柱差分があるため、回帰テストへの昇格前に再検証対象として保持する。",
       "expected": {
         "yearPillar": "壬辰",

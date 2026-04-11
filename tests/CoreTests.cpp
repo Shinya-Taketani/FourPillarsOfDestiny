@@ -91,6 +91,30 @@ QString classifyVerificationDifference(const QStringList &fields)
     return QStringLiteral("requires_manual_review");
 }
 
+QString suggestVerificationAction(const QString &classification)
+{
+    if (classification == QStringLiteral("match")) {
+        return QStringLiteral("no_action_needed");
+    }
+    if (classification == QStringLiteral("possible_day_boundary_rule_gap")) {
+        return QStringLiteral("keep_as_spec_gap");
+    }
+    if (classification == QStringLiteral("possible_hour_rule_gap")) {
+        return QStringLiteral("manual_review_required");
+    }
+    if (classification == QStringLiteral("possible_calendar_rule_gap")) {
+        return QStringLiteral("manual_review_required");
+    }
+    if (classification == QStringLiteral("multiple_pillar_mismatch")) {
+        return QStringLiteral("investigate_implementation");
+    }
+    if (classification == QStringLiteral("requires_manual_review")) {
+        return QStringLiteral("manual_review_required");
+    }
+
+    return QStringLiteral("manual_review_required");
+}
+
 QString formatVerificationDifferenceReport(
     const QJsonObject &caseObject,
     const ChartResult &result
@@ -106,17 +130,29 @@ QString formatVerificationDifferenceReport(
     );
 
     const QString classification = classifyVerificationDifference(fields);
+    const QString suggestedAction = suggestVerificationAction(classification);
     const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
     const QString description = caseObject.value(QStringLiteral("description")).toString();
     const QString notes = caseObject.value(QStringLiteral("notes")).toString();
+    const QString expectedDifferenceCategory =
+        caseObject.value(QStringLiteral("expectedDifferenceCategory")).toString();
+    const QString expectedAction =
+        caseObject.value(QStringLiteral("expectedAction")).toString();
+    const QString ruleHint = caseObject.value(QStringLiteral("ruleHint")).toString();
+    const QString reviewStatus = caseObject.value(QStringLiteral("reviewStatus")).toString();
 
     return QStringLiteral(
         "[%1] %2\n"
         "expected: %3 / %4 / %5 / %6\n"
         "actual: %7 / %8 / %9 / %10\n"
         "mismatch fields: %11\n"
-        "classification: %12\n"
-        "notes: %13"
+        "actual classification: %12\n"
+        "expectedDifferenceCategory: %13\n"
+        "suggested action: %14\n"
+        "expectedAction: %15\n"
+        "ruleHint: %16\n"
+        "reviewStatus: %17\n"
+        "notes: %18"
     ).arg(
         caseId,
         description,
@@ -130,6 +166,11 @@ QString formatVerificationDifferenceReport(
         result.hourPillar,
         fields.isEmpty() ? QStringLiteral("none") : fields.join(QStringLiteral(", ")),
         classification,
+        expectedDifferenceCategory.isEmpty() ? QStringLiteral("未設定") : expectedDifferenceCategory,
+        suggestedAction,
+        expectedAction.isEmpty() ? QStringLiteral("未設定") : expectedAction,
+        ruleHint.isEmpty() ? QStringLiteral("未設定") : ruleHint,
+        reviewStatus.isEmpty() ? QStringLiteral("pending") : reviewStatus,
         notes.isEmpty() ? QStringLiteral("外部由来ケースのため要手動確認") : notes
     );
 }
