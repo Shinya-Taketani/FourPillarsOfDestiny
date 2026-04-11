@@ -72,8 +72,10 @@ private:
     ) const;
     QVariantList calculateMajorFortunes(
         const BirthInfo &birthInfo,
+        const QString &yearPillar,
         const QString &monthPillar,
         const QString &dayPillar,
+        const QString &hourPillar,
         const QVariantMap &majorFortuneDirection,
         const QVariantMap &solarTermDifferencePreparation,
         QString *statusMessage

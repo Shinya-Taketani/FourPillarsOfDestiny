@@ -4,6 +4,7 @@
 #include <cmath>
 #include <QDate>
 #include <QDateTime>
+#include <QSet>
 #include <algorithm>
 #include <QTime>
 #include <QTimeZone>
@@ -634,6 +635,77 @@ bool branchesAreInClash(int leftBranchIndex, int rightBranchIndex)
     return positiveModulo(leftBranchIndex - rightBranchIndex, 12) == 6;
 }
 
+bool branchesAreInHarm(int leftBranchIndex, int rightBranchIndex)
+{
+    if (leftBranchIndex < 0 || rightBranchIndex < 0) {
+        return false;
+    }
+
+    const QSet<QPair<int, int>> harmPairs{
+        qMakePair(0, 7),
+        qMakePair(1, 6),
+        qMakePair(2, 5),
+        qMakePair(3, 4),
+        qMakePair(8, 11),
+        qMakePair(9, 10)
+    };
+    const auto normalizedPair = qMakePair(
+        std::min(leftBranchIndex, rightBranchIndex),
+        std::max(leftBranchIndex, rightBranchIndex)
+    );
+    return harmPairs.contains(normalizedPair);
+}
+
+bool branchesAreInBreak(int leftBranchIndex, int rightBranchIndex)
+{
+    if (leftBranchIndex < 0 || rightBranchIndex < 0) {
+        return false;
+    }
+
+    const QSet<QPair<int, int>> breakPairs{
+        qMakePair(0, 9),
+        qMakePair(3, 6),
+        qMakePair(4, 1),
+        qMakePair(7, 10),
+        qMakePair(2, 11),
+        qMakePair(5, 8)
+    };
+    const auto normalizedPair = qMakePair(
+        std::min(leftBranchIndex, rightBranchIndex),
+        std::max(leftBranchIndex, rightBranchIndex)
+    );
+    return breakPairs.contains(normalizedPair);
+}
+
+bool branchesAreInPunishment(int leftBranchIndex, int rightBranchIndex)
+{
+    if (leftBranchIndex < 0 || rightBranchIndex < 0) {
+        return false;
+    }
+
+    if (leftBranchIndex == rightBranchIndex) {
+        return leftBranchIndex == 4
+            || leftBranchIndex == 6
+            || leftBranchIndex == 9
+            || leftBranchIndex == 11;
+    }
+
+    const QSet<QPair<int, int>> punishmentPairs{
+        qMakePair(2, 5),
+        qMakePair(2, 8),
+        qMakePair(5, 8),
+        qMakePair(1, 7),
+        qMakePair(1, 10),
+        qMakePair(7, 10),
+        qMakePair(0, 3)
+    };
+    const auto normalizedPair = qMakePair(
+        std::min(leftBranchIndex, rightBranchIndex),
+        std::max(leftBranchIndex, rightBranchIndex)
+    );
+    return punishmentPairs.contains(normalizedPair);
+}
+
 bool stemsAreCombinationCandidates(int leftStemIndex, int rightStemIndex)
 {
     if (leftStemIndex < 0 || rightStemIndex < 0) {
@@ -648,29 +720,90 @@ QString joinLabelsOrFallback(const QStringList &labels)
     return labels.isEmpty() ? QStringLiteral("なし") : labels.join(QStringLiteral("・"));
 }
 
-QVariantMap calculateAnnualFortuneRelation(
-    const QString &annualPillar,
+int threeHarmonyGroupIndex(int branchIndex)
+{
+    switch (branchIndex) {
+    case 8:
+    case 0:
+    case 4:
+        return 0;
+    case 11:
+    case 3:
+    case 7:
+        return 1;
+    case 2:
+    case 6:
+    case 10:
+        return 2;
+    case 5:
+    case 9:
+    case 1:
+        return 3;
+    default:
+        return -1;
+    }
+}
+
+int directionalCombinationGroupIndex(int branchIndex)
+{
+    switch (branchIndex) {
+    case 11:
+    case 0:
+    case 1:
+        return 0;
+    case 2:
+    case 3:
+    case 4:
+        return 1;
+    case 5:
+    case 6:
+    case 7:
+        return 2;
+    case 8:
+    case 9:
+    case 10:
+        return 3;
+    default:
+        return -1;
+    }
+}
+
+QVariantMap calculatePillarRelation(
+    const QString &targetPillar,
     const QList<PillarReference> &natalPillars
 )
 {
-    const int annualStemIndex = heavenlyStemIndex(annualPillar);
-    const int annualBranchIndex = earthlyBranchIndex(annualPillar);
+    // 行運干支と原命式四柱を比較し、最小関係候補だけを抽出する。
+    const int targetStemIndex = heavenlyStemIndex(targetPillar);
+    const int targetBranchIndex = earthlyBranchIndex(targetPillar);
 
-    if (annualStemIndex < 0 || annualBranchIndex < 0) {
+    if (targetStemIndex < 0 || targetBranchIndex < 0) {
         return {
             {QStringLiteral("sameStemMatches"), QStringList{}},
             {QStringLiteral("sameBranchMatches"), QStringList{}},
             {QStringLiteral("clashBranches"), QStringList{}},
+            {QStringLiteral("harmBranches"), QStringList{}},
+            {QStringLiteral("breakBranches"), QStringList{}},
+            {QStringLiteral("punishmentBranches"), QStringList{}},
             {QStringLiteral("stemCombinationCandidates"), QStringList{}},
+            {QStringLiteral("threeHarmonyCandidates"), QStringList{}},
+            {QStringLiteral("directionalCombinationCandidates"), QStringList{}},
             {QStringLiteral("relationSummary"), QStringLiteral("命式との関係候補は未対応です。")},
-            {QStringLiteral("relationNote"), QStringLiteral("流年干支を取得できないため、原命式との関係候補を比較できません。")}
+            {QStringLiteral("relationNote"), QStringLiteral("行運干支を取得できないため、原命式との関係候補を比較できません。")}
         };
     }
 
     QStringList sameStemMatches;
     QStringList sameBranchMatches;
     QStringList clashBranches;
+    QStringList harmBranches;
+    QStringList breakBranches;
+    QStringList punishmentBranches;
     QStringList stemCombinationCandidates;
+    QStringList threeHarmonyCandidates;
+    QStringList directionalCombinationCandidates;
+    const int targetThreeHarmonyGroupIndex = threeHarmonyGroupIndex(targetBranchIndex);
+    const int targetDirectionalGroupIndex = directionalCombinationGroupIndex(targetBranchIndex);
 
     for (const PillarReference &natalPillar : natalPillars) {
         const int natalStemIndex = heavenlyStemIndex(natalPillar.pillar);
@@ -679,17 +812,34 @@ QVariantMap calculateAnnualFortuneRelation(
             continue;
         }
 
-        if (natalStemIndex == annualStemIndex) {
+        if (natalStemIndex == targetStemIndex) {
             sameStemMatches << natalPillar.label;
         }
-        if (natalBranchIndex == annualBranchIndex) {
+        if (natalBranchIndex == targetBranchIndex) {
             sameBranchMatches << natalPillar.label;
         }
-        if (branchesAreInClash(annualBranchIndex, natalBranchIndex)) {
+        if (branchesAreInClash(targetBranchIndex, natalBranchIndex)) {
             clashBranches << natalPillar.label;
         }
-        if (stemsAreCombinationCandidates(annualStemIndex, natalStemIndex)) {
+        if (branchesAreInHarm(targetBranchIndex, natalBranchIndex)) {
+            harmBranches << natalPillar.label;
+        }
+        if (branchesAreInBreak(targetBranchIndex, natalBranchIndex)) {
+            breakBranches << natalPillar.label;
+        }
+        if (branchesAreInPunishment(targetBranchIndex, natalBranchIndex)) {
+            punishmentBranches << natalPillar.label;
+        }
+        if (stemsAreCombinationCandidates(targetStemIndex, natalStemIndex)) {
             stemCombinationCandidates << natalPillar.label;
+        }
+        if (targetThreeHarmonyGroupIndex >= 0
+            && targetThreeHarmonyGroupIndex == threeHarmonyGroupIndex(natalBranchIndex)) {
+            threeHarmonyCandidates << natalPillar.label;
+        }
+        if (targetDirectionalGroupIndex >= 0
+            && targetDirectionalGroupIndex == directionalCombinationGroupIndex(natalBranchIndex)) {
+            directionalCombinationCandidates << natalPillar.label;
         }
     }
 
@@ -703,8 +853,23 @@ QVariantMap calculateAnnualFortuneRelation(
     if (!clashBranches.isEmpty()) {
         summaryParts << QStringLiteral("冲候補: %1").arg(joinLabelsOrFallback(clashBranches));
     }
+    if (!harmBranches.isEmpty()) {
+        summaryParts << QStringLiteral("害候補: %1").arg(joinLabelsOrFallback(harmBranches));
+    }
+    if (!breakBranches.isEmpty()) {
+        summaryParts << QStringLiteral("破候補: %1").arg(joinLabelsOrFallback(breakBranches));
+    }
+    if (!punishmentBranches.isEmpty()) {
+        summaryParts << QStringLiteral("刑候補: %1").arg(joinLabelsOrFallback(punishmentBranches));
+    }
     if (!stemCombinationCandidates.isEmpty()) {
         summaryParts << QStringLiteral("干合候補: %1").arg(joinLabelsOrFallback(stemCombinationCandidates));
+    }
+    if (!threeHarmonyCandidates.isEmpty()) {
+        summaryParts << QStringLiteral("三合候補: %1").arg(joinLabelsOrFallback(threeHarmonyCandidates));
+    }
+    if (!directionalCombinationCandidates.isEmpty()) {
+        summaryParts << QStringLiteral("方合候補: %1").arg(joinLabelsOrFallback(directionalCombinationCandidates));
     }
     if (summaryParts.isEmpty()) {
         summaryParts << QStringLiteral("主要関係候補なし");
@@ -714,9 +879,14 @@ QVariantMap calculateAnnualFortuneRelation(
         {QStringLiteral("sameStemMatches"), sameStemMatches},
         {QStringLiteral("sameBranchMatches"), sameBranchMatches},
         {QStringLiteral("clashBranches"), clashBranches},
+        {QStringLiteral("harmBranches"), harmBranches},
+        {QStringLiteral("breakBranches"), breakBranches},
+        {QStringLiteral("punishmentBranches"), punishmentBranches},
         {QStringLiteral("stemCombinationCandidates"), stemCombinationCandidates},
+        {QStringLiteral("threeHarmonyCandidates"), threeHarmonyCandidates},
+        {QStringLiteral("directionalCombinationCandidates"), directionalCombinationCandidates},
         {QStringLiteral("relationSummary"), summaryParts.join(QStringLiteral(" / "))},
-        {QStringLiteral("relationNote"), QStringLiteral("吉凶断定ではなく、原命式との同干・同支・冲候補・干合候補を並べた参考表示です。")}
+        {QStringLiteral("relationNote"), QStringLiteral("吉凶断定ではなく、原命式との同干・同支・冲・害・破・刑・干合・三合・方合の候補を並べた参考表示です。")}
     };
 }
 }
@@ -801,8 +971,10 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
     QString majorFortunesStatusMessage;
     const QVariantList majorFortunes = calculateMajorFortunes(
         birthInfo,
+        yearPillar,
         monthResolution.monthPillar,
         dayPillar,
+        hourPillar,
         majorFortuneDirection,
         solarTermDifferencePreparation,
         &majorFortunesStatusMessage
@@ -1432,8 +1604,10 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
 
 QVariantList ChartCalculator::calculateMajorFortunes(
     const BirthInfo &birthInfo,
+    const QString &yearPillar,
     const QString &monthPillar,
     const QString &dayPillar,
+    const QString &hourPillar,
     const QVariantMap &majorFortuneDirection,
     const QVariantMap &solarTermDifferencePreparation,
     QString *statusMessage
@@ -1453,6 +1627,17 @@ QVariantList ChartCalculator::calculateMajorFortunes(
                 {QStringLiteral("pillar"), QStringLiteral("未対応")},
                 {QStringLiteral("tenGod"), QStringLiteral("未対応")},
                 {QStringLiteral("twelvePhase"), QStringLiteral("未対応")},
+                {QStringLiteral("sameStemMatches"), QStringList{}},
+                {QStringLiteral("sameBranchMatches"), QStringList{}},
+                {QStringLiteral("clashBranches"), QStringList{}},
+                {QStringLiteral("harmBranches"), QStringList{}},
+                {QStringLiteral("breakBranches"), QStringList{}},
+                {QStringLiteral("punishmentBranches"), QStringList{}},
+                {QStringLiteral("stemCombinationCandidates"), QStringList{}},
+                {QStringLiteral("threeHarmonyCandidates"), QStringList{}},
+                {QStringLiteral("directionalCombinationCandidates"), QStringList{}},
+                {QStringLiteral("relationSummary"), QStringLiteral("命式との関係候補は未対応です。")},
+                {QStringLiteral("relationNote"), QStringLiteral("月柱を取得できないため、原命式との関係候補を比較できません。")},
                 {QStringLiteral("note"), QStringLiteral("月柱を取得できないため、大運表示骨格を生成できません。")}
             }
         };
@@ -1479,12 +1664,29 @@ QVariantList ChartCalculator::calculateMajorFortunes(
                 {QStringLiteral("pillar"), QStringLiteral("未対応")},
                 {QStringLiteral("tenGod"), QStringLiteral("未対応")},
                 {QStringLiteral("twelvePhase"), QStringLiteral("未対応")},
+                {QStringLiteral("sameStemMatches"), QStringList{}},
+                {QStringLiteral("sameBranchMatches"), QStringList{}},
+                {QStringLiteral("clashBranches"), QStringList{}},
+                {QStringLiteral("harmBranches"), QStringList{}},
+                {QStringLiteral("breakBranches"), QStringList{}},
+                {QStringLiteral("punishmentBranches"), QStringList{}},
+                {QStringLiteral("stemCombinationCandidates"), QStringList{}},
+                {QStringLiteral("threeHarmonyCandidates"), QStringList{}},
+                {QStringLiteral("directionalCombinationCandidates"), QStringList{}},
+                {QStringLiteral("relationSummary"), QStringLiteral("命式との関係候補は未対応です。")},
+                {QStringLiteral("relationNote"), QStringLiteral("順逆または正節データを確定できないため、原命式との関係候補を比較できません。")},
                 {QStringLiteral("note"), QStringLiteral("順逆または正節データを確定できないため、起運年齢を計算できません。")}
             }
         };
     }
 
     QVariantList fortunes;
+    const QList<PillarReference> natalPillars = natalPillarReferences(
+        yearPillar,
+        monthPillar,
+        dayPillar,
+        hourPillar
+    );
     for (int index = 0; index < 8; ++index) {
         const int rangeStartAge = startAge + index * 10;
         const int endAge = rangeStartAge + 9;
@@ -1492,6 +1694,7 @@ QVariantList ChartCalculator::calculateMajorFortunes(
         const QString fortunePillar = pillarAtOffset(monthPillar, pillarOffset);
         const QString fortuneTenGod = tenGodForFortunePillar(dayPillar, fortunePillar);
         const QString fortuneTwelvePhase = twelvePhaseForFortunePillar(dayPillar, fortunePillar);
+        const QVariantMap relation = calculatePillarRelation(fortunePillar, natalPillars);
         const QString traitsNote = (fortuneTenGod == QStringLiteral("未対応")
                 || fortuneTwelvePhase == QStringLiteral("未対応"))
             ? QStringLiteral(" 通変星と十二運は日干または行運干支を取得できないため未対応です。")
@@ -1504,13 +1707,25 @@ QVariantList ChartCalculator::calculateMajorFortunes(
             {QStringLiteral("pillar"), fortunePillar},
             {QStringLiteral("tenGod"), fortuneTenGod},
             {QStringLiteral("twelvePhase"), fortuneTwelvePhase},
+            {QStringLiteral("sameStemMatches"), relation.value(QStringLiteral("sameStemMatches")).toStringList()},
+            {QStringLiteral("sameBranchMatches"), relation.value(QStringLiteral("sameBranchMatches")).toStringList()},
+            {QStringLiteral("clashBranches"), relation.value(QStringLiteral("clashBranches")).toStringList()},
+            {QStringLiteral("harmBranches"), relation.value(QStringLiteral("harmBranches")).toStringList()},
+            {QStringLiteral("breakBranches"), relation.value(QStringLiteral("breakBranches")).toStringList()},
+            {QStringLiteral("punishmentBranches"), relation.value(QStringLiteral("punishmentBranches")).toStringList()},
+            {QStringLiteral("stemCombinationCandidates"), relation.value(QStringLiteral("stemCombinationCandidates")).toStringList()},
+            {QStringLiteral("threeHarmonyCandidates"), relation.value(QStringLiteral("threeHarmonyCandidates")).toStringList()},
+            {QStringLiteral("directionalCombinationCandidates"), relation.value(QStringLiteral("directionalCombinationCandidates")).toStringList()},
+            {QStringLiteral("relationSummary"), relation.value(QStringLiteral("relationSummary")).toString()},
+            {QStringLiteral("relationNote"), relation.value(QStringLiteral("relationNote")).toString()},
             {QStringLiteral("note"), QStringLiteral(
-                "起運年齢は %1 順逆は %2 を参照した確定計算で、大運干支は月柱から %3 方向へ %4 として順逆反映済みです。%5"
+                "起運年齢は %1 順逆は %2 を参照した確定計算で、大運干支は月柱から %3 方向へ %4 として順逆反映済みです。%5 %6"
             ).arg(
                 startAgeBasisNote,
                 direction.isEmpty() ? QStringLiteral("未対応") : direction,
                 direction == QStringLiteral("逆行") ? QStringLiteral("前へ戻る") : QStringLiteral("先へ進む"),
                 QString::number(pillarOffset),
+                relation.value(QStringLiteral("relationNote")).toString(),
                 traitsNote
             )}
         });
@@ -1518,7 +1733,7 @@ QVariantList ChartCalculator::calculateMajorFortunes(
 
     if (statusMessage) {
         *statusMessage = QStringLiteral(
-            "月柱起点で順逆反映済みの大運表示です。起運年齢は節入り差ベースの採用仕様で、%1 通変星と十二運は更新後の大運干支に対する日干基準の最小本実装です。"
+            "月柱起点で順逆反映済みの大運表示です。起運年齢は節入り差ベースの採用仕様で、%1 通変星と十二運に加えて、原命式との同干・同支・冲・害・破・刑・干合・三合・方合候補を最小表示しています。"
         ).arg(statusMessageSuffix);
     }
 
@@ -1546,6 +1761,17 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
                 {QStringLiteral("pillar"), QStringLiteral("未対応")},
                 {QStringLiteral("tenGod"), QStringLiteral("未対応")},
                 {QStringLiteral("twelvePhase"), QStringLiteral("未対応")},
+                {QStringLiteral("sameStemMatches"), QStringList{}},
+                {QStringLiteral("sameBranchMatches"), QStringList{}},
+                {QStringLiteral("clashBranches"), QStringList{}},
+                {QStringLiteral("harmBranches"), QStringList{}},
+                {QStringLiteral("breakBranches"), QStringList{}},
+                {QStringLiteral("punishmentBranches"), QStringList{}},
+                {QStringLiteral("stemCombinationCandidates"), QStringList{}},
+                {QStringLiteral("threeHarmonyCandidates"), QStringList{}},
+                {QStringLiteral("directionalCombinationCandidates"), QStringList{}},
+                {QStringLiteral("relationSummary"), QStringLiteral("命式との関係候補は未対応です。")},
+                {QStringLiteral("relationNote"), QStringLiteral("生年月日を取得できないため、原命式との関係候補を比較できません。")},
                 {QStringLiteral("note"), QStringLiteral("生年月日を取得できないため、流年表示骨格を生成できません。")}
             }
         };
@@ -1565,7 +1791,7 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
             + earthlyBranchAt(positiveModulo(year - 1984, 60) % 12);
         const QString fortuneTenGod = tenGodForFortunePillar(dayPillar, pillar);
         const QString fortuneTwelvePhase = twelvePhaseForFortunePillar(dayPillar, pillar);
-        const QVariantMap relation = calculateAnnualFortuneRelation(pillar, natalPillars);
+        const QVariantMap relation = calculatePillarRelation(pillar, natalPillars);
         const QString traitsNote = (fortuneTenGod == QStringLiteral("未対応")
                 || fortuneTwelvePhase == QStringLiteral("未対応"))
             ? QStringLiteral(" 通変星と十二運は日干または行運干支を取得できないため未対応です。")
@@ -1578,7 +1804,12 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
             {QStringLiteral("sameStemMatches"), relation.value(QStringLiteral("sameStemMatches")).toStringList()},
             {QStringLiteral("sameBranchMatches"), relation.value(QStringLiteral("sameBranchMatches")).toStringList()},
             {QStringLiteral("clashBranches"), relation.value(QStringLiteral("clashBranches")).toStringList()},
+            {QStringLiteral("harmBranches"), relation.value(QStringLiteral("harmBranches")).toStringList()},
+            {QStringLiteral("breakBranches"), relation.value(QStringLiteral("breakBranches")).toStringList()},
+            {QStringLiteral("punishmentBranches"), relation.value(QStringLiteral("punishmentBranches")).toStringList()},
             {QStringLiteral("stemCombinationCandidates"), relation.value(QStringLiteral("stemCombinationCandidates")).toStringList()},
+            {QStringLiteral("threeHarmonyCandidates"), relation.value(QStringLiteral("threeHarmonyCandidates")).toStringList()},
+            {QStringLiteral("directionalCombinationCandidates"), relation.value(QStringLiteral("directionalCombinationCandidates")).toStringList()},
             {QStringLiteral("relationSummary"), relation.value(QStringLiteral("relationSummary")).toString()},
             {QStringLiteral("relationNote"), relation.value(QStringLiteral("relationNote")).toString()},
             {QStringLiteral("note"), QStringLiteral(
@@ -1592,7 +1823,7 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
 
     if (statusMessage) {
         *statusMessage = QStringLiteral(
-            "出生年から 12 年分を並べた流年表示の仮骨格です。流年解釈は未実装ですが、通変星と十二運に加えて原命式との同干・同支・冲候補・干合候補を最小表示しています。"
+            "出生年から 12 年分を並べた流年表示の仮骨格です。流年解釈は未実装ですが、通変星と十二運に加えて原命式との同干・同支・冲・害・破・刑・干合・三合・方合候補を最小表示しています。"
         );
     }
 
@@ -1765,10 +1996,10 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
           << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。")
           << QStringLiteral("起運年齢は正節との差分を 3 日 = 1 年、端数切り上げで換算します。")
-          << QStringLiteral("大運一覧は月柱起点で、順行なら先へ、逆行なら前へ進めた干支列として順逆反映済みです。")
+          << QStringLiteral("大運一覧は月柱起点で、順行なら先へ、逆行なら前へ進めた干支列として順逆反映済みです。原命式との同干・同支・冲・害・破・刑・干合・三合・方合候補も参考表示します。")
           << QStringLiteral("大運の順逆は年干陰陽と性別の組み合わせによる一般ルールで実判定しています。")
           << QStringLiteral("節入り差情報には、出生日時と参照正節日時との差分、および起運年齢換算結果を保持します。")
-          << QStringLiteral("流年一覧は出生年から並べた最小表示骨格で、原命式との同干・同支・冲候補・干合候補を参考表示します。")
+          << QStringLiteral("流年一覧は出生年から並べた最小表示骨格で、原命式との同干・同支・冲・害・破・刑・干合・三合・方合候補を参考表示します。")
           << QStringLiteral("流年解釈の吉凶断定や流派固有判断は未実装です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {

@@ -523,6 +523,15 @@ Kirigami.Page {
                                 Label {
                                     width: parent.width
                                     wrapMode: Text.WordWrap
+                                    text: "関係: " + (modelData.relationSummary ? modelData.relationSummary : "未対応")
+                                    color: isCurrentMajorFortune
+                                        ? Kirigami.Theme.highlightedTextColor
+                                        : Kirigami.Theme.textColor
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
                                     text: modelData.note ? modelData.note : ""
                                     color: isCurrentMajorFortune
                                         ? Kirigami.Theme.highlightedTextColor
