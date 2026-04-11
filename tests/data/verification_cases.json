@@ -13,6 +13,7 @@
       "expectedAction": "keep_as_spec_gap",
       "ruleHint": "day_boundary_23_00",
       "reviewStatus": "pending",
+      "reviewNotes": "現採用仕様の日界 23:00 と外部正答表との差分として保持候補。",
       "notes": "『泰山流四柱推命学掌中暦』由来のケース。現実装では日柱差分があるため、回帰テストへの昇格前に再検証対象として保持する。",
       "expected": {
         "yearPillar": "壬辰",

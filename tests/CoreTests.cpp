@@ -115,6 +115,38 @@ QString suggestVerificationAction(const QString &classification)
     return QStringLiteral("manual_review_required");
 }
 
+QString determineReviewOutcome(
+    const QString &actualClassification,
+    const QString &suggestedAction,
+    const QString &expectedDifferenceCategory,
+    const QString &expectedAction
+)
+{
+    if (expectedDifferenceCategory.isEmpty() || expectedAction.isEmpty()) {
+        return QStringLiteral("manual_review_required");
+    }
+
+    if (actualClassification != expectedDifferenceCategory) {
+        return QStringLiteral("classification_mismatch");
+    }
+
+    if (suggestedAction != expectedAction) {
+        return QStringLiteral("action_mismatch");
+    }
+
+    if (expectedAction == QStringLiteral("keep_as_spec_gap")) {
+        return QStringLiteral("confirmed_spec_gap");
+    }
+    if (expectedAction == QStringLiteral("investigate_implementation")) {
+        return QStringLiteral("confirmed_bug_candidate");
+    }
+    if (expectedAction == QStringLiteral("manual_review_required")) {
+        return QStringLiteral("manual_review_required");
+    }
+
+    return QStringLiteral("manual_review_required");
+}
+
 QString formatVerificationDifferenceReport(
     const QJsonObject &caseObject,
     const ChartResult &result
@@ -140,6 +172,13 @@ QString formatVerificationDifferenceReport(
         caseObject.value(QStringLiteral("expectedAction")).toString();
     const QString ruleHint = caseObject.value(QStringLiteral("ruleHint")).toString();
     const QString reviewStatus = caseObject.value(QStringLiteral("reviewStatus")).toString();
+    const QString reviewNotes = caseObject.value(QStringLiteral("reviewNotes")).toString();
+    const QString reviewOutcome = determineReviewOutcome(
+        classification,
+        suggestedAction,
+        expectedDifferenceCategory,
+        expectedAction
+    );
 
     return QStringLiteral(
         "[%1] %2\n"
@@ -152,7 +191,9 @@ QString formatVerificationDifferenceReport(
         "expectedAction: %15\n"
         "ruleHint: %16\n"
         "reviewStatus: %17\n"
-        "notes: %18"
+        "review outcome: %18\n"
+        "reviewNotes: %19\n"
+        "notes: %20"
     ).arg(
         caseId,
         description,
@@ -171,6 +212,8 @@ QString formatVerificationDifferenceReport(
         expectedAction.isEmpty() ? QStringLiteral("未設定") : expectedAction,
         ruleHint.isEmpty() ? QStringLiteral("未設定") : ruleHint,
         reviewStatus.isEmpty() ? QStringLiteral("pending") : reviewStatus,
+        reviewOutcome,
+        reviewNotes.isEmpty() ? QStringLiteral("未設定") : reviewNotes,
         notes.isEmpty() ? QStringLiteral("外部由来ケースのため要手動確認") : notes
     );
 }
@@ -343,6 +386,7 @@ void CoreTests::chartCalculatorReportsNonRegressionVerificationDifferences()
 
     ChartCalculator calculator;
     int reportedCaseCount = 0;
+    QMap<QString, int> reviewOutcomeCounts;
 
     for (const QJsonValue &caseValue : cases) {
         const QJsonObject caseObject = caseValue.toObject();
@@ -358,12 +402,38 @@ void CoreTests::chartCalculatorReportsNonRegressionVerificationDifferences()
             caseObject.value(QStringLiteral("gender")).toString()
         };
         const ChartResult result = calculator.calculate(birthInfo);
+        const QJsonObject expected = caseObject.value(QStringLiteral("expected")).toObject();
+        const QStringList fields = mismatchFields(
+            expected.value(QStringLiteral("yearPillar")).toString(),
+            expected.value(QStringLiteral("monthPillar")).toString(),
+            expected.value(QStringLiteral("dayPillar")).toString(),
+            expected.value(QStringLiteral("hourPillar")).toString(),
+            result
+        );
+        const QString actualClassification = classifyVerificationDifference(fields);
+        const QString suggestedAction = suggestVerificationAction(actualClassification);
+        const QString reviewOutcome = determineReviewOutcome(
+            actualClassification,
+            suggestedAction,
+            caseObject.value(QStringLiteral("expectedDifferenceCategory")).toString(),
+            caseObject.value(QStringLiteral("expectedAction")).toString()
+        );
         const QString report = formatVerificationDifferenceReport(caseObject, result);
         QWARN(qPrintable(report));
+        reviewOutcomeCounts[reviewOutcome] += 1;
         ++reportedCaseCount;
     }
 
     QVERIFY2(reportedCaseCount > 0, "比較レポート対象の non-regression ケースが 1 件もありません。");
+    const QString summary = QStringLiteral(
+        "summary: confirmed_spec_gap=%1, confirmed_bug_candidate=%2, classification_mismatch=%3, action_mismatch=%4, manual_review_required=%5"
+    )
+        .arg(reviewOutcomeCounts.value(QStringLiteral("confirmed_spec_gap")))
+        .arg(reviewOutcomeCounts.value(QStringLiteral("confirmed_bug_candidate")))
+        .arg(reviewOutcomeCounts.value(QStringLiteral("classification_mismatch")))
+        .arg(reviewOutcomeCounts.value(QStringLiteral("action_mismatch")))
+        .arg(reviewOutcomeCounts.value(QStringLiteral("manual_review_required")));
+    QWARN(qPrintable(summary));
 }
 
 void CoreTests::chartCalculatorYearPillarChangesWithBirthYear()
