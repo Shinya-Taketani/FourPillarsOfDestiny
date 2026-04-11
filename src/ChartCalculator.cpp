@@ -352,6 +352,54 @@ QString tenGodName(int dayStemIndex, int targetStemIndex)
     }
 }
 
+QString twelvePhaseName(int dayStemIndex, int targetBranchIndex)
+{
+    if (dayStemIndex < 0 || targetBranchIndex < 0) {
+        return QStringLiteral("未対応");
+    }
+
+    static const QStringList phases{
+        QStringLiteral("長生"),
+        QStringLiteral("沐浴"),
+        QStringLiteral("冠帯"),
+        QStringLiteral("建禄"),
+        QStringLiteral("帝旺"),
+        QStringLiteral("衰"),
+        QStringLiteral("病"),
+        QStringLiteral("死"),
+        QStringLiteral("墓"),
+        QStringLiteral("絶"),
+        QStringLiteral("胎"),
+        QStringLiteral("養")
+    };
+    static const int startingBranchIndexes[]{
+        11, 6, 2, 9, 2, 9, 5, 0, 8, 3
+    };
+
+    // 一般四柱推命の共通基盤として、各日干の長生起点から十二運を求める。
+    const int startingBranchIndex = startingBranchIndexes[dayStemIndex];
+    const int phaseIndex = isYangStem(dayStemIndex)
+        ? positiveModulo(targetBranchIndex - startingBranchIndex, 12)
+        : positiveModulo(startingBranchIndex - targetBranchIndex, 12);
+    return phases.at(phaseIndex);
+}
+
+QString tenGodForFortunePillar(const QString &dayPillar, const QString &targetPillar)
+{
+    return tenGodName(
+        heavenlyStemIndex(dayPillar),
+        heavenlyStemIndex(targetPillar)
+    );
+}
+
+QString twelvePhaseForFortunePillar(const QString &dayPillar, const QString &targetPillar)
+{
+    return twelvePhaseName(
+        heavenlyStemIndex(dayPillar),
+        earthlyBranchIndex(targetPillar)
+    );
+}
+
 int firstHourStemIndexForDayStem(int dayStemIndex)
 {
     switch (dayStemIndex) {
@@ -574,6 +622,7 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
     const QVariantList majorFortunes = calculateMajorFortunes(
         birthInfo,
         monthResolution.monthPillar,
+        dayPillar,
         majorFortuneDirection,
         solarTermDifferencePreparation,
         &majorFortunesStatusMessage
@@ -581,6 +630,7 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
     QString annualFortunesStatusMessage;
     const QVariantList annualFortunes = calculateAnnualFortunes(
         birthInfo,
+        dayPillar,
         &annualFortunesStatusMessage
     );
     const QString description = buildDescription(
@@ -1189,6 +1239,7 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
 QVariantList ChartCalculator::calculateMajorFortunes(
     const BirthInfo &birthInfo,
     const QString &monthPillar,
+    const QString &dayPillar,
     const QVariantMap &majorFortuneDirection,
     const QVariantMap &solarTermDifferencePreparation,
     QString *statusMessage
@@ -1206,6 +1257,8 @@ QVariantList ChartCalculator::calculateMajorFortunes(
                 {QStringLiteral("endAge"), -1},
                 {QStringLiteral("label"), QStringLiteral("未対応")},
                 {QStringLiteral("pillar"), QStringLiteral("未対応")},
+                {QStringLiteral("tenGod"), QStringLiteral("未対応")},
+                {QStringLiteral("twelvePhase"), QStringLiteral("未対応")},
                 {QStringLiteral("note"), QStringLiteral("月柱を取得できないため、大運表示骨格を生成できません。")}
             }
         };
@@ -1239,6 +1292,8 @@ QVariantList ChartCalculator::calculateMajorFortunes(
                 {QStringLiteral("endAge"), -1},
                 {QStringLiteral("label"), QStringLiteral("未対応")},
                 {QStringLiteral("pillar"), QStringLiteral("未対応")},
+                {QStringLiteral("tenGod"), QStringLiteral("未対応")},
+                {QStringLiteral("twelvePhase"), QStringLiteral("未対応")},
                 {QStringLiteral("note"), QStringLiteral("生年月日を取得できないため、起運年齢の参考値を生成できません。")}
             }
         };
@@ -1248,26 +1303,36 @@ QVariantList ChartCalculator::calculateMajorFortunes(
     for (int index = 0; index < 8; ++index) {
         const int rangeStartAge = startAge + index * 10;
         const int endAge = rangeStartAge + 9;
+        const QString fortunePillar = pillarAtOffset(monthPillar, index);
+        const QString fortuneTenGod = tenGodForFortunePillar(dayPillar, fortunePillar);
+        const QString fortuneTwelvePhase = twelvePhaseForFortunePillar(dayPillar, fortunePillar);
+        const QString traitsNote = (fortuneTenGod == QStringLiteral("未対応")
+                || fortuneTwelvePhase == QStringLiteral("未対応"))
+            ? QStringLiteral(" 通変星と十二運は日干または行運干支を取得できないため未対応です。")
+            : QStringLiteral(" 通変星と十二運は日干基準の最小本実装です。");
         fortunes.append(QVariantMap{
             {QStringLiteral("index"), index + 1},
             {QStringLiteral("startAge"), rangeStartAge},
             {QStringLiteral("endAge"), endAge},
             {QStringLiteral("label"), QStringLiteral("%1〜%2歳").arg(rangeStartAge).arg(endAge)},
-            {QStringLiteral("pillar"), pillarAtOffset(monthPillar, index)},
+            {QStringLiteral("pillar"), fortunePillar},
+            {QStringLiteral("tenGod"), fortuneTenGod},
+            {QStringLiteral("twelvePhase"), fortuneTwelvePhase},
             {QStringLiteral("note"), QStringLiteral(
-                "起運年齢は %1 順逆は %2 を参照していますが、大運干支の順逆反映は未実装です。"
+                "起運年齢は %1 順逆は %2 を参照していますが、大運干支の順逆反映は未実装です。%3"
             ).arg(
                 startAgeBasisNote,
                 majorFortuneDirection.value(QStringLiteral("direction")).toString().isEmpty()
                     ? QStringLiteral("未対応")
-                    : majorFortuneDirection.value(QStringLiteral("direction")).toString()
+                    : majorFortuneDirection.value(QStringLiteral("direction")).toString(),
+                traitsNote
             )}
         });
     }
 
     if (statusMessage) {
         *statusMessage = QStringLiteral(
-            "月柱起点で並べた大運表示の仮骨格です。起運年齢は節入り差ベースの参考実計算で、%1"
+            "月柱起点で並べた大運表示の仮骨格です。起運年齢は節入り差ベースの参考実計算で、%1 通変星と十二運は日干基準の最小本実装です。"
         ).arg(statusMessageSuffix);
     }
 
@@ -1276,6 +1341,7 @@ QVariantList ChartCalculator::calculateMajorFortunes(
 
 QVariantList ChartCalculator::calculateAnnualFortunes(
     const BirthInfo &birthInfo,
+    const QString &dayPillar,
     QString *statusMessage
 ) const
 {
@@ -1289,6 +1355,8 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
             QVariantMap{
                 {QStringLiteral("year"), 0},
                 {QStringLiteral("pillar"), QStringLiteral("未対応")},
+                {QStringLiteral("tenGod"), QStringLiteral("未対応")},
+                {QStringLiteral("twelvePhase"), QStringLiteral("未対応")},
                 {QStringLiteral("note"), QStringLiteral("生年月日を取得できないため、流年表示骨格を生成できません。")}
             }
         };
@@ -1298,16 +1366,29 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
     const int startYear = birthDate.year();
     for (int offset = 0; offset < 12; ++offset) {
         const int year = startYear + offset;
+        const QString pillar = heavenlyStemAt(positiveModulo(year - 1984, 60) % 10)
+            + earthlyBranchAt(positiveModulo(year - 1984, 60) % 12);
+        const QString fortuneTenGod = tenGodForFortunePillar(dayPillar, pillar);
+        const QString fortuneTwelvePhase = twelvePhaseForFortunePillar(dayPillar, pillar);
+        const QString traitsNote = (fortuneTenGod == QStringLiteral("未対応")
+                || fortuneTwelvePhase == QStringLiteral("未対応"))
+            ? QStringLiteral(" 通変星と十二運は日干または行運干支を取得できないため未対応です。")
+            : QStringLiteral(" 通変星と十二運は日干基準の最小本実装です。");
         fortunes.append(QVariantMap{
             {QStringLiteral("year"), year},
-            {QStringLiteral("pillar"), heavenlyStemAt(positiveModulo(year - 1984, 60) % 10)
-                                           + earthlyBranchAt(positiveModulo(year - 1984, 60) % 12)},
-            {QStringLiteral("note"), QStringLiteral("流年解釈は未実装のため、西暦年から求めた干支の参考表示です。")}
+            {QStringLiteral("pillar"), pillar},
+            {QStringLiteral("tenGod"), fortuneTenGod},
+            {QStringLiteral("twelvePhase"), fortuneTwelvePhase},
+            {QStringLiteral("note"), QStringLiteral(
+                "流年解釈は未実装のため、西暦年から求めた干支の参考表示です。%1"
+            ).arg(traitsNote)}
         });
     }
 
     if (statusMessage) {
-        *statusMessage = QStringLiteral("出生年から 12 年分を並べた流年表示の仮骨格です。流年解釈は未実装です。");
+        *statusMessage = QStringLiteral(
+            "出生年から 12 年分を並べた流年表示の仮骨格です。流年解釈は未実装ですが、通変星と十二運は日干基準の最小本実装です。"
+        );
     }
 
     return fortunes;

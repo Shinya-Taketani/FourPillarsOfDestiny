@@ -40,6 +40,16 @@ Kirigami.Page {
         detailText: "",
         cautionText: ""
     })
+    property int currentYear: (new Date()).getFullYear()
+    property int birthYearFromAnnualFortunes: {
+        if (!chartResult.annualFortunes || chartResult.annualFortunes.length === undefined || chartResult.annualFortunes.length === 0) {
+            return -1
+        }
+
+        const firstYear = chartResult.annualFortunes[0].year
+        return firstYear === undefined || firstYear === null ? -1 : firstYear
+    }
+    property int currentAgeForFortunes: birthYearFromAnnualFortunes >= 0 ? currentYear - birthYearFromAnnualFortunes : -1
     property string saveMessage: ""
     property string exportMessage: ""
 
@@ -434,18 +444,91 @@ Kirigami.Page {
                         text: "開始年齢帯は、節入り差と順逆実判定を使った参考実計算です。大運干支の順逆反映は未実装です。"
                     }
 
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: currentAgeForFortunes >= 0
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "現在の目安: " + currentYear + "年 / " + currentAgeForFortunes + "歳前後"
+                    }
+
                     Repeater {
                         model: chartResult.majorFortunes ? chartResult.majorFortunes : []
 
-                        delegate: Label {
+                        delegate: Rectangle {
                             required property var modelData
+                            property bool isCurrentMajorFortune: currentAgeForFortunes >= 0
+                                && modelData.startAge !== undefined
+                                && modelData.startAge !== null
+                                && modelData.endAge !== undefined
+                                && modelData.endAge !== null
+                                && currentAgeForFortunes >= modelData.startAge
+                                && currentAgeForFortunes <= modelData.endAge
                             width: parent.width
-                            wrapMode: Text.WordWrap
-                            text: (modelData.label ? modelData.label : "未対応")
-                                  + " / "
-                                  + (modelData.pillar ? modelData.pillar : "未対応")
-                                  + " / "
-                                  + (modelData.note ? modelData.note : "")
+                            radius: 6
+                            color: isCurrentMajorFortune ? Kirigami.Theme.highlightColor : Kirigami.Theme.alternateBackgroundColor
+                            border.width: isCurrentMajorFortune ? 2 : 0
+                            border.color: Kirigami.Theme.highlightColor
+                            implicitHeight: majorFortuneColumn.implicitHeight + 16
+
+                            Column {
+                                id: majorFortuneColumn
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                spacing: 4
+
+                                Row {
+                                    width: parent.width
+                                    spacing: 8
+
+                                    Label {
+                                        text: (modelData.label ? modelData.label : "未対応")
+                                        font.bold: true
+                                        color: isCurrentMajorFortune
+                                            ? Kirigami.Theme.highlightedTextColor
+                                            : Kirigami.Theme.textColor
+                                    }
+
+                                    Label {
+                                        visible: isCurrentMajorFortune
+                                        text: "現在"
+                                        font.bold: true
+                                        color: isCurrentMajorFortune
+                                            ? Kirigami.Theme.highlightedTextColor
+                                            : Kirigami.Theme.highlightColor
+                                    }
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                    text: "大運: " + (modelData.pillar ? modelData.pillar : "未対応")
+                                    color: isCurrentMajorFortune
+                                        ? Kirigami.Theme.highlightedTextColor
+                                        : Kirigami.Theme.textColor
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                    text: "通変星: "
+                                          + (modelData.tenGod ? modelData.tenGod : "未対応")
+                                          + " / 十二運: "
+                                          + (modelData.twelvePhase ? modelData.twelvePhase : "未対応")
+                                    color: isCurrentMajorFortune
+                                        ? Kirigami.Theme.highlightedTextColor
+                                        : Kirigami.Theme.textColor
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                    text: modelData.note ? modelData.note : ""
+                                    color: isCurrentMajorFortune
+                                        ? Kirigami.Theme.highlightedTextColor
+                                        : Kirigami.Theme.disabledTextColor
+                                }
+                            }
                         }
                     }
 
@@ -463,18 +546,84 @@ Kirigami.Page {
                         font.bold: true
                     }
 
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        color: Kirigami.Theme.disabledTextColor
+                        text: "現在年 " + currentYear + " に一致する流年を強調表示しています。"
+                    }
+
                     Repeater {
                         model: chartResult.annualFortunes ? chartResult.annualFortunes : []
 
-                        delegate: Label {
+                        delegate: Rectangle {
                             required property var modelData
+                            property bool isCurrentAnnualFortune: modelData.year === currentYear
                             width: parent.width
-                            wrapMode: Text.WordWrap
-                            text: (modelData.year ? modelData.year + "年" : "未対応")
-                                  + " / "
-                                  + (modelData.pillar ? modelData.pillar : "未対応")
-                                  + " / "
-                                  + (modelData.note ? modelData.note : "")
+                            radius: 6
+                            color: isCurrentAnnualFortune ? Kirigami.Theme.highlightColor : Kirigami.Theme.alternateBackgroundColor
+                            border.width: isCurrentAnnualFortune ? 2 : 0
+                            border.color: Kirigami.Theme.highlightColor
+                            implicitHeight: annualFortuneColumn.implicitHeight + 16
+
+                            Column {
+                                id: annualFortuneColumn
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                spacing: 4
+
+                                Row {
+                                    width: parent.width
+                                    spacing: 8
+
+                                    Label {
+                                        text: modelData.year ? modelData.year + "年" : "未対応"
+                                        font.bold: true
+                                        color: isCurrentAnnualFortune
+                                            ? Kirigami.Theme.highlightedTextColor
+                                            : Kirigami.Theme.textColor
+                                    }
+
+                                    Label {
+                                        visible: isCurrentAnnualFortune
+                                        text: "現在"
+                                        font.bold: true
+                                        color: isCurrentAnnualFortune
+                                            ? Kirigami.Theme.highlightedTextColor
+                                            : Kirigami.Theme.highlightColor
+                                    }
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                    text: "流年: " + (modelData.pillar ? modelData.pillar : "未対応")
+                                    color: isCurrentAnnualFortune
+                                        ? Kirigami.Theme.highlightedTextColor
+                                        : Kirigami.Theme.textColor
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                    text: "通変星: "
+                                          + (modelData.tenGod ? modelData.tenGod : "未対応")
+                                          + " / 十二運: "
+                                          + (modelData.twelvePhase ? modelData.twelvePhase : "未対応")
+                                    color: isCurrentAnnualFortune
+                                        ? Kirigami.Theme.highlightedTextColor
+                                        : Kirigami.Theme.textColor
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                    text: modelData.note ? modelData.note : ""
+                                    color: isCurrentAnnualFortune
+                                        ? Kirigami.Theme.highlightedTextColor
+                                        : Kirigami.Theme.disabledTextColor
+                                }
+                            }
                         }
                     }
 
