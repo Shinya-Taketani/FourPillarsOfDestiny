@@ -509,12 +509,25 @@ void CoreTests::chartCalculatorCalculatesUsefulGodCandidatesForSupportedSampleYe
 
     const ChartResult result = calculator.calculate(birthInfo);
     const QStringList candidates = result.usefulGodCandidates.value(QStringLiteral("candidates")).toStringList();
+    const QVariantList rankedElements = result.usefulGodCandidates.value(QStringLiteral("rankedElements")).toList();
 
     QCOMPARE(candidates.size(), 3);
     QCOMPARE(candidates.first(), QStringLiteral("水"));
+    QCOMPARE(result.usefulGodCandidates.value(QStringLiteral("balanceState")).toString(), QStringLiteral("strong"));
+    QCOMPARE(result.usefulGodCandidates.value(QStringLiteral("referenceScore")).toInt(), 4);
+    QVERIFY(result.usefulGodCandidates.value(QStringLiteral("strengthPriority")).canConvert<QStringList>());
+    QVERIFY(result.usefulGodCandidates.value(QStringLiteral("climatePriority")).canConvert<QStringList>());
+    QVERIFY(result.usefulGodCandidates.value(QStringLiteral("shortagePriority")).canConvert<QStringList>());
+    QVERIFY(!result.usefulGodCandidates.value(QStringLiteral("strengthPriority")).toStringList().isEmpty());
+    QVERIFY(!result.usefulGodCandidates.value(QStringLiteral("climatePriority")).toStringList().isEmpty());
+    QVERIFY(!result.usefulGodCandidates.value(QStringLiteral("shortagePriority")).toStringList().isEmpty());
+    QCOMPARE(rankedElements.size(), 5);
+    QCOMPARE(rankedElements.at(0).toMap().value(QStringLiteral("element")).toString(), QStringLiteral("水"));
     QVERIFY(result.usefulGodCandidates.value(QStringLiteral("reason")).toString().contains(QStringLiteral("五行分布")));
+    QVERIFY(result.usefulGodCandidates.value(QStringLiteral("reason")).toString().contains(QStringLiteral("balanceState")));
     QVERIFY(result.usefulGodCandidates.value(QStringLiteral("note")).toString().contains(QStringLiteral("断定")));
     QVERIFY(result.usefulGodCandidatesStatusMessage.contains(QStringLiteral("暫定候補")));
+    QVERIFY(result.usefulGodCandidatesStatusMessage.contains(QStringLiteral("構造化情報")));
 }
 
 void CoreTests::chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear()
@@ -1387,7 +1400,17 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
         {
             {QStringLiteral("candidates"), QStringList{QStringLiteral("水"), QStringLiteral("金"), QStringLiteral("木")}},
             {QStringLiteral("reason"), QStringLiteral("暫定候補理由です。")},
-            {QStringLiteral("note"), QStringLiteral("断定しない参考候補です。")}
+            {QStringLiteral("note"), QStringLiteral("断定しない参考候補です。")},
+            {QStringLiteral("balanceState"), QStringLiteral("strong")},
+            {QStringLiteral("referenceScore"), 4},
+            {QStringLiteral("strengthPriority"), QStringList{QStringLiteral("水"), QStringLiteral("火")}},
+            {QStringLiteral("climatePriority"), QStringList{QStringLiteral("水"), QStringLiteral("火"), QStringLiteral("土")}},
+            {QStringLiteral("shortagePriority"), QStringList{QStringLiteral("水"), QStringLiteral("金"), QStringLiteral("木"), QStringLiteral("火")}},
+            {QStringLiteral("rankedElements"), QVariantList{
+                QVariantMap{{QStringLiteral("element"), QStringLiteral("水")}, {QStringLiteral("score"), 10}},
+                QVariantMap{{QStringLiteral("element"), QStringLiteral("金")}, {QStringLiteral("score"), 4}},
+                QVariantMap{{QStringLiteral("element"), QStringLiteral("木")}, {QStringLiteral("score"), 3}}
+            }}
         },
         QStringLiteral("用神候補の暫定表示です。"),
         {
@@ -1530,6 +1553,26 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("usefulGodCandidates")).toMap().value(QStringLiteral("candidates")).toStringList(),
         expectedUsefulGodCandidates
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("usefulGodCandidates")).toMap().value(QStringLiteral("balanceState")).toString(),
+        QStringLiteral("strong")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("usefulGodCandidates")).toMap().value(QStringLiteral("referenceScore")).toInt(),
+        4
+    );
+    QVERIFY(
+        resultMap.value(QStringLiteral("usefulGodCandidates")).toMap().contains(QStringLiteral("strengthPriority"))
+    );
+    QVERIFY(
+        resultMap.value(QStringLiteral("usefulGodCandidates")).toMap().contains(QStringLiteral("climatePriority"))
+    );
+    QVERIFY(
+        resultMap.value(QStringLiteral("usefulGodCandidates")).toMap().contains(QStringLiteral("shortagePriority"))
+    );
+    QVERIFY(
+        resultMap.value(QStringLiteral("usefulGodCandidates")).toMap().contains(QStringLiteral("rankedElements"))
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("usefulGodCandidatesStatusMessage")).toString(),
@@ -1924,7 +1967,17 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
             {
                 {QStringLiteral("candidates"), QStringList{QStringLiteral("火"), QStringLiteral("木"), QStringLiteral("土")}},
                 {QStringLiteral("reason"), QStringLiteral("保存確認用の用神候補理由です。")},
-                {QStringLiteral("note"), QStringLiteral("保存確認用の暫定候補注記です。")}
+                {QStringLiteral("note"), QStringLiteral("保存確認用の暫定候補注記です。")},
+                {QStringLiteral("balanceState"), QStringLiteral("neutral")},
+                {QStringLiteral("referenceScore"), 0},
+                {QStringLiteral("strengthPriority"), QStringList{}},
+                {QStringLiteral("climatePriority"), QStringList{QStringLiteral("火"), QStringLiteral("水")}},
+                {QStringLiteral("shortagePriority"), QStringList{QStringLiteral("火"), QStringLiteral("木"), QStringLiteral("土")}},
+                {QStringLiteral("rankedElements"), QVariantList{
+                    QVariantMap{{QStringLiteral("element"), QStringLiteral("火")}, {QStringLiteral("score"), 7}},
+                    QVariantMap{{QStringLiteral("element"), QStringLiteral("木")}, {QStringLiteral("score"), 6}},
+                    QVariantMap{{QStringLiteral("element"), QStringLiteral("土")}, {QStringLiteral("score"), 5}}
+                }}
             },
             QStringLiteral("用神候補の保存確認用データです。"),
             {
@@ -2083,6 +2136,26 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.usefulGodCandidates.value(QStringLiteral("candidates")).toStringList(),
         expectedUsefulGodCandidates
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.usefulGodCandidates.value(QStringLiteral("balanceState")).toString(),
+        QStringLiteral("neutral")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.usefulGodCandidates.value(QStringLiteral("referenceScore")).toInt(),
+        0
+    );
+    QVERIFY(
+        loadedRecord.chartResult.usefulGodCandidates.contains(QStringLiteral("strengthPriority"))
+    );
+    QVERIFY(
+        loadedRecord.chartResult.usefulGodCandidates.contains(QStringLiteral("climatePriority"))
+    );
+    QVERIFY(
+        loadedRecord.chartResult.usefulGodCandidates.contains(QStringLiteral("shortagePriority"))
+    );
+    QVERIFY(
+        loadedRecord.chartResult.usefulGodCandidates.contains(QStringLiteral("rankedElements"))
     );
     QCOMPARE(
         loadedRecord.chartResult.usefulGodCandidatesStatusMessage,

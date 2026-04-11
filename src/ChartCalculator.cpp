@@ -1348,12 +1348,19 @@ QVariantMap ChartCalculator::calculateUsefulGodCandidates(
 {
     const int dayStemIndex = heavenlyStemIndex(dayPillar);
     const QString seasonalSuitability = seasonalEvaluation.value(QStringLiteral("suitability")).toString();
-    const QString strengthLabel = strengthEvaluation.value(QStringLiteral("label")).toString();
     const QString temperature = climateEvaluation.value(QStringLiteral("temperature")).toString();
     const QString moisture = climateEvaluation.value(QStringLiteral("moisture")).toString();
+    const QString balanceState = strengthEvaluation.value(QStringLiteral("balanceState")).toString();
+    const int referenceScore = strengthEvaluation.value(QStringLiteral("finalScore")).toInt();
+    const int selfCount = strengthEvaluation.value(QStringLiteral("selfCount")).toInt();
+    const int supportiveCount = strengthEvaluation.value(QStringLiteral("supportiveCount")).toInt();
+    const int drainingCount = strengthEvaluation.value(QStringLiteral("drainingCount")).toInt();
+    const int controllingCount = strengthEvaluation.value(QStringLiteral("controllingCount")).toInt();
+    const int seasonalAdjustment = strengthEvaluation.value(QStringLiteral("seasonalAdjustment")).toInt();
 
     if (dayStemIndex < 0 || seasonalSuitability == QStringLiteral("未対応")
-        || temperature == QStringLiteral("未対応") || moisture == QStringLiteral("未対応")) {
+        || temperature == QStringLiteral("未対応") || moisture == QStringLiteral("未対応")
+        || balanceState == QStringLiteral("unknown")) {
         if (statusMessage) {
             *statusMessage = QStringLiteral("月柱または日干の情報不足のため、用神候補は未対応です。");
         }
@@ -1361,7 +1368,13 @@ QVariantMap ChartCalculator::calculateUsefulGodCandidates(
         return {
             {QStringLiteral("candidates"), QStringList{QStringLiteral("未対応")}},
             {QStringLiteral("reason"), QStringLiteral("季節評価または寒暖・乾湿評価を十分に取得できません。")},
-            {QStringLiteral("note"), QStringLiteral("暫定候補を算出できません。")}
+            {QStringLiteral("note"), QStringLiteral("暫定候補を算出できません。")},
+            {QStringLiteral("balanceState"), QStringLiteral("unknown")},
+            {QStringLiteral("referenceScore"), 0},
+            {QStringLiteral("strengthPriority"), QStringList{}},
+            {QStringLiteral("climatePriority"), QStringList{}},
+            {QStringLiteral("shortagePriority"), QStringList{}},
+            {QStringLiteral("rankedElements"), QVariantList{}}
         };
     }
 
@@ -1379,67 +1392,120 @@ QVariantMap ChartCalculator::calculateUsefulGodCandidates(
         {FiveElement::Water, 0}
     };
 
+    auto addScore = [&candidateScores](FiveElement element, int points) {
+        for (CandidateScore &candidate : candidateScores) {
+            if (candidate.element == element) {
+                candidate.score += points;
+                return;
+            }
+        }
+    };
+    auto appendPriority = [](QStringList *list, FiveElement element) {
+        const QString name = fiveElementDisplayName(element);
+        if (!list->contains(name)) {
+            list->append(name);
+        }
+    };
+
     const int woodCount = fiveElements.value(QStringLiteral("wood")).toInt();
     const int fireCount = fiveElements.value(QStringLiteral("fire")).toInt();
     const int earthCount = fiveElements.value(QStringLiteral("earth")).toInt();
     const int metalCount = fiveElements.value(QStringLiteral("metal")).toInt();
     const int waterCount = fiveElements.value(QStringLiteral("water")).toInt();
     const int maxCount = std::max({woodCount, fireCount, earthCount, metalCount, waterCount});
-
-    for (CandidateScore &candidate : candidateScores) {
-        const int count = fiveElements.value(fiveElementKey(candidate.element)).toInt();
-        candidate.score += maxCount - count;
-    }
-
-    QStringList reasons;
-    reasons << QStringLiteral("五行分布の不足傾向を基準にしています。");
-
-    if (temperature == QStringLiteral("寒")) {
-        candidateScores[static_cast<int>(FiveElement::Fire)].score += 3;
-        candidateScores[static_cast<int>(FiveElement::Wood)].score += 1;
-        reasons << QStringLiteral("寒さを和らげる方向として火を上げています。");
-    } else if (temperature == QStringLiteral("涼")) {
-        candidateScores[static_cast<int>(FiveElement::Fire)].score += 2;
-        reasons << QStringLiteral("涼寄りのため火をやや上げています。");
-    } else if (temperature == QStringLiteral("暖")) {
-        candidateScores[static_cast<int>(FiveElement::Water)].score += 2;
-        reasons << QStringLiteral("暖寄りのため水をやや上げています。");
-    } else if (temperature == QStringLiteral("熱")) {
-        candidateScores[static_cast<int>(FiveElement::Water)].score += 3;
-        reasons << QStringLiteral("熱を冷ます方向として水を上げています。");
-    }
-
-    if (moisture == QStringLiteral("乾")) {
-        candidateScores[static_cast<int>(FiveElement::Water)].score += 3;
-        reasons << QStringLiteral("乾きが強いため水を上げています。");
-    } else if (moisture == QStringLiteral("やや乾")) {
-        candidateScores[static_cast<int>(FiveElement::Water)].score += 2;
-        reasons << QStringLiteral("やや乾き寄りのため水をやや上げています。");
-    } else if (moisture == QStringLiteral("湿")) {
-        candidateScores[static_cast<int>(FiveElement::Fire)].score += 2;
-        candidateScores[static_cast<int>(FiveElement::Earth)].score += 2;
-        reasons << QStringLiteral("湿りを動かす方向として火と土を上げています。");
-    } else if (moisture == QStringLiteral("やや湿")) {
-        candidateScores[static_cast<int>(FiveElement::Fire)].score += 1;
-        candidateScores[static_cast<int>(FiveElement::Earth)].score += 1;
-        reasons << QStringLiteral("やや湿り寄りのため火と土を補助候補にしています。");
-    }
-
     const FiveElement dayElement = fiveElementForStem(dayStemIndex);
     const FiveElement supportiveElement = generatingElementFor(dayElement);
     const FiveElement drainingElement = generatedElementFrom(dayElement);
     const FiveElement controllingElement = controllingElementFor(dayElement);
 
-    if (strengthLabel == QStringLiteral("やや弱め")) {
-        candidateScores[static_cast<int>(dayElement)].score += 2;
-        candidateScores[static_cast<int>(supportiveElement)].score += 2;
-        reasons << QStringLiteral("やや弱め判定のため日干を助ける側を上げています。");
-    } else if (strengthLabel == QStringLiteral("やや強め")) {
-        candidateScores[static_cast<int>(drainingElement)].score += 2;
-        candidateScores[static_cast<int>(controllingElement)].score += 2;
-        reasons << QStringLiteral("やや強め判定のため洩らす側と抑える側を上げています。");
+    QStringList reasons;
+    QStringList shortagePriority;
+    QStringList climatePriority;
+    QStringList strengthPriority;
+
+    for (CandidateScore &candidate : candidateScores) {
+        const int count = fiveElements.value(fiveElementKey(candidate.element)).toInt();
+        const int shortageGap = maxCount - count;
+        candidate.score += shortageGap;
+        if (shortageGap > 0) {
+            appendPriority(&shortagePriority, candidate.element);
+        }
+    }
+
+    reasons << QStringLiteral("五行分布の不足傾向を基準にしています。");
+    reasons << QStringLiteral(
+        "強弱参照値として finalScore %1、同五行 %2、生扶 %3、泄耗 %4、剋 %5、季節補正 %6 を参照しています。"
+    ).arg(referenceScore).arg(selfCount).arg(supportiveCount).arg(drainingCount).arg(controllingCount).arg(seasonalAdjustment);
+
+    if (temperature == QStringLiteral("寒")) {
+        addScore(FiveElement::Fire, 3);
+        addScore(FiveElement::Wood, 1);
+        appendPriority(&climatePriority, FiveElement::Fire);
+        appendPriority(&climatePriority, FiveElement::Wood);
+        reasons << QStringLiteral("寒さを和らげる方向として火を上げています。");
+    } else if (temperature == QStringLiteral("涼")) {
+        addScore(FiveElement::Fire, 2);
+        appendPriority(&climatePriority, FiveElement::Fire);
+        reasons << QStringLiteral("涼寄りのため火をやや上げています。");
+    } else if (temperature == QStringLiteral("暖")) {
+        addScore(FiveElement::Water, 2);
+        appendPriority(&climatePriority, FiveElement::Water);
+        reasons << QStringLiteral("暖寄りのため水をやや上げています。");
+    } else if (temperature == QStringLiteral("熱")) {
+        addScore(FiveElement::Water, 3);
+        appendPriority(&climatePriority, FiveElement::Water);
+        reasons << QStringLiteral("熱を冷ます方向として水を上げています。");
+    }
+
+    if (moisture == QStringLiteral("乾")) {
+        addScore(FiveElement::Water, 3);
+        appendPriority(&climatePriority, FiveElement::Water);
+        reasons << QStringLiteral("乾きが強いため水を上げています。");
+    } else if (moisture == QStringLiteral("やや乾")) {
+        addScore(FiveElement::Water, 2);
+        appendPriority(&climatePriority, FiveElement::Water);
+        reasons << QStringLiteral("やや乾き寄りのため水をやや上げています。");
+    } else if (moisture == QStringLiteral("湿")) {
+        addScore(FiveElement::Fire, 2);
+        addScore(FiveElement::Earth, 2);
+        appendPriority(&climatePriority, FiveElement::Fire);
+        appendPriority(&climatePriority, FiveElement::Earth);
+        reasons << QStringLiteral("湿りを動かす方向として火と土を上げています。");
+    } else if (moisture == QStringLiteral("やや湿")) {
+        addScore(FiveElement::Fire, 1);
+        addScore(FiveElement::Earth, 1);
+        appendPriority(&climatePriority, FiveElement::Fire);
+        appendPriority(&climatePriority, FiveElement::Earth);
+        reasons << QStringLiteral("やや湿り寄りのため火と土を補助候補にしています。");
+    }
+
+    if (balanceState == QStringLiteral("weak")) {
+        const int basePriority = referenceScore <= -4 ? 3 : 2;
+        addScore(dayElement, basePriority);
+        addScore(supportiveElement, basePriority);
+        appendPriority(&strengthPriority, dayElement);
+        appendPriority(&strengthPriority, supportiveElement);
+        if (seasonalAdjustment < 0) {
+            addScore(supportiveElement, 1);
+            reasons << QStringLiteral("季節補正が不利側のため、生扶五行を追加で補強しています。");
+        }
+        reasons << QStringLiteral("balanceState が weak のため、日干を助ける側と同類側を優先しています。");
+    } else if (balanceState == QStringLiteral("strong")) {
+        const int leakingPriority = referenceScore >= 4 ? 3 : 2;
+        const int controllingPriority = referenceScore >= 5 && seasonalAdjustment > 0 ? 1 : 0;
+        addScore(drainingElement, leakingPriority);
+        appendPriority(&strengthPriority, drainingElement);
+        appendPriority(&strengthPriority, controllingElement);
+        if (controllingPriority > 0) {
+            addScore(controllingElement, controllingPriority);
+        }
+        if (seasonalAdjustment > 0) {
+            addScore(drainingElement, 1);
+            reasons << QStringLiteral("季節補正が日干を後押しするため、洩らす側を追加で上げています。");
+        }
+        reasons << QStringLiteral("balanceState が strong のため、日干を洩らす側と抑える側を優先しています。");
     } else {
-        reasons << QStringLiteral("強弱は中立寄りとして極端な補正を避けています。");
+        reasons << QStringLiteral("balanceState が neutral のため、強弱による極端な補正は避けています。");
     }
 
     std::sort(std::begin(candidateScores), std::end(candidateScores), [](const CandidateScore &left, const CandidateScore &right) {
@@ -1454,14 +1520,28 @@ QVariantMap ChartCalculator::calculateUsefulGodCandidates(
         candidates << fiveElementDisplayName(candidateScores[index].element);
     }
 
+    QVariantList rankedElements;
+    for (const CandidateScore &candidate : candidateScores) {
+        rankedElements.append(QVariantMap{
+            {QStringLiteral("element"), fiveElementDisplayName(candidate.element)},
+            {QStringLiteral("score"), candidate.score}
+        });
+    }
+
     if (statusMessage) {
-        *statusMessage = QStringLiteral("五行分布・季節・寒暖乾湿・暫定強弱から作った断定しない暫定候補です。");
+        *statusMessage = QStringLiteral("五行分布・季節・寒暖乾湿に加えて、strengthEvaluation の構造化情報を参照した断定しない暫定候補です。");
     }
 
     return {
         {QStringLiteral("candidates"), candidates},
         {QStringLiteral("reason"), reasons.join(QStringLiteral(" "))},
-        {QStringLiteral("note"), QStringLiteral("用神を断定せず、補いたい方向の参考候補を表示しています。")}
+        {QStringLiteral("note"), QStringLiteral("用神を断定せず、補いたい方向の暫定候補を参考表示しています。")},
+        {QStringLiteral("balanceState"), balanceState},
+        {QStringLiteral("referenceScore"), referenceScore},
+        {QStringLiteral("strengthPriority"), strengthPriority},
+        {QStringLiteral("climatePriority"), climatePriority},
+        {QStringLiteral("shortagePriority"), shortagePriority},
+        {QStringLiteral("rankedElements"), rankedElements}
     };
 }
 
