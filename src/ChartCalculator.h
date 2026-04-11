@@ -68,6 +68,7 @@ private:
         const QVariantMap &hiddenStems,
         const QVariantMap &fiveElements,
         const QVariantMap &strengthEvaluation,
+        const QVariantMap &usefulGodCandidates,
         QString *statusMessage
     ) const;
     QVariantList calculateMajorFortunes(

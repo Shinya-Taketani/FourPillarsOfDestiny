@@ -1,6 +1,7 @@
 #include <QtTest>
 
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTemporaryDir>
@@ -17,12 +18,24 @@
 #include "SolarTermDataSource.h"
 #include "SolarTermResolver.h"
 
+namespace {
+
+QString verificationCasesFilePath()
+{
+    return QString::fromUtf8(FPOFD_SOURCE_DIR)
+        + QStringLiteral("/tests/data/verification_cases.json");
+}
+
+}
+
 class CoreTests : public QObject
 {
     Q_OBJECT
 
 private slots:
     void chartCalculatorReturnsNonEmptyResult();
+    void chartCalculatorMatchesVerificationCases_data();
+    void chartCalculatorMatchesVerificationCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
     void chartCalculatorReturnsStableResultForSameInput();
     void chartCalculatorHourPillarChangesWithBirthTime();
@@ -111,6 +124,80 @@ void CoreTests::chartCalculatorReturnsNonEmptyResult()
     QVERIFY(!result.dayPillar.isEmpty());
     QVERIFY(!result.hourPillar.isEmpty());
     QVERIFY(!result.description.isEmpty());
+}
+
+void CoreTests::chartCalculatorMatchesVerificationCases_data()
+{
+    QTest::addColumn<QString>("birthDate");
+    QTest::addColumn<QString>("birthTime");
+    QTest::addColumn<QString>("gender");
+    QTest::addColumn<QString>("expectedYearPillar");
+    QTest::addColumn<QString>("expectedMonthPillar");
+    QTest::addColumn<QString>("expectedDayPillar");
+    QTest::addColumn<QString>("expectedHourPillar");
+
+    QFile file(verificationCasesFilePath());
+    QVERIFY2(
+        file.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(QStringLiteral("検証用 JSON を開けません: %1").arg(file.fileName()))
+    );
+
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
+    QVERIFY2(
+        parseError.error == QJsonParseError::NoError,
+        qPrintable(QStringLiteral("検証用 JSON の解析に失敗しました: %1").arg(parseError.errorString()))
+    );
+    QVERIFY2(document.isObject(), "検証用 JSON のルートは object である必要があります。");
+
+    const QJsonArray cases = document.object().value(QStringLiteral("cases")).toArray();
+    QVERIFY2(!cases.isEmpty(), "検証用ケースが 1 件もありません。");
+
+    int enabledCaseCount = 0;
+    for (const QJsonValue &caseValue : cases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        if (!caseObject.value(QStringLiteral("enabledForRegression")).toBool(true)) {
+            continue;
+        }
+
+        const QJsonObject expected = caseObject.value(QStringLiteral("expected")).toObject();
+        const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
+        QVERIFY2(!caseId.isEmpty(), "caseId が空の検証ケースがあります。");
+
+        const QByteArray rowName = caseId.toUtf8();
+        QTest::addRow("%s", rowName.constData())
+            << caseObject.value(QStringLiteral("birthDate")).toString()
+            << caseObject.value(QStringLiteral("birthTime")).toString()
+            << caseObject.value(QStringLiteral("gender")).toString()
+            << expected.value(QStringLiteral("yearPillar")).toString()
+            << expected.value(QStringLiteral("monthPillar")).toString()
+            << expected.value(QStringLiteral("dayPillar")).toString()
+            << expected.value(QStringLiteral("hourPillar")).toString();
+        ++enabledCaseCount;
+    }
+
+    QVERIFY2(enabledCaseCount > 0, "回帰テスト対象の検証ケースが 1 件もありません。");
+}
+
+void CoreTests::chartCalculatorMatchesVerificationCases()
+{
+    QFETCH(QString, birthDate);
+    QFETCH(QString, birthTime);
+    QFETCH(QString, gender);
+    QFETCH(QString, expectedYearPillar);
+    QFETCH(QString, expectedMonthPillar);
+    QFETCH(QString, expectedDayPillar);
+    QFETCH(QString, expectedHourPillar);
+
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{birthDate, birthTime, gender};
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.yearPillar, expectedYearPillar);
+    QCOMPARE(result.monthPillar, expectedMonthPillar);
+    QCOMPARE(result.dayPillar, expectedDayPillar);
+    QCOMPARE(result.hourPillar, expectedHourPillar);
 }
 
 void CoreTests::chartCalculatorYearPillarChangesWithBirthYear()
@@ -541,12 +628,22 @@ void CoreTests::chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear
 
     const ChartResult result = calculator.calculate(birthInfo);
     const QStringList candidates = result.patternCandidates.value(QStringLiteral("candidates")).toStringList();
+    const QVariantList rankedPatterns = result.patternCandidates.value(QStringLiteral("rankedPatterns")).toList();
 
     QCOMPARE(candidates.size(), 3);
     QCOMPARE(candidates.at(0), QStringLiteral("印綬格"));
-    QCOMPARE(candidates.at(1), QStringLiteral("正財格"));
-    QCOMPARE(candidates.at(2), QStringLiteral("正官格"));
+    QVERIFY(candidates.contains(QStringLiteral("正財格")));
+    QVERIFY(candidates.contains(QStringLiteral("正官格")));
+    QCOMPARE(result.patternCandidates.value(QStringLiteral("primaryBasis")).toString(), QStringLiteral("month_tengod_centered"));
+    QCOMPARE(result.patternCandidates.value(QStringLiteral("monthTenGod")).toString(), QStringLiteral("印綬"));
+    QVERIFY(result.patternCandidates.value(QStringLiteral("monthHiddenStemTenGods")).canConvert<QStringList>());
+    QVERIFY(result.patternCandidates.value(QStringLiteral("strengthSupport")).toString().contains(QStringLiteral("balanceState")));
+    QVERIFY(result.patternCandidates.value(QStringLiteral("usefulGodSupport")).toString().contains(QStringLiteral("用神候補")));
+    QCOMPARE(rankedPatterns.size(), 3);
+    QCOMPARE(rankedPatterns.at(0).toMap().value(QStringLiteral("pattern")).toString(), QStringLiteral("印綬格"));
     QVERIFY(result.patternCandidates.value(QStringLiteral("reason")).toString().contains(QStringLiteral("月干通変星")));
+    QVERIFY(result.patternCandidates.value(QStringLiteral("reason")).toString().contains(QStringLiteral("用神候補")));
+    QVERIFY(result.patternCandidates.value(QStringLiteral("reason")).toString().contains(QStringLiteral("五行分布")));
     QVERIFY(result.patternCandidates.value(QStringLiteral("note")).toString().contains(QStringLiteral("断定")));
     QVERIFY(result.patternCandidatesStatusMessage.contains(QStringLiteral("暫定候補")));
 }
@@ -1416,7 +1513,17 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
         {
             {QStringLiteral("candidates"), QStringList{QStringLiteral("印綬格"), QStringLiteral("正財格"), QStringLiteral("正官格")}},
             {QStringLiteral("reason"), QStringLiteral("格局候補の暫定理由です。")},
-            {QStringLiteral("note"), QStringLiteral("断定しない格局候補です。")}
+            {QStringLiteral("note"), QStringLiteral("断定しない格局候補です。")},
+            {QStringLiteral("primaryBasis"), QStringLiteral("month_tengod_centered")},
+            {QStringLiteral("monthTenGod"), QStringLiteral("印綬")},
+            {QStringLiteral("monthHiddenStemTenGods"), QStringList{QStringLiteral("正財"), QStringLiteral("正官")}},
+            {QStringLiteral("strengthSupport"), QStringLiteral("保存確認用の強弱補助です。")},
+            {QStringLiteral("usefulGodSupport"), QStringLiteral("保存確認用の用神候補補助です。")},
+            {QStringLiteral("rankedPatterns"), QVariantList{
+                QVariantMap{{QStringLiteral("pattern"), QStringLiteral("印綬格")}, {QStringLiteral("score"), 10}},
+                QVariantMap{{QStringLiteral("pattern"), QStringLiteral("正財格")}, {QStringLiteral("score"), 7}},
+                QVariantMap{{QStringLiteral("pattern"), QStringLiteral("正官格")}, {QStringLiteral("score"), 6}}
+            }}
         },
         QStringLiteral("格局候補の暫定表示です。"),
         {
@@ -1581,6 +1688,26 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("patternCandidates")).toMap().value(QStringLiteral("candidates")).toStringList(),
         expectedPatternCandidates
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("patternCandidates")).toMap().value(QStringLiteral("primaryBasis")).toString(),
+        QStringLiteral("month_tengod_centered")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("patternCandidates")).toMap().value(QStringLiteral("monthTenGod")).toString(),
+        QStringLiteral("印綬")
+    );
+    QVERIFY(
+        resultMap.value(QStringLiteral("patternCandidates")).toMap().contains(QStringLiteral("monthHiddenStemTenGods"))
+    );
+    QVERIFY(
+        resultMap.value(QStringLiteral("patternCandidates")).toMap().contains(QStringLiteral("strengthSupport"))
+    );
+    QVERIFY(
+        resultMap.value(QStringLiteral("patternCandidates")).toMap().contains(QStringLiteral("usefulGodSupport"))
+    );
+    QVERIFY(
+        resultMap.value(QStringLiteral("patternCandidates")).toMap().contains(QStringLiteral("rankedPatterns"))
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("patternCandidatesStatusMessage")).toString(),
@@ -1983,7 +2110,17 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
             {
                 {QStringLiteral("candidates"), QStringList{QStringLiteral("偏財格"), QStringLiteral("食神格"), QStringLiteral("偏官格")}},
                 {QStringLiteral("reason"), QStringLiteral("保存確認用の格局候補理由です。")},
-                {QStringLiteral("note"), QStringLiteral("保存確認用の格局候補注記です。")}
+                {QStringLiteral("note"), QStringLiteral("保存確認用の格局候補注記です。")},
+                {QStringLiteral("primaryBasis"), QStringLiteral("month_tengod_centered")},
+                {QStringLiteral("monthTenGod"), QStringLiteral("偏財")},
+                {QStringLiteral("monthHiddenStemTenGods"), QStringList{QStringLiteral("食神"), QStringLiteral("偏官")}},
+                {QStringLiteral("strengthSupport"), QStringLiteral("保存確認用の強弱補助です。")},
+                {QStringLiteral("usefulGodSupport"), QStringLiteral("保存確認用の用神候補補助です。")},
+                {QStringLiteral("rankedPatterns"), QVariantList{
+                    QVariantMap{{QStringLiteral("pattern"), QStringLiteral("偏財格")}, {QStringLiteral("score"), 9}},
+                    QVariantMap{{QStringLiteral("pattern"), QStringLiteral("食神格")}, {QStringLiteral("score"), 7}},
+                    QVariantMap{{QStringLiteral("pattern"), QStringLiteral("偏官格")}, {QStringLiteral("score"), 5}}
+                }}
             },
             QStringLiteral("格局候補の保存確認用データです。"),
             {
@@ -2164,6 +2301,26 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.patternCandidates.value(QStringLiteral("candidates")).toStringList(),
         expectedPatternCandidates
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.patternCandidates.value(QStringLiteral("primaryBasis")).toString(),
+        QStringLiteral("month_tengod_centered")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.patternCandidates.value(QStringLiteral("monthTenGod")).toString(),
+        QStringLiteral("偏財")
+    );
+    QVERIFY(
+        loadedRecord.chartResult.patternCandidates.contains(QStringLiteral("monthHiddenStemTenGods"))
+    );
+    QVERIFY(
+        loadedRecord.chartResult.patternCandidates.contains(QStringLiteral("strengthSupport"))
+    );
+    QVERIFY(
+        loadedRecord.chartResult.patternCandidates.contains(QStringLiteral("usefulGodSupport"))
+    );
+    QVERIFY(
+        loadedRecord.chartResult.patternCandidates.contains(QStringLiteral("rankedPatterns"))
     );
     QCOMPARE(
         loadedRecord.chartResult.patternCandidatesStatusMessage,

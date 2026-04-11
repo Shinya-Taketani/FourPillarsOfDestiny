@@ -1,0 +1,72 @@
+{
+  "cases": [
+    {
+      "caseId": "TZ-003",
+      "description": "検証用正答表から取り込んだ基準ケース",
+      "birthDate": "1952-05-10",
+      "birthTime": "10:30",
+      "gender": "女性",
+      "enabledForRegression": false,
+      "source": "verification_answer_key",
+      "confidence": "external",
+      "notes": "『泰山流四柱推命学掌中暦』由来のケース。現実装では日柱差分があるため、回帰テストへの昇格前に再検証対象として保持する。",
+      "expected": {
+        "yearPillar": "壬辰",
+        "monthPillar": "乙巳",
+        "dayPillar": "戊寅",
+        "hourPillar": "丁巳"
+      }
+    },
+    {
+      "caseId": "REG-1990-0130",
+      "description": "既存の supported sample year 契約を JSON 化した回帰ケース",
+      "birthDate": "1990-02-05",
+      "birthTime": "13:30",
+      "gender": "男性",
+      "enabledForRegression": true,
+      "source": "coretests_existing_contract",
+      "confidence": "internal",
+      "notes": "立春後・寅月区間の標準ケース。",
+      "expected": {
+        "yearPillar": "庚午",
+        "monthPillar": "戊寅",
+        "dayPillar": "辛丑",
+        "hourPillar": "乙未"
+      }
+    },
+    {
+      "caseId": "REG-1990-2259",
+      "description": "日界 23:00 直前の回帰ケース",
+      "birthDate": "1990-02-05",
+      "birthTime": "22:59",
+      "gender": "男性",
+      "enabledForRegression": true,
+      "source": "coretests_existing_contract",
+      "confidence": "internal",
+      "notes": "前日 23:00 開始の日界に切り替わる直前。",
+      "expected": {
+        "yearPillar": "庚午",
+        "monthPillar": "戊寅",
+        "dayPillar": "辛丑",
+        "hourPillar": "己亥"
+      }
+    },
+    {
+      "caseId": "REG-1990-2300",
+      "description": "日界 23:00 到達時の回帰ケース",
+      "birthDate": "1990-02-05",
+      "birthTime": "23:00",
+      "gender": "男性",
+      "enabledForRegression": true,
+      "source": "coretests_existing_contract",
+      "confidence": "internal",
+      "notes": "日柱が翌日扱いへ切り替わる境界。",
+      "expected": {
+        "yearPillar": "庚午",
+        "monthPillar": "戊寅",
+        "dayPillar": "壬寅",
+        "hourPillar": "庚子"
+      }
+    }
+  ]
+}

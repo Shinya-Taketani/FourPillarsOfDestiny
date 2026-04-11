@@ -905,6 +905,7 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         hiddenStems,
         fiveElements,
         strengthEvaluation,
+        usefulGodCandidates,
         &patternCandidatesStatusMessage
     );
     QString majorFortuneDirectionStatusMessage;
@@ -1552,6 +1553,7 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
     const QVariantMap &hiddenStems,
     const QVariantMap &fiveElements,
     const QVariantMap &strengthEvaluation,
+    const QVariantMap &usefulGodCandidates,
     QString *statusMessage
 ) const
 {
@@ -1559,6 +1561,15 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
     const int dayStemIndex = heavenlyStemIndex(dayPillar);
     const QString monthTenGod = tenGods.value(QStringLiteral("monthPillar")).toString();
     const QStringList monthHiddenStems = hiddenStems.value(QStringLiteral("monthPillar")).toStringList();
+    const QString balanceState = strengthEvaluation.value(QStringLiteral("balanceState")).toString();
+    const int referenceScore = strengthEvaluation.value(QStringLiteral("finalScore")).toInt();
+    const QStringList usefulCandidates = usefulGodCandidates.value(QStringLiteral("candidates")).toStringList();
+    const QString usefulBalanceState = usefulGodCandidates.value(QStringLiteral("balanceState")).toString();
+    const int usefulReferenceScore = usefulGodCandidates.value(QStringLiteral("referenceScore")).toInt();
+    const QStringList strengthPriority = usefulGodCandidates.value(QStringLiteral("strengthPriority")).toStringList();
+    const QStringList climatePriority = usefulGodCandidates.value(QStringLiteral("climatePriority")).toStringList();
+    const QStringList shortagePriority = usefulGodCandidates.value(QStringLiteral("shortagePriority")).toStringList();
+    const QVariantList rankedElements = usefulGodCandidates.value(QStringLiteral("rankedElements")).toList();
 
     if (monthBranchIndex < 0 || dayStemIndex < 0 || monthTenGod == QStringLiteral("未対応")) {
         if (statusMessage) {
@@ -1568,16 +1579,57 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
         return {
             {QStringLiteral("candidates"), QStringList{QStringLiteral("未対応")}},
             {QStringLiteral("reason"), QStringLiteral("月干通変星または月令参照に必要な情報を取得できません。")},
-            {QStringLiteral("note"), QStringLiteral("格局候補を暫定表示できません。")}
+            {QStringLiteral("note"), QStringLiteral("格局候補を暫定表示できません。")},
+            {QStringLiteral("primaryBasis"), QStringLiteral("undetermined")},
+            {QStringLiteral("monthTenGod"), QStringLiteral("未対応")},
+            {QStringLiteral("monthHiddenStemTenGods"), QStringList{}},
+            {QStringLiteral("strengthSupport"), QStringLiteral("未対応")},
+            {QStringLiteral("usefulGodSupport"), QStringLiteral("未対応")},
+            {QStringLiteral("rankedPatterns"), QVariantList{}}
         };
     }
 
-    QStringList candidates;
+    struct PatternScore
+    {
+        QString pattern;
+        int score;
+    };
+
+    auto addPatternScore = [](QList<PatternScore> *scores, const QString &pattern, int delta) {
+        if (pattern.isEmpty()) {
+            return;
+        }
+
+        for (PatternScore &score : *scores) {
+            if (score.pattern == pattern) {
+                score.score += delta;
+                return;
+            }
+        }
+
+        scores->append(PatternScore{pattern, delta});
+    };
+    auto patternBaseTenGod = [](const QString &pattern) {
+        return pattern.endsWith(QStringLiteral("格")) ? pattern.left(pattern.size() - 1) : pattern;
+    };
+    auto patternElementName = [dayStemIndex, &patternBaseTenGod](const QString &pattern) {
+        const QString tenGod = patternBaseTenGod(pattern);
+        for (int stemIndex = 0; stemIndex < 10; ++stemIndex) {
+            if (tenGodName(dayStemIndex, stemIndex) == tenGod) {
+                return fiveElementDisplayName(fiveElementForStem(stemIndex));
+            }
+        }
+
+        return QString();
+    };
+
+    QList<PatternScore> patternScores;
     QStringList reasons;
+    QStringList monthHiddenStemTenGods;
 
     const QString primaryPattern = patternNameForTenGod(monthTenGod);
     if (!primaryPattern.isEmpty()) {
-        candidates << primaryPattern;
+        addPatternScore(&patternScores, primaryPattern, 10);
         reasons << QStringLiteral("月干通変星 %1 を月柱の主候補として参照しています。").arg(monthTenGod);
     }
 
@@ -1588,21 +1640,22 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
         }
 
         const QString hiddenTenGod = tenGodName(dayStemIndex, hiddenStemIndex);
+        if (!hiddenTenGod.isEmpty() && hiddenTenGod != QStringLiteral("未対応")
+            && !monthHiddenStemTenGods.contains(hiddenTenGod)) {
+            monthHiddenStemTenGods << hiddenTenGod;
+        }
         const QString hiddenPattern = patternNameForTenGod(hiddenTenGod);
-        if (hiddenPattern.isEmpty() || candidates.contains(hiddenPattern)) {
+        if (hiddenPattern.isEmpty()) {
             continue;
         }
 
-        candidates << hiddenPattern;
+        const int hiddenPriorityScore = std::max(2, 10 - static_cast<int>(monthHiddenStemTenGods.size()) * 2);
+        addPatternScore(&patternScores, hiddenPattern, hiddenPriorityScore);
         reasons << QStringLiteral("月支蔵干 %1 の通変星 %2 を月令の参考候補にしています。")
                        .arg(hiddenStem, hiddenTenGod);
-
-        if (candidates.size() >= 3) {
-            break;
-        }
     }
 
-    if (candidates.isEmpty()) {
+    if (patternScores.isEmpty()) {
         if (statusMessage) {
             *statusMessage = QStringLiteral("月干通変星から格局候補を作れないため、格局候補は未対応です。");
         }
@@ -1610,13 +1663,62 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
         return {
             {QStringLiteral("candidates"), QStringList{QStringLiteral("未対応")}},
             {QStringLiteral("reason"), QStringLiteral("月干通変星と月支蔵干から対象となる格局候補を抽出できません。")},
-            {QStringLiteral("note"), QStringLiteral("現段階では参考候補を出せません。")}
+            {QStringLiteral("note"), QStringLiteral("現段階では参考候補を出せません。")},
+            {QStringLiteral("primaryBasis"), QStringLiteral("month_tengod_centered")},
+            {QStringLiteral("monthTenGod"), monthTenGod},
+            {QStringLiteral("monthHiddenStemTenGods"), monthHiddenStemTenGods},
+            {QStringLiteral("strengthSupport"), QStringLiteral("未対応")},
+            {QStringLiteral("usefulGodSupport"), QStringLiteral("未対応")},
+            {QStringLiteral("rankedPatterns"), QVariantList{}}
         };
     }
 
-    const QString strengthLabel = strengthEvaluation.value(QStringLiteral("label")).toString();
-    if (!strengthLabel.isEmpty() && strengthLabel != QStringLiteral("未対応")) {
-        reasons << QStringLiteral("暫定強弱評価 %1 を補助情報として併記しています。").arg(strengthLabel);
+    QString strengthSupport = QStringLiteral("強弱補助は未適用です。");
+    if (balanceState == QStringLiteral("strong")) {
+        for (PatternScore &patternScore : patternScores) {
+            if (strengthPriority.contains(patternElementName(patternScore.pattern))) {
+                patternScore.score += 2;
+            }
+        }
+        strengthSupport = QStringLiteral(
+            "balanceState が strong、referenceScore %1 のため、洩らす側・抑える側に寄る格局候補を補助的に上げています。"
+        ).arg(referenceScore);
+    } else if (balanceState == QStringLiteral("weak")) {
+        for (PatternScore &patternScore : patternScores) {
+            if (strengthPriority.contains(patternElementName(patternScore.pattern))) {
+                patternScore.score += 2;
+            }
+        }
+        strengthSupport = QStringLiteral(
+            "balanceState が weak、referenceScore %1 のため、生扶側に寄る格局候補を補助的に上げています。"
+        ).arg(referenceScore);
+    } else if (balanceState == QStringLiteral("neutral")) {
+        strengthSupport = QStringLiteral(
+            "balanceState が neutral、referenceScore %1 のため、強弱による極端な順位補正は避けています。"
+        ).arg(referenceScore);
+    }
+
+    QString usefulGodSupport = QStringLiteral("用神候補補助は未適用です。");
+    if (!usefulCandidates.isEmpty() && usefulCandidates.first() != QStringLiteral("未対応")) {
+        for (PatternScore &patternScore : patternScores) {
+            const QString patternElement = patternElementName(patternScore.pattern);
+            if (strengthPriority.contains(patternElement)) {
+                patternScore.score += 1;
+            }
+            if (climatePriority.contains(patternElement)) {
+                patternScore.score += 1;
+            }
+            if (shortagePriority.contains(patternElement)) {
+                patternScore.score += 1;
+            }
+        }
+        usefulGodSupport = QStringLiteral(
+            "用神候補の balanceState %1、referenceScore %2、候補 %3 を補助材料として順位へ反映しています。"
+        ).arg(
+            usefulBalanceState.isEmpty() ? QStringLiteral("未対応") : usefulBalanceState,
+            QString::number(usefulReferenceScore),
+            usefulCandidates.join(QStringLiteral("・"))
+        );
     }
 
     int dominantCount = -1;
@@ -1645,17 +1747,58 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
     }
 
     if (!dominantElement.isEmpty()) {
+        for (PatternScore &patternScore : patternScores) {
+            if (patternElementName(patternScore.pattern) == dominantElement) {
+                patternScore.score += 1;
+            }
+        }
         reasons << QStringLiteral("五行分布では %1 が比較的多く、候補理由の補助情報としています。").arg(dominantElement);
     }
 
+    if (!rankedElements.isEmpty()) {
+        const QVariantMap topRankedElement = rankedElements.first().toMap();
+        if (!topRankedElement.value(QStringLiteral("element")).toString().isEmpty()) {
+            reasons << QStringLiteral("用神候補の優先五行 %1 も順位補助として参照しています。")
+                           .arg(topRankedElement.value(QStringLiteral("element")).toString());
+        }
+    }
+
+    reasons << strengthSupport;
+    reasons << usefulGodSupport;
+
+    std::sort(patternScores.begin(), patternScores.end(), [](const PatternScore &left, const PatternScore &right) {
+        if (left.score == right.score) {
+            return left.pattern < right.pattern;
+        }
+        return left.score > right.score;
+    });
+
+    QStringList candidates;
+    QVariantList rankedPatterns;
+    for (const PatternScore &patternScore : patternScores) {
+        rankedPatterns.append(QVariantMap{
+            {QStringLiteral("pattern"), patternScore.pattern},
+            {QStringLiteral("score"), patternScore.score}
+        });
+        if (!candidates.contains(patternScore.pattern) && candidates.size() < 3) {
+            candidates << patternScore.pattern;
+        }
+    }
+
     if (statusMessage) {
-        *statusMessage = QStringLiteral("月干通変星と月令の簡易参照から作った断定しない暫定候補です。");
+        *statusMessage = QStringLiteral("月干通変星と月支蔵干を主軸に、strengthEvaluation と usefulGodCandidates の構造化情報も補助参照した断定しない暫定候補です。");
     }
 
     return {
-        {QStringLiteral("candidates"), candidates.mid(0, 3)},
+        {QStringLiteral("candidates"), candidates},
         {QStringLiteral("reason"), reasons.join(QStringLiteral(" "))},
-        {QStringLiteral("note"), QStringLiteral("格局を断定せず、月柱中心の参考候補を表示しています。")}
+        {QStringLiteral("note"), QStringLiteral("格局を断定せず、月柱中心の暫定候補を参考表示しています。")},
+        {QStringLiteral("primaryBasis"), QStringLiteral("month_tengod_centered")},
+        {QStringLiteral("monthTenGod"), monthTenGod},
+        {QStringLiteral("monthHiddenStemTenGods"), monthHiddenStemTenGods},
+        {QStringLiteral("strengthSupport"), strengthSupport},
+        {QStringLiteral("usefulGodSupport"), usefulGodSupport},
+        {QStringLiteral("rankedPatterns"), rankedPatterns}
     };
 }
 
