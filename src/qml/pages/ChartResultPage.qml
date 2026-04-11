@@ -618,6 +618,24 @@ Kirigami.Page {
                                 Label {
                                     width: parent.width
                                     wrapMode: Text.WordWrap
+                                    text: "関係: " + (modelData.relationSummary ? modelData.relationSummary : "未対応")
+                                    color: isCurrentAnnualFortune
+                                        ? Kirigami.Theme.highlightedTextColor
+                                        : Kirigami.Theme.textColor
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                    text: modelData.relationNote ? modelData.relationNote : ""
+                                    color: isCurrentAnnualFortune
+                                        ? Kirigami.Theme.highlightedTextColor
+                                        : Kirigami.Theme.disabledTextColor
+                                }
+
+                                Label {
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
                                     text: modelData.note ? modelData.note : ""
                                     color: isCurrentAnnualFortune
                                         ? Kirigami.Theme.highlightedTextColor

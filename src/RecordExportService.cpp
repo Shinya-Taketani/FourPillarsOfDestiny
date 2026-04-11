@@ -53,11 +53,12 @@ QString formatAnnualFortunes(const QVariantList &annualFortunes)
     for (const QVariant &fortuneValue : annualFortunes) {
         const QVariantMap fortune = fortuneValue.toMap();
         lines << QStringLiteral(
-                     "  %1年 / %2 / 通変星:%3 / 十二運:%4 / %5"
+                     "  %1年 / %2 / 通変星:%3 / 十二運:%4 / 関係:%5 / %6"
                  ).arg(fortune.value(QStringLiteral("year")).toInt())
                   .arg(fortune.value(QStringLiteral("pillar")).toString())
                   .arg(fortune.value(QStringLiteral("tenGod")).toString())
                   .arg(fortune.value(QStringLiteral("twelvePhase")).toString())
+                  .arg(fortune.value(QStringLiteral("relationSummary")).toString())
                   .arg(fortune.value(QStringLiteral("note")).toString());
     }
 

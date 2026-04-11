@@ -603,6 +603,122 @@ int signedMajorFortuneOffset(const QString &direction, int sequenceIndex)
     const int baseOffset = sequenceIndex + 1;
     return direction == QStringLiteral("逆行") ? -baseOffset : baseOffset;
 }
+
+struct PillarReference
+{
+    QString label;
+    QString pillar;
+};
+
+QList<PillarReference> natalPillarReferences(
+    const QString &yearPillar,
+    const QString &monthPillar,
+    const QString &dayPillar,
+    const QString &hourPillar
+)
+{
+    return {
+        {QStringLiteral("年柱"), yearPillar},
+        {QStringLiteral("月柱"), monthPillar},
+        {QStringLiteral("日柱"), dayPillar},
+        {QStringLiteral("時柱"), hourPillar}
+    };
+}
+
+bool branchesAreInClash(int leftBranchIndex, int rightBranchIndex)
+{
+    if (leftBranchIndex < 0 || rightBranchIndex < 0) {
+        return false;
+    }
+
+    return positiveModulo(leftBranchIndex - rightBranchIndex, 12) == 6;
+}
+
+bool stemsAreCombinationCandidates(int leftStemIndex, int rightStemIndex)
+{
+    if (leftStemIndex < 0 || rightStemIndex < 0) {
+        return false;
+    }
+
+    return positiveModulo(leftStemIndex - rightStemIndex, 10) == 5;
+}
+
+QString joinLabelsOrFallback(const QStringList &labels)
+{
+    return labels.isEmpty() ? QStringLiteral("なし") : labels.join(QStringLiteral("・"));
+}
+
+QVariantMap calculateAnnualFortuneRelation(
+    const QString &annualPillar,
+    const QList<PillarReference> &natalPillars
+)
+{
+    const int annualStemIndex = heavenlyStemIndex(annualPillar);
+    const int annualBranchIndex = earthlyBranchIndex(annualPillar);
+
+    if (annualStemIndex < 0 || annualBranchIndex < 0) {
+        return {
+            {QStringLiteral("sameStemMatches"), QStringList{}},
+            {QStringLiteral("sameBranchMatches"), QStringList{}},
+            {QStringLiteral("clashBranches"), QStringList{}},
+            {QStringLiteral("stemCombinationCandidates"), QStringList{}},
+            {QStringLiteral("relationSummary"), QStringLiteral("命式との関係候補は未対応です。")},
+            {QStringLiteral("relationNote"), QStringLiteral("流年干支を取得できないため、原命式との関係候補を比較できません。")}
+        };
+    }
+
+    QStringList sameStemMatches;
+    QStringList sameBranchMatches;
+    QStringList clashBranches;
+    QStringList stemCombinationCandidates;
+
+    for (const PillarReference &natalPillar : natalPillars) {
+        const int natalStemIndex = heavenlyStemIndex(natalPillar.pillar);
+        const int natalBranchIndex = earthlyBranchIndex(natalPillar.pillar);
+        if (natalStemIndex < 0 || natalBranchIndex < 0) {
+            continue;
+        }
+
+        if (natalStemIndex == annualStemIndex) {
+            sameStemMatches << natalPillar.label;
+        }
+        if (natalBranchIndex == annualBranchIndex) {
+            sameBranchMatches << natalPillar.label;
+        }
+        if (branchesAreInClash(annualBranchIndex, natalBranchIndex)) {
+            clashBranches << natalPillar.label;
+        }
+        if (stemsAreCombinationCandidates(annualStemIndex, natalStemIndex)) {
+            stemCombinationCandidates << natalPillar.label;
+        }
+    }
+
+    QStringList summaryParts;
+    if (!sameStemMatches.isEmpty()) {
+        summaryParts << QStringLiteral("同干: %1").arg(joinLabelsOrFallback(sameStemMatches));
+    }
+    if (!sameBranchMatches.isEmpty()) {
+        summaryParts << QStringLiteral("同支: %1").arg(joinLabelsOrFallback(sameBranchMatches));
+    }
+    if (!clashBranches.isEmpty()) {
+        summaryParts << QStringLiteral("冲候補: %1").arg(joinLabelsOrFallback(clashBranches));
+    }
+    if (!stemCombinationCandidates.isEmpty()) {
+        summaryParts << QStringLiteral("干合候補: %1").arg(joinLabelsOrFallback(stemCombinationCandidates));
+    }
+    if (summaryParts.isEmpty()) {
+        summaryParts << QStringLiteral("主要関係候補なし");
+    }
+
+    return {
+        {QStringLiteral("sameStemMatches"), sameStemMatches},
+        {QStringLiteral("sameBranchMatches"), sameBranchMatches},
+        {QStringLiteral("clashBranches"), clashBranches},
+        {QStringLiteral("stemCombinationCandidates"), stemCombinationCandidates},
+        {QStringLiteral("relationSummary"), summaryParts.join(QStringLiteral(" / "))},
+        {QStringLiteral("relationNote"), QStringLiteral("吉凶断定ではなく、原命式との同干・同支・冲候補・干合候補を並べた参考表示です。")}
+    };
+}
 }
 
 ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
@@ -694,7 +810,10 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
     QString annualFortunesStatusMessage;
     const QVariantList annualFortunes = calculateAnnualFortunes(
         birthInfo,
+        yearPillar,
+        monthResolution.monthPillar,
         dayPillar,
+        hourPillar,
         &annualFortunesStatusMessage
     );
     const QString description = buildDescription(
@@ -1408,7 +1527,10 @@ QVariantList ChartCalculator::calculateMajorFortunes(
 
 QVariantList ChartCalculator::calculateAnnualFortunes(
     const BirthInfo &birthInfo,
+    const QString &yearPillar,
+    const QString &monthPillar,
     const QString &dayPillar,
+    const QString &hourPillar,
     QString *statusMessage
 ) const
 {
@@ -1431,12 +1553,19 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
 
     QVariantList fortunes;
     const int startYear = birthDate.year();
+    const QList<PillarReference> natalPillars = natalPillarReferences(
+        yearPillar,
+        monthPillar,
+        dayPillar,
+        hourPillar
+    );
     for (int offset = 0; offset < 12; ++offset) {
         const int year = startYear + offset;
         const QString pillar = heavenlyStemAt(positiveModulo(year - 1984, 60) % 10)
             + earthlyBranchAt(positiveModulo(year - 1984, 60) % 12);
         const QString fortuneTenGod = tenGodForFortunePillar(dayPillar, pillar);
         const QString fortuneTwelvePhase = twelvePhaseForFortunePillar(dayPillar, pillar);
+        const QVariantMap relation = calculateAnnualFortuneRelation(pillar, natalPillars);
         const QString traitsNote = (fortuneTenGod == QStringLiteral("未対応")
                 || fortuneTwelvePhase == QStringLiteral("未対応"))
             ? QStringLiteral(" 通変星と十二運は日干または行運干支を取得できないため未対応です。")
@@ -1446,15 +1575,24 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
             {QStringLiteral("pillar"), pillar},
             {QStringLiteral("tenGod"), fortuneTenGod},
             {QStringLiteral("twelvePhase"), fortuneTwelvePhase},
+            {QStringLiteral("sameStemMatches"), relation.value(QStringLiteral("sameStemMatches")).toStringList()},
+            {QStringLiteral("sameBranchMatches"), relation.value(QStringLiteral("sameBranchMatches")).toStringList()},
+            {QStringLiteral("clashBranches"), relation.value(QStringLiteral("clashBranches")).toStringList()},
+            {QStringLiteral("stemCombinationCandidates"), relation.value(QStringLiteral("stemCombinationCandidates")).toStringList()},
+            {QStringLiteral("relationSummary"), relation.value(QStringLiteral("relationSummary")).toString()},
+            {QStringLiteral("relationNote"), relation.value(QStringLiteral("relationNote")).toString()},
             {QStringLiteral("note"), QStringLiteral(
-                "流年解釈は未実装のため、西暦年から求めた干支の参考表示です。%1"
-            ).arg(traitsNote)}
+                "流年解釈は未実装のため、西暦年から求めた干支と原命式との最小関係候補の参考表示です。%1 %2"
+            ).arg(
+                relation.value(QStringLiteral("relationNote")).toString(),
+                traitsNote
+            )}
         });
     }
 
     if (statusMessage) {
         *statusMessage = QStringLiteral(
-            "出生年から 12 年分を並べた流年表示の仮骨格です。流年解釈は未実装ですが、通変星と十二運は日干基準の最小本実装です。"
+            "出生年から 12 年分を並べた流年表示の仮骨格です。流年解釈は未実装ですが、通変星と十二運に加えて原命式との同干・同支・冲候補・干合候補を最小表示しています。"
         );
     }
 
@@ -1630,7 +1768,8 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("大運一覧は月柱起点で、順行なら先へ、逆行なら前へ進めた干支列として順逆反映済みです。")
           << QStringLiteral("大運の順逆は年干陰陽と性別の組み合わせによる一般ルールで実判定しています。")
           << QStringLiteral("節入り差情報には、出生日時と参照正節日時との差分、および起運年齢換算結果を保持します。")
-          << QStringLiteral("流年一覧は出生年から並べた最小表示骨格です。流年解釈は未実装です。");
+          << QStringLiteral("流年一覧は出生年から並べた最小表示骨格で、原命式との同干・同支・冲候補・干合候補を参考表示します。")
+          << QStringLiteral("流年解釈の吉凶断定や流派固有判断は未実装です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")

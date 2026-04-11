@@ -80,7 +80,10 @@ private:
     ) const;
     QVariantList calculateAnnualFortunes(
         const BirthInfo &birthInfo,
+        const QString &yearPillar,
+        const QString &monthPillar,
         const QString &dayPillar,
+        const QString &hourPillar,
         QString *statusMessage
     ) const;
     QVariantMap calculateMajorFortuneDirection(
