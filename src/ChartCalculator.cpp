@@ -1264,7 +1264,14 @@ QVariantMap ChartCalculator::calculateStrengthEvaluation(
         return {
             {QStringLiteral("label"), QStringLiteral("未対応")},
             {QStringLiteral("reason"), QStringLiteral("日干を取得できません。")},
-            {QStringLiteral("score"), 0}
+            {QStringLiteral("score"), 0},
+            {QStringLiteral("selfCount"), 0},
+            {QStringLiteral("supportiveCount"), 0},
+            {QStringLiteral("drainingCount"), 0},
+            {QStringLiteral("controllingCount"), 0},
+            {QStringLiteral("seasonalAdjustment"), 0},
+            {QStringLiteral("finalScore"), 0},
+            {QStringLiteral("balanceState"), QStringLiteral("unknown")}
         };
     }
 
@@ -1276,7 +1283,14 @@ QVariantMap ChartCalculator::calculateStrengthEvaluation(
         return {
             {QStringLiteral("label"), QStringLiteral("未対応")},
             {QStringLiteral("reason"), QStringLiteral("月支による季節評価を取得できません。")},
-            {QStringLiteral("score"), 0}
+            {QStringLiteral("score"), 0},
+            {QStringLiteral("selfCount"), 0},
+            {QStringLiteral("supportiveCount"), 0},
+            {QStringLiteral("drainingCount"), 0},
+            {QStringLiteral("controllingCount"), 0},
+            {QStringLiteral("seasonalAdjustment"), 0},
+            {QStringLiteral("finalScore"), 0},
+            {QStringLiteral("balanceState"), QStringLiteral("unknown")}
         };
     }
 
@@ -1290,18 +1304,23 @@ QVariantMap ChartCalculator::calculateStrengthEvaluation(
     const int drainingCount = fiveElements.value(fiveElementKey(drainingElement)).toInt();
     const int controllingCount = fiveElements.value(fiveElementKey(controllingElement)).toInt();
 
+    int seasonalAdjustment = 0;
     int score = (selfCount + supportiveCount) - (drainingCount + controllingCount);
     if (seasonalSuitabilityLabel == QStringLiteral("有利")) {
-        score += 1;
+        seasonalAdjustment = 1;
     } else if (seasonalSuitabilityLabel == QStringLiteral("不利")) {
-        score -= 1;
+        seasonalAdjustment = -1;
     }
+    score += seasonalAdjustment;
 
     QString label = QStringLiteral("中立寄り");
+    QString balanceState = QStringLiteral("neutral");
     if (score >= 2) {
         label = QStringLiteral("やや強め");
+        balanceState = QStringLiteral("strong");
     } else if (score <= -2) {
         label = QStringLiteral("やや弱め");
+        balanceState = QStringLiteral("weak");
     }
 
     const QString reason = QStringLiteral(
@@ -1315,7 +1334,14 @@ QVariantMap ChartCalculator::calculateStrengthEvaluation(
     return {
         {QStringLiteral("label"), label},
         {QStringLiteral("reason"), reason},
-        {QStringLiteral("score"), score}
+        {QStringLiteral("score"), score},
+        {QStringLiteral("selfCount"), selfCount},
+        {QStringLiteral("supportiveCount"), supportiveCount},
+        {QStringLiteral("drainingCount"), drainingCount},
+        {QStringLiteral("controllingCount"), controllingCount},
+        {QStringLiteral("seasonalAdjustment"), seasonalAdjustment},
+        {QStringLiteral("finalScore"), score},
+        {QStringLiteral("balanceState"), balanceState}
     };
 }
 
