@@ -44,6 +44,7 @@ private slots:
     void chartCalculatorChangesMajorFortuneDirectionWithYearStemPolarity();
     void chartCalculatorReturnsUndeterminedMajorFortuneDirectionForUnspecifiedGender();
     void chartCalculatorCalculatesSolarTermDifferencePreparationForSupportedSampleYear();
+    void chartCalculatorChangesReferencedSolarTermByDirection();
     void chartCalculatorCalculatesMajorFortunesForSupportedSampleYear();
     void chartCalculatorChangesFortuneStartAgeByDirection();
     void chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear();
@@ -577,6 +578,42 @@ void CoreTests::chartCalculatorCalculatesSolarTermDifferencePreparationForSuppor
         result.solarTermDifferencePreparation.value(QStringLiteral("note")).toString().contains(QStringLiteral("参考実計算"))
     );
     QVERIFY(result.solarTermDifferencePreparationStatusMessage.contains(QStringLiteral("精密化準備")));
+}
+
+void CoreTests::chartCalculatorChangesReferencedSolarTermByDirection()
+{
+    ChartCalculator calculator;
+    const BirthInfo maleBirthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo femaleBirthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("女性")
+    };
+
+    const ChartResult maleResult = calculator.calculate(maleBirthInfo);
+    const ChartResult femaleResult = calculator.calculate(femaleBirthInfo);
+
+    QCOMPARE(
+        maleResult.solarTermDifferencePreparation.value(QStringLiteral("referenceTerm")).toString(),
+        QStringLiteral("啓蟄")
+    );
+    QCOMPARE(
+        maleResult.solarTermDifferencePreparation.value(QStringLiteral("referenceDirection")).toString(),
+        QStringLiteral("直後節入り")
+    );
+    QCOMPARE(
+        femaleResult.solarTermDifferencePreparation.value(QStringLiteral("referenceTerm")).toString(),
+        QStringLiteral("立春")
+    );
+    QCOMPARE(
+        femaleResult.solarTermDifferencePreparation.value(QStringLiteral("referenceDirection")).toString(),
+        QStringLiteral("直前節入り")
+    );
+    QVERIFY(maleResult.solarTermDifferencePreparation != femaleResult.solarTermDifferencePreparation);
 }
 
 void CoreTests::chartCalculatorCalculatesMajorFortunesForSupportedSampleYear()

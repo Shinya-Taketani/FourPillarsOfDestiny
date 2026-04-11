@@ -373,7 +373,7 @@ Kirigami.Page {
 
                     Label {
                         width: parent.width
-                        text: "節入り差準備"
+                        text: "起運年齢統合計算"
                         font.bold: true
                     }
 
@@ -424,7 +424,7 @@ Kirigami.Page {
                         wrapMode: Text.WordWrap
                         visible: chartResult.solarTermDifferencePreparationStatusMessage.length > 0
                         color: Kirigami.Theme.disabledTextColor
-                        text: "節入り差状態: " + chartResult.solarTermDifferencePreparationStatusMessage
+                        text: "統合計算状態: " + chartResult.solarTermDifferencePreparationStatusMessage
                     }
 
                     Label {
