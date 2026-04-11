@@ -709,18 +709,25 @@ void CoreTests::chartCalculatorCalculatesMajorFortunesForSupportedSampleYear()
     QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("tenGod")).toString(), QStringLiteral("偏印"));
     QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("twelvePhase")).toString(), QStringLiteral("絶"));
     QCOMPARE(
-        majorFortunes.at(0).toMap().value(QStringLiteral("breakBranches")).toStringList(),
-        QStringList{QStringLiteral("年柱")}
+        majorFortunes.at(0).toMap().value(QStringLiteral("sameStemMatches")).toStringList(),
+        QStringList{}
     );
     QCOMPARE(
-        majorFortunes.at(0).toMap().value(QStringLiteral("threeHarmonyCandidates")).toStringList(),
-        QStringList{QStringLiteral("時柱")}
+        majorFortunes.at(0).toMap().value(QStringLiteral("sameBranchMatches")).toStringList(),
+        QStringList{}
     );
     QCOMPARE(
-        majorFortunes.at(0).toMap().value(QStringLiteral("directionalCombinationCandidates")).toStringList(),
-        QStringList{QStringLiteral("月柱")}
+        majorFortunes.at(0).toMap().value(QStringLiteral("clashBranches")).toStringList(),
+        QStringList{}
     );
-    QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("relationSummary")).toString().contains(QStringLiteral("破候補")));
+    QCOMPARE(
+        majorFortunes.at(0).toMap().value(QStringLiteral("stemCombinationCandidates")).toStringList(),
+        QStringList{}
+    );
+    QCOMPARE(
+        majorFortunes.at(0).toMap().value(QStringLiteral("relationSummary")).toString(),
+        QStringLiteral("該当なし")
+    );
     QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("startAge")).toInt(), 20);
     QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("庚辰"));
     QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("確定計算")));
@@ -729,6 +736,7 @@ void CoreTests::chartCalculatorCalculatesMajorFortunesForSupportedSampleYear()
     QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("採用仕様")));
     QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("順逆反映済み")));
     QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("通変星と十二運")));
+    QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("同干・同支・冲候補・干合候補")));
 }
 
 void CoreTests::chartCalculatorReflectsMajorFortuneDirectionInPillars()
@@ -819,19 +827,6 @@ void CoreTests::chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear()
 
     const ChartResult result = calculator.calculate(birthInfo);
     const QVariantList annualFortunes = result.annualFortunes;
-    const QStringList expectedFirstAnnualThreeHarmonyCandidates{
-        QStringLiteral("年柱"),
-        QStringLiteral("月柱")
-    };
-    const QStringList expectedFirstAnnualDirectionalCombinationCandidates{
-        QStringLiteral("年柱"),
-        QStringLiteral("時柱")
-    };
-    const QStringList expectedSecondAnnualPunishmentBranches{
-        QStringLiteral("日柱"),
-        QStringLiteral("時柱")
-    };
-
     QCOMPARE(annualFortunes.size(), 12);
     QCOMPARE(annualFortunes.at(0).toMap().value(QStringLiteral("year")).toInt(), 1990);
     QCOMPARE(annualFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("庚午"));
@@ -850,28 +845,8 @@ void CoreTests::chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear()
         QStringList{}
     );
     QCOMPARE(
-        annualFortunes.at(0).toMap().value(QStringLiteral("harmBranches")).toStringList(),
-        QStringList{QStringLiteral("日柱")}
-    );
-    QCOMPARE(
-        annualFortunes.at(0).toMap().value(QStringLiteral("breakBranches")).toStringList(),
-        QStringList{}
-    );
-    QCOMPARE(
-        annualFortunes.at(0).toMap().value(QStringLiteral("punishmentBranches")).toStringList(),
-        QStringList{QStringLiteral("年柱")}
-    );
-    QCOMPARE(
         annualFortunes.at(0).toMap().value(QStringLiteral("stemCombinationCandidates")).toStringList(),
         QStringList{QStringLiteral("時柱")}
-    );
-    QCOMPARE(
-        annualFortunes.at(0).toMap().value(QStringLiteral("threeHarmonyCandidates")).toStringList(),
-        expectedFirstAnnualThreeHarmonyCandidates
-    );
-    QCOMPARE(
-        annualFortunes.at(0).toMap().value(QStringLiteral("directionalCombinationCandidates")).toStringList(),
-        expectedFirstAnnualDirectionalCombinationCandidates
     );
     QVERIFY(annualFortunes.at(0).toMap().value(QStringLiteral("relationSummary")).toString().contains(QStringLiteral("同干")));
     QVERIFY(annualFortunes.at(0).toMap().value(QStringLiteral("relationNote")).toString().contains(QStringLiteral("吉凶断定ではなく")));
@@ -892,18 +867,13 @@ void CoreTests::chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear()
         QStringList{QStringLiteral("日柱")}
     );
     QCOMPARE(
-        annualFortunes.at(1).toMap().value(QStringLiteral("punishmentBranches")).toStringList(),
-        expectedSecondAnnualPunishmentBranches
+        annualFortunes.at(1).toMap().value(QStringLiteral("stemCombinationCandidates")).toStringList(),
+        QStringList{}
     );
-    QVERIFY(annualFortunes.at(0).toMap().contains(QStringLiteral("harmBranches")));
-    QVERIFY(annualFortunes.at(0).toMap().contains(QStringLiteral("breakBranches")));
-    QVERIFY(annualFortunes.at(0).toMap().contains(QStringLiteral("punishmentBranches")));
-    QVERIFY(annualFortunes.at(0).toMap().contains(QStringLiteral("threeHarmonyCandidates")));
-    QVERIFY(annualFortunes.at(0).toMap().contains(QStringLiteral("directionalCombinationCandidates")));
     QVERIFY(annualFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("参考表示")));
     QVERIFY(annualFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("通変星と十二運")));
-    QVERIFY(result.annualFortunesStatusMessage.contains(QStringLiteral("仮骨格")));
-    QVERIFY(result.annualFortunesStatusMessage.contains(QStringLiteral("同干・同支・冲・害・破・刑・干合・三合・方合候補")));
+    QVERIFY(result.annualFortunesStatusMessage.contains(QStringLiteral("流年表示です")));
+    QVERIFY(result.annualFortunesStatusMessage.contains(QStringLiteral("同干・同支・冲候補・干合候補")));
 }
 
 void CoreTests::chartCalculatorAddsAnnualFortuneRelationsForSupportedSampleYear()
@@ -923,16 +893,10 @@ void CoreTests::chartCalculatorAddsAnnualFortuneRelationsForSupportedSampleYear(
     QVERIFY(firstAnnualFortune.contains(QStringLiteral("sameStemMatches")));
     QVERIFY(firstAnnualFortune.contains(QStringLiteral("sameBranchMatches")));
     QVERIFY(firstAnnualFortune.contains(QStringLiteral("clashBranches")));
-    QVERIFY(firstAnnualFortune.contains(QStringLiteral("harmBranches")));
-    QVERIFY(firstAnnualFortune.contains(QStringLiteral("breakBranches")));
-    QVERIFY(firstAnnualFortune.contains(QStringLiteral("punishmentBranches")));
     QVERIFY(firstAnnualFortune.contains(QStringLiteral("stemCombinationCandidates")));
-    QVERIFY(firstAnnualFortune.contains(QStringLiteral("threeHarmonyCandidates")));
-    QVERIFY(firstAnnualFortune.contains(QStringLiteral("directionalCombinationCandidates")));
     QVERIFY(firstAnnualFortune.contains(QStringLiteral("relationNote")));
     QVERIFY(firstAnnualFortune.value(QStringLiteral("relationSummary")).toString().contains(QStringLiteral("干合候補")));
     QVERIFY(secondAnnualFortune.value(QStringLiteral("relationSummary")).toString().contains(QStringLiteral("冲候補")));
-    QVERIFY(secondAnnualFortune.value(QStringLiteral("relationSummary")).toString().contains(QStringLiteral("刑候補")));
 }
 
 void CoreTests::chartCalculatorAddsExtendedMajorFortuneRelationsForSupportedSampleYear()
@@ -950,12 +914,7 @@ void CoreTests::chartCalculatorAddsExtendedMajorFortuneRelationsForSupportedSamp
     QVERIFY(firstMajorFortune.contains(QStringLiteral("sameStemMatches")));
     QVERIFY(firstMajorFortune.contains(QStringLiteral("sameBranchMatches")));
     QVERIFY(firstMajorFortune.contains(QStringLiteral("clashBranches")));
-    QVERIFY(firstMajorFortune.contains(QStringLiteral("harmBranches")));
-    QVERIFY(firstMajorFortune.contains(QStringLiteral("breakBranches")));
-    QVERIFY(firstMajorFortune.contains(QStringLiteral("punishmentBranches")));
     QVERIFY(firstMajorFortune.contains(QStringLiteral("stemCombinationCandidates")));
-    QVERIFY(firstMajorFortune.contains(QStringLiteral("threeHarmonyCandidates")));
-    QVERIFY(firstMajorFortune.contains(QStringLiteral("directionalCombinationCandidates")));
     QVERIFY(firstMajorFortune.contains(QStringLiteral("relationSummary")));
     QVERIFY(firstMajorFortune.contains(QStringLiteral("relationNote")));
     QVERIFY(firstMajorFortune.contains(QStringLiteral("pillar")));
@@ -963,8 +922,7 @@ void CoreTests::chartCalculatorAddsExtendedMajorFortuneRelationsForSupportedSamp
     QVERIFY(firstMajorFortune.contains(QStringLiteral("twelvePhase")));
     QVERIFY(firstMajorFortune.contains(QStringLiteral("note")));
     QVERIFY(!firstMajorFortune.value(QStringLiteral("relationSummary")).toString().isEmpty());
-    QVERIFY(firstMajorFortune.value(QStringLiteral("relationSummary")).toString().contains(QStringLiteral("三合候補")));
-    QVERIFY(firstMajorFortune.value(QStringLiteral("relationSummary")).toString().contains(QStringLiteral("方合候補")));
+    QCOMPARE(firstMajorFortune.value(QStringLiteral("relationSummary")).toString(), QStringLiteral("該当なし"));
 }
 
 void CoreTests::chartCalculatorAddsMajorFortuneRelationsForSupportedSampleYear()
@@ -1341,7 +1299,7 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
     QCOMPARE(result.annualFortunes.size(), 12);
     QCOMPARE(result.annualFortunes.at(0).toMap().value(QStringLiteral("year")).toInt(), 1949);
     QCOMPARE(result.annualFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("己丑"));
-    QVERIFY(result.annualFortunesStatusMessage.contains(QStringLiteral("仮骨格")));
+    QVERIFY(result.annualFortunesStatusMessage.contains(QStringLiteral("流年表示")));
     QVERIFY(result.description.contains(QStringLiteral("指定年の正節データが未整備")));
 }
 
@@ -1450,18 +1408,13 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
                 {QStringLiteral("sameStemMatches"), QStringList{QStringLiteral("日柱")}},
                 {QStringLiteral("sameBranchMatches"), QStringList{}},
                 {QStringLiteral("clashBranches"), QStringList{}},
-                {QStringLiteral("harmBranches"), QStringList{QStringLiteral("時柱")}},
-                {QStringLiteral("breakBranches"), QStringList{}},
-                {QStringLiteral("punishmentBranches"), QStringList{}},
                 {QStringLiteral("stemCombinationCandidates"), QStringList{}},
-                {QStringLiteral("threeHarmonyCandidates"), QStringList{QStringLiteral("年柱")}},
-                {QStringLiteral("directionalCombinationCandidates"), QStringList{QStringLiteral("月柱")}},
-                {QStringLiteral("relationSummary"), QStringLiteral("同干: 日柱 / 害候補: 時柱 / 三合候補: 年柱 / 方合候補: 月柱")},
+                {QStringLiteral("relationSummary"), QStringLiteral("同干: 日柱")},
                 {QStringLiteral("relationNote"), QStringLiteral("吉凶断定ではなく、原命式との関係候補の参考表示です。")},
                 {QStringLiteral("note"), QStringLiteral("起運年齢参考値つきの大運仮データです。")}
             }
         },
-        QStringLiteral("大運表示の仮骨格です。起運年齢は参考値です。"),
+        QStringLiteral("大運表示の採用仕様データです。"),
         QVariantList{
                 QVariantMap{
                     {QStringLiteral("year"), 1990},
@@ -1495,7 +1448,7 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("calculatedStartAge"), 1},
             {QStringLiteral("note"), QStringLiteral("節入り差の参考情報です。")}
         },
-        QStringLiteral("節入り差準備の暫定表示です。")
+        QStringLiteral("節入り差準備の採用仕様表示です。")
     };
 
     const QVariantMap resultMap = result.toVariantMap();
@@ -1608,7 +1561,7 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("solarTermDifferencePreparationStatusMessage")).toString(),
-        QStringLiteral("節入り差準備の暫定表示です。")
+        QStringLiteral("節入り差準備の採用仕様表示です。")
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("majorFortunes")).toList().at(0).toMap().value(QStringLiteral("pillar")).toString(),
@@ -1628,26 +1581,11 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("majorFortunes")).toList().at(0).toMap().value(QStringLiteral("relationSummary")).toString(),
-        QStringLiteral("同干: 日柱 / 害候補: 時柱 / 三合候補: 年柱 / 方合候補: 月柱")
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("majorFortunes")).toList().at(0).toMap().contains(QStringLiteral("harmBranches"))
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("majorFortunes")).toList().at(0).toMap().contains(QStringLiteral("breakBranches"))
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("majorFortunes")).toList().at(0).toMap().contains(QStringLiteral("punishmentBranches"))
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("majorFortunes")).toList().at(0).toMap().contains(QStringLiteral("threeHarmonyCandidates"))
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("majorFortunes")).toList().at(0).toMap().contains(QStringLiteral("directionalCombinationCandidates"))
+        QStringLiteral("同干: 日柱")
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("majorFortunesStatusMessage")).toString(),
-        QStringLiteral("大運表示の仮骨格です。起運年齢は参考値です。")
+        QStringLiteral("大運表示の採用仕様データです。")
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("annualFortunes")).toList().at(0).toMap().value(QStringLiteral("pillar")).toString(),
@@ -1664,21 +1602,6 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("annualFortunes")).toList().at(0).toMap().value(QStringLiteral("relationSummary")).toString(),
         QStringLiteral("同干: 年柱 / 同支: 年柱 / 干合候補: 時柱")
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("annualFortunes")).toList().at(0).toMap().contains(QStringLiteral("harmBranches"))
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("annualFortunes")).toList().at(0).toMap().contains(QStringLiteral("breakBranches"))
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("annualFortunes")).toList().at(0).toMap().contains(QStringLiteral("punishmentBranches"))
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("annualFortunes")).toList().at(0).toMap().contains(QStringLiteral("threeHarmonyCandidates"))
-    );
-    QVERIFY(
-        resultMap.value(QStringLiteral("annualFortunes")).toList().at(0).toMap().contains(QStringLiteral("directionalCombinationCandidates"))
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("annualFortunesStatusMessage")).toString(),
@@ -2022,13 +1945,8 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                     {QStringLiteral("sameStemMatches"), QStringList{}},
                     {QStringLiteral("sameBranchMatches"), QStringList{QStringLiteral("月柱")}},
                     {QStringLiteral("clashBranches"), QStringList{}},
-                    {QStringLiteral("harmBranches"), QStringList{}},
-                    {QStringLiteral("breakBranches"), QStringList{QStringLiteral("時柱")}},
-                    {QStringLiteral("punishmentBranches"), QStringList{QStringLiteral("年柱")}},
                     {QStringLiteral("stemCombinationCandidates"), QStringList{QStringLiteral("日柱")}},
-                    {QStringLiteral("threeHarmonyCandidates"), QStringList{QStringLiteral("時柱")}},
-                    {QStringLiteral("directionalCombinationCandidates"), QStringList{QStringLiteral("年柱")}},
-                    {QStringLiteral("relationSummary"), QStringLiteral("同支: 月柱 / 破候補: 時柱 / 刑候補: 年柱 / 干合候補: 日柱 / 三合候補: 時柱 / 方合候補: 年柱")},
+                    {QStringLiteral("relationSummary"), QStringLiteral("同支: 月柱 / 干合候補: 日柱")},
                     {QStringLiteral("relationNote"), QStringLiteral("保存確認用の大運関係候補です。")},
                     {QStringLiteral("note"), QStringLiteral("保存確認用の起運年齢参考値つき大運です。")}
                 },
@@ -2043,13 +1961,8 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                     {QStringLiteral("sameStemMatches"), QStringList{QStringLiteral("時柱")}},
                     {QStringLiteral("sameBranchMatches"), QStringList{}},
                     {QStringLiteral("clashBranches"), QStringList{QStringLiteral("年柱")}},
-                    {QStringLiteral("harmBranches"), QStringList{QStringLiteral("日柱")}},
-                    {QStringLiteral("breakBranches"), QStringList{}},
-                    {QStringLiteral("punishmentBranches"), QStringList{}},
                     {QStringLiteral("stemCombinationCandidates"), QStringList{QStringLiteral("月柱")}},
-                    {QStringLiteral("threeHarmonyCandidates"), QStringList{}},
-                    {QStringLiteral("directionalCombinationCandidates"), QStringList{QStringLiteral("月柱")}},
-                    {QStringLiteral("relationSummary"), QStringLiteral("同干: 時柱 / 冲候補: 年柱 / 害候補: 日柱 / 干合候補: 月柱 / 方合候補: 月柱")},
+                    {QStringLiteral("relationSummary"), QStringLiteral("同干: 時柱 / 冲候補: 年柱 / 干合候補: 月柱")},
                     {QStringLiteral("relationNote"), QStringLiteral("保存確認用の大運関係候補です。")},
                     {QStringLiteral("note"), QStringLiteral("保存確認用の起運年齢参考値つき大運です。")}
                 }
@@ -2222,22 +2135,7 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     );
     QCOMPARE(
         loadedRecord.chartResult.majorFortunes.at(0).toMap().value(QStringLiteral("relationSummary")).toString(),
-        QStringLiteral("同支: 月柱 / 破候補: 時柱 / 刑候補: 年柱 / 干合候補: 日柱 / 三合候補: 時柱 / 方合候補: 年柱")
-    );
-    QVERIFY(
-        loadedRecord.chartResult.majorFortunes.at(0).toMap().contains(QStringLiteral("harmBranches"))
-    );
-    QVERIFY(
-        loadedRecord.chartResult.majorFortunes.at(0).toMap().contains(QStringLiteral("breakBranches"))
-    );
-    QVERIFY(
-        loadedRecord.chartResult.majorFortunes.at(0).toMap().contains(QStringLiteral("punishmentBranches"))
-    );
-    QVERIFY(
-        loadedRecord.chartResult.majorFortunes.at(0).toMap().contains(QStringLiteral("threeHarmonyCandidates"))
-    );
-    QVERIFY(
-        loadedRecord.chartResult.majorFortunes.at(0).toMap().contains(QStringLiteral("directionalCombinationCandidates"))
+        QStringLiteral("同支: 月柱 / 干合候補: 日柱")
     );
     QCOMPARE(
         loadedRecord.chartResult.majorFortunesStatusMessage,
@@ -2259,21 +2157,6 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.annualFortunes.at(0).toMap().value(QStringLiteral("relationSummary")).toString(),
         QStringLiteral("同干: 時柱 / 冲候補: 月柱 / 干合候補: 年柱")
-    );
-    QVERIFY(
-        loadedRecord.chartResult.annualFortunes.at(0).toMap().contains(QStringLiteral("harmBranches"))
-    );
-    QVERIFY(
-        loadedRecord.chartResult.annualFortunes.at(0).toMap().contains(QStringLiteral("breakBranches"))
-    );
-    QVERIFY(
-        loadedRecord.chartResult.annualFortunes.at(0).toMap().contains(QStringLiteral("punishmentBranches"))
-    );
-    QVERIFY(
-        loadedRecord.chartResult.annualFortunes.at(0).toMap().contains(QStringLiteral("threeHarmonyCandidates"))
-    );
-    QVERIFY(
-        loadedRecord.chartResult.annualFortunes.at(0).toMap().contains(QStringLiteral("directionalCombinationCandidates"))
     );
     QCOMPARE(
         loadedRecord.chartResult.annualFortunesStatusMessage,
