@@ -26,6 +26,114 @@ QString verificationCasesFilePath()
         + QStringLiteral("/tests/data/verification_cases.json");
 }
 
+QJsonArray loadVerificationCases()
+{
+    QFile file(verificationCasesFilePath());
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return {};
+    }
+
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+        return {};
+    }
+
+    return document.object().value(QStringLiteral("cases")).toArray();
+}
+
+QStringList mismatchFields(
+    const QString &expectedYearPillar,
+    const QString &expectedMonthPillar,
+    const QString &expectedDayPillar,
+    const QString &expectedHourPillar,
+    const ChartResult &result
+)
+{
+    QStringList fields;
+
+    if (result.yearPillar != expectedYearPillar) {
+        fields << QStringLiteral("yearPillar");
+    }
+    if (result.monthPillar != expectedMonthPillar) {
+        fields << QStringLiteral("monthPillar");
+    }
+    if (result.dayPillar != expectedDayPillar) {
+        fields << QStringLiteral("dayPillar");
+    }
+    if (result.hourPillar != expectedHourPillar) {
+        fields << QStringLiteral("hourPillar");
+    }
+
+    return fields;
+}
+
+QString classifyVerificationDifference(const QStringList &fields)
+{
+    if (fields.isEmpty()) {
+        return QStringLiteral("match");
+    }
+
+    if (fields.size() > 1) {
+        return QStringLiteral("multiple_pillar_mismatch");
+    }
+
+    if (fields.contains(QStringLiteral("dayPillar"))) {
+        return QStringLiteral("possible_day_boundary_rule_gap");
+    }
+    if (fields.contains(QStringLiteral("hourPillar"))) {
+        return QStringLiteral("possible_hour_rule_gap");
+    }
+    if (fields.contains(QStringLiteral("monthPillar")) || fields.contains(QStringLiteral("yearPillar"))) {
+        return QStringLiteral("possible_calendar_rule_gap");
+    }
+
+    return QStringLiteral("requires_manual_review");
+}
+
+QString formatVerificationDifferenceReport(
+    const QJsonObject &caseObject,
+    const ChartResult &result
+)
+{
+    const QJsonObject expected = caseObject.value(QStringLiteral("expected")).toObject();
+    const QStringList fields = mismatchFields(
+        expected.value(QStringLiteral("yearPillar")).toString(),
+        expected.value(QStringLiteral("monthPillar")).toString(),
+        expected.value(QStringLiteral("dayPillar")).toString(),
+        expected.value(QStringLiteral("hourPillar")).toString(),
+        result
+    );
+
+    const QString classification = classifyVerificationDifference(fields);
+    const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
+    const QString description = caseObject.value(QStringLiteral("description")).toString();
+    const QString notes = caseObject.value(QStringLiteral("notes")).toString();
+
+    return QStringLiteral(
+        "[%1] %2\n"
+        "expected: %3 / %4 / %5 / %6\n"
+        "actual: %7 / %8 / %9 / %10\n"
+        "mismatch fields: %11\n"
+        "classification: %12\n"
+        "notes: %13"
+    ).arg(
+        caseId,
+        description,
+        expected.value(QStringLiteral("yearPillar")).toString(),
+        expected.value(QStringLiteral("monthPillar")).toString(),
+        expected.value(QStringLiteral("dayPillar")).toString(),
+        expected.value(QStringLiteral("hourPillar")).toString(),
+        result.yearPillar,
+        result.monthPillar,
+        result.dayPillar,
+        result.hourPillar,
+        fields.isEmpty() ? QStringLiteral("none") : fields.join(QStringLiteral(", ")),
+        classification,
+        notes.isEmpty() ? QStringLiteral("外部由来ケースのため要手動確認") : notes
+    );
+}
+
 }
 
 class CoreTests : public QObject
@@ -34,8 +142,9 @@ class CoreTests : public QObject
 
 private slots:
     void chartCalculatorReturnsNonEmptyResult();
-    void chartCalculatorMatchesVerificationCases_data();
-    void chartCalculatorMatchesVerificationCases();
+    void chartCalculatorMatchesRegressionVerificationCases_data();
+    void chartCalculatorMatchesRegressionVerificationCases();
+    void chartCalculatorReportsNonRegressionVerificationDifferences();
     void chartCalculatorYearPillarChangesWithBirthYear();
     void chartCalculatorReturnsStableResultForSameInput();
     void chartCalculatorHourPillarChangesWithBirthTime();
@@ -126,7 +235,7 @@ void CoreTests::chartCalculatorReturnsNonEmptyResult()
     QVERIFY(!result.description.isEmpty());
 }
 
-void CoreTests::chartCalculatorMatchesVerificationCases_data()
+void CoreTests::chartCalculatorMatchesRegressionVerificationCases_data()
 {
     QTest::addColumn<QString>("birthDate");
     QTest::addColumn<QString>("birthTime");
@@ -136,21 +245,7 @@ void CoreTests::chartCalculatorMatchesVerificationCases_data()
     QTest::addColumn<QString>("expectedDayPillar");
     QTest::addColumn<QString>("expectedHourPillar");
 
-    QFile file(verificationCasesFilePath());
-    QVERIFY2(
-        file.open(QIODevice::ReadOnly | QIODevice::Text),
-        qPrintable(QStringLiteral("検証用 JSON を開けません: %1").arg(file.fileName()))
-    );
-
-    QJsonParseError parseError;
-    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
-    QVERIFY2(
-        parseError.error == QJsonParseError::NoError,
-        qPrintable(QStringLiteral("検証用 JSON の解析に失敗しました: %1").arg(parseError.errorString()))
-    );
-    QVERIFY2(document.isObject(), "検証用 JSON のルートは object である必要があります。");
-
-    const QJsonArray cases = document.object().value(QStringLiteral("cases")).toArray();
+    const QJsonArray cases = loadVerificationCases();
     QVERIFY2(!cases.isEmpty(), "検証用ケースが 1 件もありません。");
 
     int enabledCaseCount = 0;
@@ -179,7 +274,7 @@ void CoreTests::chartCalculatorMatchesVerificationCases_data()
     QVERIFY2(enabledCaseCount > 0, "回帰テスト対象の検証ケースが 1 件もありません。");
 }
 
-void CoreTests::chartCalculatorMatchesVerificationCases()
+void CoreTests::chartCalculatorMatchesRegressionVerificationCases()
 {
     QFETCH(QString, birthDate);
     QFETCH(QString, birthTime);
@@ -198,6 +293,36 @@ void CoreTests::chartCalculatorMatchesVerificationCases()
     QCOMPARE(result.monthPillar, expectedMonthPillar);
     QCOMPARE(result.dayPillar, expectedDayPillar);
     QCOMPARE(result.hourPillar, expectedHourPillar);
+}
+
+void CoreTests::chartCalculatorReportsNonRegressionVerificationDifferences()
+{
+    const QJsonArray cases = loadVerificationCases();
+    QVERIFY2(!cases.isEmpty(), "検証用ケースが 1 件もありません。");
+
+    ChartCalculator calculator;
+    int reportedCaseCount = 0;
+
+    for (const QJsonValue &caseValue : cases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        const bool enabledForRegression = caseObject.value(QStringLiteral("enabledForRegression")).toBool(true);
+        const QString confidence = caseObject.value(QStringLiteral("confidence")).toString();
+        if (enabledForRegression && confidence != QStringLiteral("external")) {
+            continue;
+        }
+
+        const BirthInfo birthInfo{
+            caseObject.value(QStringLiteral("birthDate")).toString(),
+            caseObject.value(QStringLiteral("birthTime")).toString(),
+            caseObject.value(QStringLiteral("gender")).toString()
+        };
+        const ChartResult result = calculator.calculate(birthInfo);
+        const QString report = formatVerificationDifferenceReport(caseObject, result);
+        QWARN(qPrintable(report));
+        ++reportedCaseCount;
+    }
+
+    QVERIFY2(reportedCaseCount > 0, "比較レポート対象の non-regression ケースが 1 件もありません。");
 }
 
 void CoreTests::chartCalculatorYearPillarChangesWithBirthYear()
