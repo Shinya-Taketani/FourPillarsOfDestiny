@@ -26,6 +26,12 @@ QString verificationCasesFilePath()
         + QStringLiteral("/tests/data/verification_cases.json");
 }
 
+QString specGapRegistryFilePath()
+{
+    return QString::fromUtf8(FPOFD_SOURCE_DIR)
+        + QStringLiteral("/tests/data/spec_gap_registry.json");
+}
+
 QJsonArray loadVerificationCases()
 {
     QFile file(verificationCasesFilePath());
@@ -40,6 +46,34 @@ QJsonArray loadVerificationCases()
     }
 
     return document.object().value(QStringLiteral("cases")).toArray();
+}
+
+QJsonArray loadSpecGapRegistry()
+{
+    QFile file(specGapRegistryFilePath());
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return {};
+    }
+
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+        return {};
+    }
+
+    return document.object().value(QStringLiteral("specGaps")).toArray();
+}
+
+QJsonObject findSpecGapByRuleHint(const QJsonArray &specGaps, const QString &ruleHint)
+{
+    for (const QJsonValue &specGapValue : specGaps) {
+        const QJsonObject specGapObject = specGapValue.toObject();
+        if (specGapObject.value(QStringLiteral("ruleHint")).toString() == ruleHint) {
+            return specGapObject;
+        }
+    }
+
+    return {};
 }
 
 QStringList mismatchFields(
@@ -229,6 +263,7 @@ private slots:
     void chartCalculatorMatchesRegressionVerificationCases_data();
     void chartCalculatorMatchesRegressionVerificationCases();
     void chartCalculatorReportsNonRegressionVerificationDifferences();
+    void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
     void chartCalculatorReturnsStableResultForSameInput();
     void chartCalculatorHourPillarChangesWithBirthTime();
@@ -434,6 +469,65 @@ void CoreTests::chartCalculatorReportsNonRegressionVerificationDifferences()
         .arg(reviewOutcomeCounts.value(QStringLiteral("action_mismatch")))
         .arg(reviewOutcomeCounts.value(QStringLiteral("manual_review_required")));
     QWARN(qPrintable(summary));
+}
+
+void CoreTests::verificationSpecGapRegistryCoversKeepAsSpecGapCases()
+{
+    const QJsonArray verificationCases = loadVerificationCases();
+    QVERIFY2(!verificationCases.isEmpty(), "検証用ケースが 1 件もありません。");
+
+    const QJsonArray specGaps = loadSpecGapRegistry();
+    QVERIFY2(!specGaps.isEmpty(), "spec gap registry を読み込めません。");
+
+    int matchedCaseCount = 0;
+
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        if (caseObject.value(QStringLiteral("enabledForRegression")).toBool(true)) {
+            continue;
+        }
+        if (caseObject.value(QStringLiteral("expectedAction")).toString()
+            != QStringLiteral("keep_as_spec_gap")) {
+            continue;
+        }
+
+        const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
+        const QString ruleHint = caseObject.value(QStringLiteral("ruleHint")).toString();
+        QVERIFY2(!caseId.isEmpty(), "keep_as_spec_gap ケースの caseId が空です。");
+        QVERIFY2(!ruleHint.isEmpty(), qPrintable(QStringLiteral("%1 の ruleHint が空です。").arg(caseId)));
+
+        const QJsonObject specGapObject = findSpecGapByRuleHint(specGaps, ruleHint);
+        QVERIFY2(
+            !specGapObject.isEmpty(),
+            qPrintable(QStringLiteral("%1 に対応する spec gap が registry にありません。").arg(ruleHint))
+        );
+
+        const QJsonArray relatedCaseIds = specGapObject.value(QStringLiteral("relatedCaseIds")).toArray();
+        bool containsCaseId = false;
+        for (const QJsonValue &relatedCaseIdValue : relatedCaseIds) {
+            if (relatedCaseIdValue.toString() == caseId) {
+                containsCaseId = true;
+                break;
+            }
+        }
+
+        QVERIFY2(
+            containsCaseId,
+            qPrintable(QStringLiteral("%1 が %2 の relatedCaseIds に含まれていません。").arg(caseId, ruleHint))
+        );
+        QVERIFY2(
+            !specGapObject.value(QStringLiteral("status")).toString().isEmpty(),
+            qPrintable(QStringLiteral("%1 の status が空です。").arg(ruleHint))
+        );
+        QVERIFY2(
+            !specGapObject.value(QStringLiteral("adoptedSpec")).toString().isEmpty(),
+            qPrintable(QStringLiteral("%1 の adoptedSpec が空です。").arg(ruleHint))
+        );
+
+        ++matchedCaseCount;
+    }
+
+    QVERIFY2(matchedCaseCount > 0, "keep_as_spec_gap の non-regression ケースが 1 件もありません。");
 }
 
 void CoreTests::chartCalculatorYearPillarChangesWithBirthYear()

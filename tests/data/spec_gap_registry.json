@@ -1,0 +1,17 @@
+{
+  "specGaps": [
+    {
+      "ruleHint": "day_boundary_23_00",
+      "title": "日界は前日23:00開始として扱う",
+      "status": "active",
+      "category": "calendar_rule",
+      "adoptedSpec": "本アプリでは日界を前日23:00で切り替える。",
+      "externalDifference": "外部正答表では日柱差が生じるケースがある。",
+      "rationale": "現在の採用仕様として日界 23:00 を固定しているため。",
+      "relatedCaseIds": [
+        "TZ-003"
+      ],
+      "notes": "外部資料との差異はあるが、現段階では実装修正を行わず仕様差として保持する。"
+    }
+  ]
+}
