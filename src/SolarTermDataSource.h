@@ -1,14 +1,24 @@
 #pragma once
 
-#include <QJsonArray>
+#include <QDateTime>
+#include <QList>
 #include <QString>
+
+struct SolarTermEntry
+{
+    int year;
+    QString termName;
+    QString atIsoString;
+    QDateTime atDateTime;
+    QString timeZoneOffsetText;
+};
 
 struct SolarTermYearData
 {
     bool dataSourceAvailable;
     bool hasYearData;
     int year;
-    QJsonArray entries;
+    QList<SolarTermEntry> entries;
     QString statusMessage;
 };
 

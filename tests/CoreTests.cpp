@@ -700,6 +700,9 @@ void CoreTests::solarTermDataSourceLoadsSampleYearData()
     QVERIFY(yearData.hasYearData);
     QCOMPARE(yearData.year, 1990);
     QVERIFY(!yearData.entries.isEmpty());
+    QCOMPARE(yearData.entries.first().termName, QStringLiteral("立春"));
+    QVERIFY(yearData.entries.first().atDateTime.isValid());
+    QCOMPARE(yearData.entries.first().timeZoneOffsetText, QStringLiteral("+09:00"));
 }
 
 void CoreTests::solarTermDataSourceHandlesMissingYearData()

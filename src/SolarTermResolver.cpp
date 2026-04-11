@@ -4,8 +4,6 @@
 #include <limits>
 #include <QDate>
 #include <QDateTime>
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QTimeZone>
 
 namespace {
@@ -158,23 +156,12 @@ QString yearPillarForGregorianYear(int year)
 QList<SolarTermMoment> solarTermMomentsFromYearData(const SolarTermYearData &yearData)
 {
     QList<SolarTermMoment> moments;
-    for (const QJsonValue &entryValue : yearData.entries) {
-        if (!entryValue.isObject()) {
+    for (const SolarTermEntry &entry : yearData.entries) {
+        if (entry.termName.isEmpty() || !entry.atDateTime.isValid()) {
             continue;
         }
 
-        const QJsonObject entryObject = entryValue.toObject();
-        const QString termName = entryObject.value(QStringLiteral("term")).toString();
-        const QDateTime termDateTime = QDateTime::fromString(
-            entryObject.value(QStringLiteral("at")).toString(),
-            Qt::ISODate
-        );
-
-        if (termName.isEmpty() || !termDateTime.isValid()) {
-            continue;
-        }
-
-        moments.append({termName, termDateTime});
+        moments.append({entry.termName, entry.atDateTime});
     }
 
     return moments;
@@ -235,30 +222,15 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
     QString matchedTermName;
     const QDateTime birthDateTime(birthDate, QTime(0, 0), QTimeZone::systemTimeZone());
 
-    for (const QJsonValue &entryValue : yearData.entries) {
-        if (!entryValue.isObject()) {
-            continue;
-        }
-
-        const QJsonObject entryObject = entryValue.toObject();
-        const QString termName = entryObject.value(QStringLiteral("term")).toString();
-        const QDateTime termDateTime = QDateTime::fromString(
-            entryObject.value(QStringLiteral("at")).toString(),
-            Qt::ISODate
-        );
-
-        if (!termDateTime.isValid()) {
-            continue;
-        }
-
-        const int monthOffset = monthOffsetFromTerm(termName);
+    for (const SolarTermEntry &entry : yearData.entries) {
+        const int monthOffset = monthOffsetFromTerm(entry.termName);
         if (monthOffset < 0) {
             continue;
         }
 
-        if (termDateTime <= birthDateTime) {
+        if (entry.atDateTime <= birthDateTime) {
             matchedMonthOffset = monthOffset;
-            matchedTermName = termName;
+            matchedTermName = entry.termName;
         }
     }
 
