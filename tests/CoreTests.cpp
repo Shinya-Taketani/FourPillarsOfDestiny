@@ -49,6 +49,7 @@ private slots:
     void chartCalculatorCalculatesSolarTermDifferencePreparationForSupportedSampleYear();
     void chartCalculatorChangesReferencedSolarTermByDirection();
     void chartCalculatorCalculatesMajorFortunesForSupportedSampleYear();
+    void chartCalculatorReflectsMajorFortuneDirectionInPillars();
     void chartCalculatorChangesFortuneStartAgeByDirection();
     void chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
@@ -700,17 +701,58 @@ void CoreTests::chartCalculatorCalculatesMajorFortunesForSupportedSampleYear()
     QCOMPARE(majorFortunes.size(), 8);
     QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toInt(), 10);
     QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("endAge")).toInt(), 19);
-    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("戊寅"));
-    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("tenGod")).toString(), QStringLiteral("印綬"));
-    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("twelvePhase")).toString(), QStringLiteral("胎"));
+    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("己卯"));
+    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("tenGod")).toString(), QStringLiteral("偏印"));
+    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("twelvePhase")).toString(), QStringLiteral("絶"));
     QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("startAge")).toInt(), 20);
-    QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("己卯"));
-    QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("tenGod")).toString(), QStringLiteral("偏印"));
-    QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("twelvePhase")).toString(), QStringLiteral("絶"));
+    QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("庚辰"));
     QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("確定計算")));
+    QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("順逆反映済み")));
     QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("通変星と十二運")));
     QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("採用仕様")));
+    QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("順逆反映済み")));
     QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("通変星と十二運")));
+}
+
+void CoreTests::chartCalculatorReflectsMajorFortuneDirectionInPillars()
+{
+    ChartCalculator calculator;
+    const BirthInfo maleBirthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo femaleBirthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("女性")
+    };
+
+    const ChartResult maleResult = calculator.calculate(maleBirthInfo);
+    const ChartResult femaleResult = calculator.calculate(femaleBirthInfo);
+
+    QCOMPARE(
+        maleResult.majorFortuneDirection.value(QStringLiteral("direction")).toString(),
+        QStringLiteral("順行")
+    );
+    QCOMPARE(
+        femaleResult.majorFortuneDirection.value(QStringLiteral("direction")).toString(),
+        QStringLiteral("逆行")
+    );
+    QCOMPARE(
+        maleResult.majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(),
+        QStringLiteral("己卯")
+    );
+    QCOMPARE(
+        femaleResult.majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(),
+        QStringLiteral("丁丑")
+    );
+    QVERIFY(maleResult.majorFortunes.at(0).toMap().value(QStringLiteral("tenGod")).toString()
+            != femaleResult.majorFortunes.at(0).toMap().value(QStringLiteral("tenGod")).toString());
+    QVERIFY(maleResult.majorFortunes.at(0).toMap().value(QStringLiteral("twelvePhase")).toString()
+            != femaleResult.majorFortunes.at(0).toMap().value(QStringLiteral("twelvePhase")).toString());
+    QVERIFY(maleResult.majorFortunesStatusMessage.contains(QStringLiteral("順逆反映済み")));
+    QVERIFY(femaleResult.majorFortunesStatusMessage.contains(QStringLiteral("順逆反映済み")));
 }
 
 void CoreTests::chartCalculatorChangesFortuneStartAgeByDirection()
@@ -737,6 +779,14 @@ void CoreTests::chartCalculatorChangesFortuneStartAgeByDirection()
     QCOMPARE(
         femaleResult.majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toInt(),
         1
+    );
+    QCOMPARE(
+        maleResult.majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(),
+        QStringLiteral("己卯")
+    );
+    QCOMPARE(
+        femaleResult.majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(),
+        QStringLiteral("丁丑")
     );
     QVERIFY(maleResult.majorFortunes != femaleResult.majorFortunes);
 }

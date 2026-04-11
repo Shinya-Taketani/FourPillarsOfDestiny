@@ -590,7 +590,18 @@ QString pillarAtOffset(const QString &pillar, int offset)
         return QStringLiteral("未対応");
     }
 
-    return heavenlyStemAt((stemIndex + offset) % 10) + earthlyBranchAt((branchIndex + offset) % 12);
+    return heavenlyStemAt(positiveModulo(stemIndex + offset, 10))
+        + earthlyBranchAt(positiveModulo(branchIndex + offset, 12));
+}
+
+int signedMajorFortuneOffset(const QString &direction, int sequenceIndex)
+{
+    if (sequenceIndex < 0) {
+        return 0;
+    }
+
+    const int baseOffset = sequenceIndex + 1;
+    return direction == QStringLiteral("逆行") ? -baseOffset : baseOffset;
 }
 }
 
@@ -1330,6 +1341,7 @@ QVariantList ChartCalculator::calculateMajorFortunes(
 
     int startAge = solarTermDifferencePreparation.value(QStringLiteral("calculatedStartAge")).toInt();
     QString startAgeBasisNote = solarTermDifferencePreparation.value(QStringLiteral("note")).toString();
+    const QString direction = majorFortuneDirection.value(QStringLiteral("direction")).toString();
     QString statusMessageSuffix = QStringLiteral(
         "正節の節入り差を 3 日 = 1 年で換算し、端数は切り上げる採用仕様です。"
     );
@@ -1357,7 +1369,8 @@ QVariantList ChartCalculator::calculateMajorFortunes(
     for (int index = 0; index < 8; ++index) {
         const int rangeStartAge = startAge + index * 10;
         const int endAge = rangeStartAge + 9;
-        const QString fortunePillar = pillarAtOffset(monthPillar, index);
+        const int pillarOffset = signedMajorFortuneOffset(direction, index);
+        const QString fortunePillar = pillarAtOffset(monthPillar, pillarOffset);
         const QString fortuneTenGod = tenGodForFortunePillar(dayPillar, fortunePillar);
         const QString fortuneTwelvePhase = twelvePhaseForFortunePillar(dayPillar, fortunePillar);
         const QString traitsNote = (fortuneTenGod == QStringLiteral("未対応")
@@ -1373,12 +1386,12 @@ QVariantList ChartCalculator::calculateMajorFortunes(
             {QStringLiteral("tenGod"), fortuneTenGod},
             {QStringLiteral("twelvePhase"), fortuneTwelvePhase},
             {QStringLiteral("note"), QStringLiteral(
-                "起運年齢は %1 順逆は %2 を参照して確定計算していますが、大運干支の順逆反映は未実装です。%3"
+                "起運年齢は %1 順逆は %2 を参照した確定計算で、大運干支は月柱から %3 方向へ %4 として順逆反映済みです。%5"
             ).arg(
                 startAgeBasisNote,
-                majorFortuneDirection.value(QStringLiteral("direction")).toString().isEmpty()
-                    ? QStringLiteral("未対応")
-                    : majorFortuneDirection.value(QStringLiteral("direction")).toString(),
+                direction.isEmpty() ? QStringLiteral("未対応") : direction,
+                direction == QStringLiteral("逆行") ? QStringLiteral("前へ戻る") : QStringLiteral("先へ進む"),
+                QString::number(pillarOffset),
                 traitsNote
             )}
         });
@@ -1386,7 +1399,7 @@ QVariantList ChartCalculator::calculateMajorFortunes(
 
     if (statusMessage) {
         *statusMessage = QStringLiteral(
-            "月柱起点で並べた大運表示です。起運年齢は節入り差ベースの採用仕様で、%1 通変星と十二運は日干基準の最小本実装です。"
+            "月柱起点で順逆反映済みの大運表示です。起運年齢は節入り差ベースの採用仕様で、%1 通変星と十二運は更新後の大運干支に対する日干基準の最小本実装です。"
         ).arg(statusMessageSuffix);
     }
 
@@ -1614,7 +1627,7 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
           << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。")
           << QStringLiteral("起運年齢は正節との差分を 3 日 = 1 年、端数切り上げで換算します。")
-          << QStringLiteral("大運一覧は月柱起点で表示し、開始年齢は採用仕様の起運計算結果を反映しています。")
+          << QStringLiteral("大運一覧は月柱起点で、順行なら先へ、逆行なら前へ進めた干支列として順逆反映済みです。")
           << QStringLiteral("大運の順逆は年干陰陽と性別の組み合わせによる一般ルールで実判定しています。")
           << QStringLiteral("節入り差情報には、出生日時と参照正節日時との差分、および起運年齢換算結果を保持します。")
           << QStringLiteral("流年一覧は出生年から並べた最小表示骨格です。流年解釈は未実装です。");

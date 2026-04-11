@@ -441,7 +441,7 @@ Kirigami.Page {
                         width: parent.width
                         wrapMode: Text.WordWrap
                         color: Kirigami.Theme.disabledTextColor
-                        text: "開始年齢帯は、節入り差と順逆実判定を使った採用仕様の計算結果です。大運干支の順逆反映は未実装です。"
+                        text: "開始年齢帯は節入り差と順逆実判定を使った採用仕様の計算結果です。大運干支は月柱起点の順逆反映済みです。"
                     }
 
                     Label {
