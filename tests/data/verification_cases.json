@@ -1,6 +1,50 @@
 {
   "cases": [
     {
+      "caseId": "TZ-001",
+      "description": "阿部泰山資料由来の外部比較ケース",
+      "birthDate": "1923-01-15",
+      "birthTime": "14:00",
+      "gender": "男性",
+      "enabledForRegression": false,
+      "source": "verification_answer_key",
+      "confidence": "external",
+      "expectedDifferenceCategory": "requires_manual_review",
+      "expectedAction": "manual_review_required",
+      "ruleHint": "calendar_rule_general",
+      "reviewStatus": "pending",
+      "reviewNotes": "1923 年ケースで暦法・通日計算の双方を含むため、まずは手動確認対象として保持する。",
+      "notes": "『四柱推命学奥義伝』由来。丑月の蔵干境界も絡むため、回帰ではなく外部比較用に保持する。",
+      "expected": {
+        "yearPillar": "壬戌",
+        "monthPillar": "癸丑",
+        "dayPillar": "癸酉",
+        "hourPillar": "己未"
+      }
+    },
+    {
+      "caseId": "TZ-002",
+      "description": "阿部泰山全集由来の外部比較ケース",
+      "birthDate": "1883-12-14",
+      "birthTime": "04:00",
+      "gender": "男性",
+      "enabledForRegression": false,
+      "source": "verification_answer_key",
+      "confidence": "external",
+      "expectedDifferenceCategory": "requires_manual_review",
+      "expectedAction": "manual_review_required",
+      "ruleHint": "calendar_rule_general",
+      "reviewStatus": "pending",
+      "reviewNotes": "1883 年ケースで暦法・時柱・通日計算の複合確認が必要なため、手動確認対象として保持する。",
+      "notes": "『阿部泰山全集』由来。冬月の判定と時柱の整合を含めて後続検証する。",
+      "expected": {
+        "yearPillar": "癸未",
+        "monthPillar": "甲子",
+        "dayPillar": "丙午",
+        "hourPillar": "庚寅"
+      }
+    },
+    {
       "caseId": "TZ-003",
       "description": "検証用正答表から取り込んだ基準ケース",
       "birthDate": "1952-05-10",
@@ -20,6 +64,72 @@
         "monthPillar": "乙巳",
         "dayPillar": "戊寅",
         "hourPillar": "丁巳"
+      }
+    },
+    {
+      "caseId": "DOC-2026-0203-2330",
+      "description": "大運・流年判断ロジック研究の境界付近ケース",
+      "birthDate": "2026-02-03",
+      "birthTime": "23:30",
+      "gender": "男性",
+      "enabledForRegression": false,
+      "source": "logic_research_example",
+      "confidence": "external",
+      "expectedDifferenceCategory": "possible_day_boundary_rule_gap",
+      "expectedAction": "manual_review_required",
+      "ruleHint": "day_boundary_23_00",
+      "reviewStatus": "pending",
+      "reviewNotes": "23:00 日界と立春前判定が同時に絡むため、外部資料との整合を継続確認する。",
+      "notes": "研究資料の中間値ログ形式例。日界と時柱の境界実装確認に使う。",
+      "expected": {
+        "yearPillar": "乙巳",
+        "monthPillar": "己丑",
+        "dayPillar": "己酉",
+        "hourPillar": "甲子"
+      }
+    },
+    {
+      "caseId": "DOC-2026-0204-0600",
+      "description": "立春直後ケースの外部比較用サンプル",
+      "birthDate": "2026-02-04",
+      "birthTime": "06:00",
+      "gender": "女性",
+      "enabledForRegression": false,
+      "source": "logic_research_example",
+      "confidence": "external",
+      "expectedDifferenceCategory": "multiple_pillar_mismatch",
+      "expectedAction": "investigate_implementation",
+      "ruleHint": "principal_term_boundary",
+      "reviewStatus": "pending",
+      "reviewNotes": "研究資料では 05:02 の立春を採るため、本アプリの固定サンプル節入り時刻との差分確認が必要。",
+      "notes": "年柱・月柱の境界差が出やすいため、実装修正候補の洗い出し用に保持する。",
+      "expected": {
+        "yearPillar": "丙午",
+        "monthPillar": "庚寅",
+        "dayPillar": "己酉",
+        "hourPillar": "丁卯"
+      }
+    },
+    {
+      "caseId": "DOC-2026-1220-2230",
+      "description": "命式判断ロジック研究の冬月ケース",
+      "birthDate": "2026-12-20",
+      "birthTime": "22:30",
+      "gender": "女性",
+      "enabledForRegression": false,
+      "source": "logic_research_example",
+      "confidence": "external",
+      "expectedDifferenceCategory": "possible_hour_rule_gap",
+      "expectedAction": "manual_review_required",
+      "ruleHint": "hour_pillar_rule",
+      "reviewStatus": "pending",
+      "reviewNotes": "冬月ケースの時柱比較を確保し、時刻帯ルール差の確認用に保持する。",
+      "notes": "研究資料の四柱例。まずは non-regression の時柱比較母数を増やす目的で追加する。",
+      "expected": {
+        "yearPillar": "丙午",
+        "monthPillar": "庚子",
+        "dayPillar": "戊辰",
+        "hourPillar": "癸亥"
       }
     },
     {

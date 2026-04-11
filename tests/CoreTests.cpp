@@ -263,6 +263,7 @@ private slots:
     void chartCalculatorMatchesRegressionVerificationCases_data();
     void chartCalculatorMatchesRegressionVerificationCases();
     void chartCalculatorReportsNonRegressionVerificationDifferences();
+    void verificationNonRegressionCasesContainReviewMetadata();
     void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
     void chartCalculatorReturnsStableResultForSameInput();
@@ -528,6 +529,54 @@ void CoreTests::verificationSpecGapRegistryCoversKeepAsSpecGapCases()
     }
 
     QVERIFY2(matchedCaseCount > 0, "keep_as_spec_gap の non-regression ケースが 1 件もありません。");
+}
+
+void CoreTests::verificationNonRegressionCasesContainReviewMetadata()
+{
+    const QJsonArray verificationCases = loadVerificationCases();
+    QVERIFY2(!verificationCases.isEmpty(), "検証用ケースが 1 件もありません。");
+
+    int externalNonRegressionCount = 0;
+
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        if (caseObject.value(QStringLiteral("enabledForRegression")).toBool(true)) {
+            continue;
+        }
+        if (caseObject.value(QStringLiteral("confidence")).toString() != QStringLiteral("external")) {
+            continue;
+        }
+
+        const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
+        QVERIFY2(!caseId.isEmpty(), "external non-regression ケースの caseId が空です。");
+        QVERIFY2(
+            !caseObject.value(QStringLiteral("expectedDifferenceCategory")).toString().isEmpty(),
+            qPrintable(QStringLiteral("%1 の expectedDifferenceCategory が空です。").arg(caseId))
+        );
+        QVERIFY2(
+            !caseObject.value(QStringLiteral("expectedAction")).toString().isEmpty(),
+            qPrintable(QStringLiteral("%1 の expectedAction が空です。").arg(caseId))
+        );
+        QVERIFY2(
+            !caseObject.value(QStringLiteral("ruleHint")).toString().isEmpty(),
+            qPrintable(QStringLiteral("%1 の ruleHint が空です。").arg(caseId))
+        );
+        QVERIFY2(
+            !caseObject.value(QStringLiteral("reviewStatus")).toString().isEmpty(),
+            qPrintable(QStringLiteral("%1 の reviewStatus が空です。").arg(caseId))
+        );
+        QVERIFY2(
+            !caseObject.value(QStringLiteral("reviewNotes")).toString().isEmpty(),
+            qPrintable(QStringLiteral("%1 の reviewNotes が空です。").arg(caseId))
+        );
+
+        ++externalNonRegressionCount;
+    }
+
+    QVERIFY2(
+        externalNonRegressionCount >= 5,
+        qPrintable(QStringLiteral("external non-regression ケース数が不足しています: %1").arg(externalNonRegressionCount))
+    );
 }
 
 void CoreTests::chartCalculatorYearPillarChangesWithBirthYear()
