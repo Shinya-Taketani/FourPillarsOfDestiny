@@ -27,11 +27,14 @@ private slots:
     void chartCalculatorReturnsStableResultForSameInput();
     void chartCalculatorHourPillarChangesWithBirthTime();
     void chartCalculatorHandlesMissingBirthTime();
+    void chartCalculatorChangesDayPillarAcross23HourBoundary();
+    void chartCalculatorChangesYearPillarAcrossLichunBoundary();
     void chartCalculatorReturnsMonthPillarFor1955SampleYear();
     void chartCalculatorReturnsMonthPillarFor1971YearStartCase();
     void chartCalculatorReturnsMonthPillarFor1985SampleYear();
     void chartCalculatorReturnsMonthPillarFor1995SampleYear();
     void chartCalculatorReturnsMonthPillarForSupportedSampleYear();
+    void chartCalculatorChangesMonthPillarAcrossPrincipalTermTimeBoundary();
     void chartCalculatorCalculatesTenGodsForSupportedSampleYear();
     void chartCalculatorCalculatesHiddenStemsForSupportedSampleYear();
     void chartCalculatorCalculatesFiveElementsForSupportedSampleYear();
@@ -238,6 +241,50 @@ void CoreTests::chartCalculatorHandlesMissingBirthTime()
     QCOMPARE(result.hourPillar, QStringLiteral("時柱未計算"));
 }
 
+void CoreTests::chartCalculatorChangesDayPillarAcross23HourBoundary()
+{
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("22:59"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("23:00"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
+
+    QCOMPARE(beforeResult.dayPillar, QStringLiteral("辛丑"));
+    QCOMPARE(afterResult.dayPillar, QStringLiteral("壬寅"));
+    QVERIFY(beforeResult.dayPillar != afterResult.dayPillar);
+}
+
+void CoreTests::chartCalculatorChangesYearPillarAcrossLichunBoundary()
+{
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1990-02-04"),
+        QStringLiteral("11:59"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1990-02-04"),
+        QStringLiteral("12:00"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
+
+    QCOMPARE(beforeResult.yearPillar, QStringLiteral("己巳"));
+    QCOMPARE(afterResult.yearPillar, QStringLiteral("庚午"));
+    QVERIFY(beforeResult.yearPillar != afterResult.yearPillar);
+}
+
 void CoreTests::chartCalculatorReturnsMonthPillarFor1955SampleYear()
 {
     ChartCalculator calculator;
@@ -250,7 +297,7 @@ void CoreTests::chartCalculatorReturnsMonthPillarFor1955SampleYear()
     const ChartResult result = calculator.calculate(birthInfo);
 
     QCOMPARE(result.monthPillar, QStringLiteral("戊寅"));
-    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("節入りサンプルデータによる限定実装")));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("本アプリ採用仕様")));
 }
 
 void CoreTests::chartCalculatorReturnsMonthPillarFor1971YearStartCase()
@@ -265,7 +312,7 @@ void CoreTests::chartCalculatorReturnsMonthPillarFor1971YearStartCase()
     const ChartResult result = calculator.calculate(birthInfo);
 
     QCOMPARE(result.monthPillar, QStringLiteral("己丑"));
-    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("前年の最終月区間")));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("小寒")));
 }
 
 void CoreTests::chartCalculatorReturnsMonthPillarFor1985SampleYear()
@@ -280,7 +327,7 @@ void CoreTests::chartCalculatorReturnsMonthPillarFor1985SampleYear()
     const ChartResult result = calculator.calculate(birthInfo);
 
     QCOMPARE(result.monthPillar, QStringLiteral("戊寅"));
-    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("節入りサンプルデータによる限定実装")));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("本アプリ採用仕様")));
 }
 
 void CoreTests::chartCalculatorReturnsMonthPillarFor1995SampleYear()
@@ -295,7 +342,7 @@ void CoreTests::chartCalculatorReturnsMonthPillarFor1995SampleYear()
     const ChartResult result = calculator.calculate(birthInfo);
 
     QCOMPARE(result.monthPillar, QStringLiteral("戊寅"));
-    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("節入りサンプルデータによる限定実装")));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("本アプリ採用仕様")));
 }
 
 void CoreTests::chartCalculatorReturnsMonthPillarForSupportedSampleYear()
@@ -311,7 +358,29 @@ void CoreTests::chartCalculatorReturnsMonthPillarForSupportedSampleYear()
 
     QCOMPARE(result.monthPillar, QStringLiteral("戊寅"));
     QVERIFY(!result.monthPillarStatusMessage.isEmpty());
-    QVERIFY(result.description.contains(QStringLiteral("節入りサンプルデータによる限定実装")));
+    QVERIFY(result.description.contains(QStringLiteral("正節の節入り日時基準")));
+}
+
+void CoreTests::chartCalculatorChangesMonthPillarAcrossPrincipalTermTimeBoundary()
+{
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        QStringLiteral("1990-04-05"),
+        QStringLiteral("11:59"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo afterBoundary{
+        QStringLiteral("1990-04-05"),
+        QStringLiteral("12:00"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult afterResult = calculator.calculate(afterBoundary);
+
+    QCOMPARE(beforeResult.monthPillar, QStringLiteral("己卯"));
+    QCOMPARE(afterResult.monthPillar, QStringLiteral("庚辰"));
+    QVERIFY(beforeResult.monthPillar != afterResult.monthPillar);
 }
 
 void CoreTests::chartCalculatorCalculatesTenGodsForSupportedSampleYear()
@@ -564,20 +633,20 @@ void CoreTests::chartCalculatorCalculatesSolarTermDifferencePreparationForSuppor
     );
     QCOMPARE(
         result.solarTermDifferencePreparation.value(QStringLiteral("absoluteDifferenceMinutes")).toLongLong(),
-        40950
+        41670
     );
     QCOMPARE(
         result.solarTermDifferencePreparation.value(QStringLiteral("differenceDays")).toString(),
-        QStringLiteral("28.44")
+        QStringLiteral("28.94")
     );
     QCOMPARE(
         result.solarTermDifferencePreparation.value(QStringLiteral("calculatedStartAge")).toInt(),
         10
     );
     QVERIFY(
-        result.solarTermDifferencePreparation.value(QStringLiteral("note")).toString().contains(QStringLiteral("参考実計算"))
+        result.solarTermDifferencePreparation.value(QStringLiteral("note")).toString().contains(QStringLiteral("本アプリ採用仕様"))
     );
-    QVERIFY(result.solarTermDifferencePreparationStatusMessage.contains(QStringLiteral("精密化準備")));
+    QVERIFY(result.solarTermDifferencePreparationStatusMessage.contains(QStringLiteral("採用仕様")));
 }
 
 void CoreTests::chartCalculatorChangesReferencedSolarTermByDirection()
@@ -638,9 +707,9 @@ void CoreTests::chartCalculatorCalculatesMajorFortunesForSupportedSampleYear()
     QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("己卯"));
     QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("tenGod")).toString(), QStringLiteral("偏印"));
     QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("twelvePhase")).toString(), QStringLiteral("絶"));
-    QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("参考実計算")));
+    QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("確定計算")));
     QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("通変星と十二運")));
-    QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("参考実計算")));
+    QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("採用仕様")));
     QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("通変星と十二運")));
 }
 
@@ -823,7 +892,9 @@ void CoreTests::solarTermDataSourceLoadsSampleYearData()
     QVERIFY(yearData.hasYearData);
     QCOMPARE(yearData.year, 1990);
     QVERIFY(!yearData.entries.isEmpty());
-    QCOMPARE(yearData.entries.first().termName, QStringLiteral("立春"));
+    QCOMPARE(yearData.entries.size(), 12);
+    QCOMPARE(yearData.entries.first().termName, QStringLiteral("小寒"));
+    QCOMPARE(yearData.entries.at(1).termName, QStringLiteral("立春"));
     QVERIFY(yearData.entries.first().atDateTime.isValid());
     QCOMPARE(yearData.entries.first().timeZoneOffsetText, QStringLiteral("+09:00"));
 }
@@ -976,7 +1047,7 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
     const ChartResult result = calculator.calculate(birthInfo);
 
     QCOMPARE(result.monthPillar, QStringLiteral("月柱未対応"));
-    QCOMPARE(result.monthPillarStatusMessage, QStringLiteral("節入りデータは外部 JSON 方式を採用していますが、指定年データが未整備です。"));
+    QCOMPARE(result.monthPillarStatusMessage, QStringLiteral("指定年の正節データが未整備のため、月柱を確定できません。"));
     QCOMPARE(result.tenGods.value(QStringLiteral("monthPillar")).toString(), QStringLiteral("未対応"));
     QCOMPARE(
         result.hiddenStems.value(QStringLiteral("monthPillar")).toStringList(),
@@ -1018,7 +1089,7 @@ void CoreTests::chartCalculatorReturnsUnsupportedMonthPillarForUnsupportedYear()
     QCOMPARE(result.annualFortunes.at(0).toMap().value(QStringLiteral("year")).toInt(), 1949);
     QCOMPARE(result.annualFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("己丑"));
     QVERIFY(result.annualFortunesStatusMessage.contains(QStringLiteral("仮骨格")));
-    QVERIFY(result.description.contains(QStringLiteral("指定年データが未整備")));
+    QVERIFY(result.description.contains(QStringLiteral("指定年の正節データが未整備")));
 }
 
 void CoreTests::chartCalculatorProvidesMonthPillarStatusMessage()
@@ -1033,7 +1104,7 @@ void CoreTests::chartCalculatorProvidesMonthPillarStatusMessage()
     const ChartResult result = calculator.calculate(birthInfo);
 
     QCOMPARE(result.monthPillar, QStringLiteral("己丑"));
-    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("前年の最終月区間")));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("小寒")));
 }
 
 void CoreTests::solarTermResolverReturnsSupportedSampleContract()
@@ -1051,7 +1122,7 @@ void CoreTests::solarTermResolverReturnsSupportedSampleContract()
     QVERIFY(resolution.isImplemented);
     QVERIFY(resolution.canDetermineMonthPillar);
     QCOMPARE(resolution.monthPillar, QStringLiteral("戊寅"));
-    QVERIFY(resolution.statusMessage.contains(QStringLiteral("節入りサンプルデータによる限定実装")));
+    QVERIFY(resolution.statusMessage.contains(QStringLiteral("本アプリ採用仕様")));
 }
 
 void CoreTests::chartResultToVariantMapContainsRequiredKeys()
@@ -1925,7 +1996,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("格局候補:")));
     QVERIFY(content.contains(QStringLiteral("順逆:")));
     QVERIFY(content.contains(QStringLiteral("出生日時(節入り差準備):")));
-    QVERIFY(content.contains(QStringLiteral("参考起運年齢:")));
+    QVERIFY(content.contains(QStringLiteral("起運年齢:")));
     QVERIFY(content.contains(QStringLiteral("大運一覧:")));
     QVERIFY(content.contains(QStringLiteral("流年一覧:")));
     QVERIFY(content.contains(QStringLiteral("十二運:")));

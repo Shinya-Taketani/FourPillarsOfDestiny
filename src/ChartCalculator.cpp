@@ -1,9 +1,12 @@
 #include "ChartCalculator.h"
+#include "SolarTermDataSource.h"
 
 #include <cmath>
 #include <QDate>
+#include <QDateTime>
 #include <algorithm>
 #include <QTime>
+#include <QTimeZone>
 
 namespace {
 enum class FiveElement
@@ -61,10 +64,60 @@ QString earthlyBranchAt(int index)
     return branches.at(index);
 }
 
+QString yearPillarForGregorianYear(int year)
+{
+    const int offset = ((year - 1984) % 60 + 60) % 60;
+    return heavenlyStemAt(offset % 10) + earthlyBranchAt(offset % 12);
+}
+
 int positiveModulo(int value, int divisor)
 {
     const int remainder = value % divisor;
     return remainder < 0 ? remainder + divisor : remainder;
+}
+
+QDateTime birthDateTimeForCalculation(
+    const BirthInfo &birthInfo,
+    const QTimeZone &timeZone = QTimeZone::systemTimeZone()
+)
+{
+    const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
+    if (!birthDate.isValid()) {
+        return {};
+    }
+
+    QTime birthTime = QTime::fromString(birthInfo.birthTime, QStringLiteral("HH:mm"));
+    if (!birthTime.isValid()) {
+        birthTime = QTime(0, 0);
+    }
+
+    return QDateTime(birthDate, birthTime, timeZone);
+}
+
+QDate dayBoundaryAdjustedDate(const BirthInfo &birthInfo)
+{
+    const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
+    if (!birthDate.isValid()) {
+        return {};
+    }
+
+    const QTime birthTime = QTime::fromString(birthInfo.birthTime, QStringLiteral("HH:mm"));
+    if (birthTime.isValid() && birthTime >= QTime(23, 0)) {
+        return birthDate.addDays(1);
+    }
+
+    return birthDate;
+}
+
+QDateTime solarTermDateTimeForTerm(const SolarTermYearData &yearData, const QString &termName)
+{
+    for (const SolarTermEntry &entry : yearData.entries) {
+        if (entry.termName == termName && entry.atDateTime.isValid()) {
+            return entry.atDateTime;
+        }
+    }
+
+    return {};
 }
 
 int heavenlyStemIndex(const QString &pillar)
@@ -680,10 +733,22 @@ QString ChartCalculator::calculateYearPillar(const BirthInfo &birthInfo) const
         return QStringLiteral("年柱未計算");
     }
 
-    // 1984 年を甲子年の基準として暦年ベースで算出する。
-    // 立春基準の年切り替えは未実装。
-    const int offset = positiveModulo(birthDate.year() - 1984, 60);
-    return heavenlyStemAt(offset % 10) + earthlyBranchAt(offset % 12);
+    SolarTermDataSource dataSource;
+    const SolarTermYearData yearData = dataSource.loadYearData(birthDate.year());
+    const QDateTime lichunDateTime = solarTermDateTimeForTerm(yearData, QStringLiteral("立春"));
+
+    if (!lichunDateTime.isValid()) {
+        return yearPillarForGregorianYear(birthDate.year());
+    }
+
+    const QDateTime birthDateTime = birthDateTimeForCalculation(birthInfo, lichunDateTime.timeZone());
+    if (!birthDateTime.isValid()) {
+        return QStringLiteral("年柱未計算");
+    }
+
+    return birthDateTime < lichunDateTime
+        ? yearPillarForGregorianYear(birthDate.year() - 1)
+        : yearPillarForGregorianYear(birthDate.year());
 }
 
 SolarTermResolution ChartCalculator::calculateMonthPillarResolution(
@@ -696,15 +761,14 @@ SolarTermResolution ChartCalculator::calculateMonthPillarResolution(
 
 QString ChartCalculator::calculateDayPillar(const BirthInfo &birthInfo) const
 {
-    const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
-    if (!birthDate.isValid()) {
+    const QDate dayCalculationDate = dayBoundaryAdjustedDate(birthInfo);
+    if (!dayCalculationDate.isValid()) {
         return QStringLiteral("日柱未計算");
     }
 
-    // 1984-02-02 を丙寅日とする最小基準で暦日ベース算出する。
-    // 地方時補正や日界の厳密判定は未実装。
+    // このプロジェクトでは前日 23:00 開始の日界を採用する。
     const QDate referenceDate(1984, 2, 2);
-    const int dayIndex = positiveModulo(2 + referenceDate.daysTo(birthDate), 60);
+    const int dayIndex = positiveModulo(2 + referenceDate.daysTo(dayCalculationDate), 60);
     return heavenlyStemAt(dayIndex % 10) + earthlyBranchAt(dayIndex % 12);
 }
 
@@ -1267,22 +1331,12 @@ QVariantList ChartCalculator::calculateMajorFortunes(
     int startAge = solarTermDifferencePreparation.value(QStringLiteral("calculatedStartAge")).toInt();
     QString startAgeBasisNote = solarTermDifferencePreparation.value(QStringLiteral("note")).toString();
     QString statusMessageSuffix = QStringLiteral(
-        "節入り差を 3 日 = 1 年で換算し、端数切り上げした参考実計算です。"
+        "正節の節入り差を 3 日 = 1 年で換算し、端数は切り上げる採用仕様です。"
     );
-
-    if (startAge <= 0) {
-        startAge = calculateTentativeFortuneStartAge(birthInfo);
-        startAgeBasisNote = QStringLiteral(
-            "参照節入りを確定できないため、出生月日ベースの暫定起運年齢へフォールバックしています。"
-        );
-        statusMessageSuffix = QStringLiteral(
-            "順逆または節入り差を確定できないため、出生月日ベースの暫定起運年齢へフォールバックしています。"
-        );
-    }
 
     if (startAge < 0) {
         if (statusMessage) {
-            *statusMessage = QStringLiteral("生年月日を取得できないため、大運一覧は未対応です。");
+            *statusMessage = QStringLiteral("節入り差または順逆を確定できないため、大運開始年齢を計算できません。");
         }
 
         return {
@@ -1294,7 +1348,7 @@ QVariantList ChartCalculator::calculateMajorFortunes(
                 {QStringLiteral("pillar"), QStringLiteral("未対応")},
                 {QStringLiteral("tenGod"), QStringLiteral("未対応")},
                 {QStringLiteral("twelvePhase"), QStringLiteral("未対応")},
-                {QStringLiteral("note"), QStringLiteral("生年月日を取得できないため、起運年齢の参考値を生成できません。")}
+                {QStringLiteral("note"), QStringLiteral("順逆または正節データを確定できないため、起運年齢を計算できません。")}
             }
         };
     }
@@ -1319,7 +1373,7 @@ QVariantList ChartCalculator::calculateMajorFortunes(
             {QStringLiteral("tenGod"), fortuneTenGod},
             {QStringLiteral("twelvePhase"), fortuneTwelvePhase},
             {QStringLiteral("note"), QStringLiteral(
-                "起運年齢は %1 順逆は %2 を参照していますが、大運干支の順逆反映は未実装です。%3"
+                "起運年齢は %1 順逆は %2 を参照して確定計算していますが、大運干支の順逆反映は未実装です。%3"
             ).arg(
                 startAgeBasisNote,
                 majorFortuneDirection.value(QStringLiteral("direction")).toString().isEmpty()
@@ -1332,7 +1386,7 @@ QVariantList ChartCalculator::calculateMajorFortunes(
 
     if (statusMessage) {
         *statusMessage = QStringLiteral(
-            "月柱起点で並べた大運表示の仮骨格です。起運年齢は節入り差ベースの参考実計算で、%1 通変星と十二運は日干基準の最小本実装です。"
+            "月柱起点で並べた大運表示です。起運年齢は節入り差ベースの採用仕様で、%1 通変星と十二運は日干基準の最小本実装です。"
         ).arg(statusMessageSuffix);
     }
 
@@ -1463,10 +1517,10 @@ QVariantMap ChartCalculator::calculateSolarTermDifferencePreparation(
 
     if (direction == QStringLiteral("順行")) {
         resolution = m_solarTermResolver.resolveNextSolarTermDifference(birthInfo);
-        selectionNote = QStringLiteral("順行のため、出生日時より後の節入りを参照しています。");
+        selectionNote = QStringLiteral("順行のため、出生日時より後の次の正節を参照しています。");
     } else if (direction == QStringLiteral("逆行")) {
         resolution = m_solarTermResolver.resolvePreviousSolarTermDifference(birthInfo);
-        selectionNote = QStringLiteral("逆行のため、出生日時より前の節入りを参照しています。");
+        selectionNote = QStringLiteral("逆行のため、出生日時より前の前の正節を参照しています。");
     } else {
         resolution = m_solarTermResolver.resolveNearestSolarTermDifference(birthInfo);
         selectionNote = QStringLiteral("順逆が未確定のため、最寄り節入りを暫定参照しています。");
@@ -1489,7 +1543,7 @@ QVariantMap ChartCalculator::calculateSolarTermDifferencePreparation(
             {QStringLiteral("differenceDays"), QStringLiteral("未対応")},
             {QStringLiteral("calculatedStartAge"), -1},
             {QStringLiteral("conversionRule"), QStringLiteral("未対応")},
-            {QStringLiteral("note"), QStringLiteral("節入り差から起運日数へ進むための前処理は未対応です。%1").arg(selectionNote)}
+            {QStringLiteral("note"), QStringLiteral("正節との差分を使う起運計算を完了できません。%1").arg(selectionNote)}
         };
     }
 
@@ -1509,7 +1563,7 @@ QVariantMap ChartCalculator::calculateSolarTermDifferencePreparation(
         {QStringLiteral("calculatedStartAge"), calculatedStartAge},
         {QStringLiteral("conversionRule"), QStringLiteral("差分 3 日 = 1 年、端数切り上げ")},
         {QStringLiteral("note"), QStringLiteral(
-            "出生日時と参照節入り日時との差分を使い、差分 3 日 = 1 年・端数切り上げで %1 歳起運の参考実計算に変換しています。%2"
+            "本アプリ採用仕様として、出生日時と参照正節日時との差分を差分 3 日 = 1 年・端数切り上げで %1 歳起運に換算しています。%2"
         ).arg(calculatedStartAge).arg(selectionNote)}
     };
 }
@@ -1517,12 +1571,11 @@ QVariantMap ChartCalculator::calculateSolarTermDifferencePreparation(
 int ChartCalculator::calculateFortuneStartAgeFromDifferenceMinutes(qint64 absoluteDifferenceMinutes) const
 {
     if (absoluteDifferenceMinutes <= 0) {
-        return 1;
+        return 0;
     }
 
     const double differenceDays = static_cast<double>(absoluteDifferenceMinutes) / (60.0 * 24.0);
-    const int convertedAge = static_cast<int>(std::ceil(differenceDays / 3.0));
-    return std::clamp(convertedAge, 1, 10);
+    return static_cast<int>(std::ceil(differenceDays / 3.0));
 }
 
 int ChartCalculator::calculateTentativeFortuneStartAge(const BirthInfo &birthInfo) const
@@ -1546,11 +1599,11 @@ QString ChartCalculator::buildDescription(
 {
     QStringList lines;
 
-    lines << QStringLiteral("一般四柱推命の共通計算基盤の途中実装です。")
-          << QStringLiteral("年柱は暦年ベースで計算しています。立春基準の年切り替えは未対応です。")
-          << QStringLiteral("月柱は節入り判定責務を分離済みです。")
+    lines << QStringLiteral("一般四柱推命の共通計算基盤として、このソフトで採用する暦法と起運計算を反映しています。")
+          << QStringLiteral("年柱は立春の節入り日時基準で切り替えます。")
+          << QStringLiteral("月柱は正節の節入り日時基準で切り替えます。")
           << monthResolution.statusMessage
-          << QStringLiteral("日柱は暦日ベースの最小実装です。地方時補正や日界の厳密判定は未対応です。")
+          << QStringLiteral("日柱は前日 23:00 開始の日界で切り替えます。地方時補正は未実装です。")
           << QStringLiteral("時柱は日干と出生時刻から最小実装で計算しています。")
           << QStringLiteral("通変星は日干を基準に、年干・月干・時干の天干どうしのみ最小実装しています。")
           << QStringLiteral("蔵干は各支に対応する一般的な一覧のみ最小実装しています。")
@@ -1560,9 +1613,10 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("寒暖・乾湿評価は月支ベースの調候前提情報を最小実装しています。")
           << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
           << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。")
-          << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢は節入り差を 3 日 = 1 年で換算した参考実計算です。")
+          << QStringLiteral("起運年齢は正節との差分を 3 日 = 1 年、端数切り上げで換算します。")
+          << QStringLiteral("大運一覧は月柱起点で表示し、開始年齢は採用仕様の起運計算結果を反映しています。")
           << QStringLiteral("大運の順逆は年干陰陽と性別の組み合わせによる一般ルールで実判定しています。")
-          << QStringLiteral("節入り差準備情報は出生日時と参照節入り日時との差分、および起運年齢への参考換算値を保持する参考表示です。")
+          << QStringLiteral("節入り差情報には、出生日時と参照正節日時との差分、および起運年齢換算結果を保持します。")
           << QStringLiteral("流年一覧は出生年から並べた最小表示骨格です。流年解釈は未実装です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {

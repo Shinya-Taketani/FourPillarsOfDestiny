@@ -20,14 +20,74 @@ enum class SolarTermReferenceMode
     Next = 2
 };
 
+bool isPrincipalTermName(const QString &termName)
+{
+    static const QStringList principalTerms{
+        QStringLiteral("小寒"),
+        QStringLiteral("立春"),
+        QStringLiteral("啓蟄"),
+        QStringLiteral("清明"),
+        QStringLiteral("立夏"),
+        QStringLiteral("芒種"),
+        QStringLiteral("小暑"),
+        QStringLiteral("立秋"),
+        QStringLiteral("白露"),
+        QStringLiteral("寒露"),
+        QStringLiteral("立冬"),
+        QStringLiteral("大雪")
+    };
+
+    return principalTerms.contains(termName);
+}
+
 int monthOffsetFromTerm(const QString &termName)
 {
+    if (termName == QStringLiteral("小寒")) {
+        return 11;
+    }
+
     if (termName == QStringLiteral("立春")) {
         return 0;
     }
 
     if (termName == QStringLiteral("啓蟄")) {
         return 1;
+    }
+
+    if (termName == QStringLiteral("清明")) {
+        return 2;
+    }
+
+    if (termName == QStringLiteral("立夏")) {
+        return 3;
+    }
+
+    if (termName == QStringLiteral("芒種")) {
+        return 4;
+    }
+
+    if (termName == QStringLiteral("小暑")) {
+        return 5;
+    }
+
+    if (termName == QStringLiteral("立秋")) {
+        return 6;
+    }
+
+    if (termName == QStringLiteral("白露")) {
+        return 7;
+    }
+
+    if (termName == QStringLiteral("寒露")) {
+        return 8;
+    }
+
+    if (termName == QStringLiteral("立冬")) {
+        return 9;
+    }
+
+    if (termName == QStringLiteral("大雪")) {
+        return 10;
     }
 
     return -1;
@@ -164,7 +224,7 @@ QList<SolarTermMoment> solarTermMomentsFromYearData(const SolarTermYearData &yea
 {
     QList<SolarTermMoment> moments;
     for (const SolarTermEntry &entry : yearData.entries) {
-        if (entry.termName.isEmpty() || !entry.atDateTime.isValid()) {
+        if (entry.termName.isEmpty() || !entry.atDateTime.isValid() || !isPrincipalTermName(entry.termName)) {
             continue;
         }
 
@@ -344,7 +404,7 @@ SolarTermDifferenceResolution resolveSolarTermDifference(
         : QStringLiteral("直後節入り");
 
     QString statusMessage = QStringLiteral(
-        "出生日時と参照節入り日時との差分を保持するための精密化準備です。起運換算は簡易実装です。"
+        "一般四柱推命の共通基盤として、正節の節入り日時との差分を保持する採用仕様です。"
     );
     if (!missingYears.isEmpty()) {
         statusMessage += QStringLiteral(" 近傍年の一部データが未整備です: %1。")
@@ -385,8 +445,8 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
         return {
             false,
             false,
-            QStringLiteral("月柱未実装"),
-            QStringLiteral("節入りデータを参照できません。月柱本実装は保留しています。")
+            QStringLiteral("月柱未対応"),
+            QStringLiteral("正節データを参照できないため、月柱を確定できません。")
         };
     }
 
@@ -395,13 +455,21 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
             false,
             false,
             QStringLiteral("月柱未対応"),
-            QStringLiteral("節入りデータは外部 JSON 方式を採用していますが、指定年データが未整備です。")
+            QStringLiteral("指定年の正節データが未整備のため、月柱を確定できません。")
         };
     }
 
     int matchedMonthOffset = -1;
     QString matchedTermName;
-    const QDateTime birthDateTime(birthDate, QTime(0, 0), QTimeZone::systemTimeZone());
+    const QDateTime birthDateTime = birthDateTimeForComparison(birthInfo, solarTermMomentsFromYearData(yearData));
+    if (!birthDateTime.isValid()) {
+        return {
+            false,
+            false,
+            QStringLiteral("月柱未計算"),
+            QStringLiteral("出生日時を組み立てられないため、月柱を確定できません。")
+        };
+    }
 
     for (const SolarTermEntry &entry : yearData.entries) {
         const int monthOffset = monthOffsetFromTerm(entry.termName);
@@ -422,7 +490,7 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
                 false,
                 false,
                 QStringLiteral("月柱未対応"),
-                QStringLiteral("年初の節入り前ですが、前年データが未整備のため月柱計算に対応していません。")
+                QStringLiteral("年初の最初の正節前ですが、前年の正節データが未整備のため月柱を確定できません。")
             };
         }
 
@@ -433,7 +501,7 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
                 false,
                 false,
                 QStringLiteral("月柱未対応"),
-                QStringLiteral("前年基準の年初月柱計算に失敗しました。")
+                QStringLiteral("前年基準の丑月計算に失敗しました。")
             };
         }
 
@@ -441,7 +509,7 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
             true,
             true,
             monthPillar,
-            QStringLiteral("年初の最初の節入り前のため、前年の最終月区間として暫定計算しました。")
+            QStringLiteral("本アプリ採用仕様として、正節の節入り日時比較により前年の丑月区間と判定しました。")
         };
     }
 
@@ -451,7 +519,7 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
             false,
             false,
             QStringLiteral("月柱未対応"),
-            QStringLiteral("年干から月干を導く限定実装に失敗しました。")
+            QStringLiteral("年干から月干を導く一般ルール計算に失敗しました。")
         };
     }
 
@@ -459,7 +527,7 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
         true,
         true,
         monthPillar,
-        QStringLiteral("節入りサンプルデータによる限定実装です。%1 以降の区間として月柱を計算しました。")
+        QStringLiteral("本アプリ採用仕様として、正節 %1 の節入り日時以後の区間から月柱を確定しました。")
             .arg(matchedTermName)
     };
 }
