@@ -73,6 +73,8 @@ private:
     QVariantList calculateMajorFortunes(
         const BirthInfo &birthInfo,
         const QString &monthPillar,
+        const QVariantMap &majorFortuneDirection,
+        const QVariantMap &solarTermDifferencePreparation,
         QString *statusMessage
     ) const;
     QVariantList calculateAnnualFortunes(
@@ -85,8 +87,10 @@ private:
     ) const;
     QVariantMap calculateSolarTermDifferencePreparation(
         const BirthInfo &birthInfo,
+        const QVariantMap &majorFortuneDirection,
         QString *statusMessage
     ) const;
+    int calculateFortuneStartAgeFromDifferenceMinutes(qint64 absoluteDifferenceMinutes) const;
     int calculateTentativeFortuneStartAge(const BirthInfo &birthInfo) const;
     QString buildDescription(
         const BirthInfo &birthInfo,

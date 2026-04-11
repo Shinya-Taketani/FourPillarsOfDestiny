@@ -1,5 +1,6 @@
 #include "ChartCalculator.h"
 
+#include <cmath>
 #include <QDate>
 #include <algorithm>
 #include <QTime>
@@ -557,17 +558,6 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
         strengthEvaluation,
         &patternCandidatesStatusMessage
     );
-    QString majorFortunesStatusMessage;
-    const QVariantList majorFortunes = calculateMajorFortunes(
-        birthInfo,
-        monthResolution.monthPillar,
-        &majorFortunesStatusMessage
-    );
-    QString annualFortunesStatusMessage;
-    const QVariantList annualFortunes = calculateAnnualFortunes(
-        birthInfo,
-        &annualFortunesStatusMessage
-    );
     QString majorFortuneDirectionStatusMessage;
     const QVariantMap majorFortuneDirection = calculateMajorFortuneDirection(
         birthInfo,
@@ -576,7 +566,21 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
     QString solarTermDifferencePreparationStatusMessage;
     const QVariantMap solarTermDifferencePreparation = calculateSolarTermDifferencePreparation(
         birthInfo,
+        majorFortuneDirection,
         &solarTermDifferencePreparationStatusMessage
+    );
+    QString majorFortunesStatusMessage;
+    const QVariantList majorFortunes = calculateMajorFortunes(
+        birthInfo,
+        monthResolution.monthPillar,
+        majorFortuneDirection,
+        solarTermDifferencePreparation,
+        &majorFortunesStatusMessage
+    );
+    QString annualFortunesStatusMessage;
+    const QVariantList annualFortunes = calculateAnnualFortunes(
+        birthInfo,
+        &annualFortunesStatusMessage
     );
     const QString description = buildDescription(
         birthInfo,
@@ -1184,6 +1188,8 @@ QVariantMap ChartCalculator::calculatePatternCandidates(
 QVariantList ChartCalculator::calculateMajorFortunes(
     const BirthInfo &birthInfo,
     const QString &monthPillar,
+    const QVariantMap &majorFortuneDirection,
+    const QVariantMap &solarTermDifferencePreparation,
     QString *statusMessage
 ) const
 {
@@ -1204,8 +1210,23 @@ QVariantList ChartCalculator::calculateMajorFortunes(
         };
     }
 
-    const int tentativeStartAge = calculateTentativeFortuneStartAge(birthInfo);
-    if (tentativeStartAge < 0) {
+    int startAge = solarTermDifferencePreparation.value(QStringLiteral("calculatedStartAge")).toInt();
+    QString startAgeBasisNote = solarTermDifferencePreparation.value(QStringLiteral("note")).toString();
+    QString statusMessageSuffix = QStringLiteral(
+        "節入り差を 3 日 = 1 年で換算し、端数切り上げした参考実計算です。"
+    );
+
+    if (startAge <= 0) {
+        startAge = calculateTentativeFortuneStartAge(birthInfo);
+        startAgeBasisNote = QStringLiteral(
+            "参照節入りを確定できないため、出生月日ベースの暫定起運年齢へフォールバックしています。"
+        );
+        statusMessageSuffix = QStringLiteral(
+            "順逆または節入り差を確定できないため、出生月日ベースの暫定起運年齢へフォールバックしています。"
+        );
+    }
+
+    if (startAge < 0) {
         if (statusMessage) {
             *statusMessage = QStringLiteral("生年月日を取得できないため、大運一覧は未対応です。");
         }
@@ -1224,20 +1245,29 @@ QVariantList ChartCalculator::calculateMajorFortunes(
 
     QVariantList fortunes;
     for (int index = 0; index < 8; ++index) {
-        const int startAge = tentativeStartAge + index * 10;
-        const int endAge = startAge + 9;
+        const int rangeStartAge = startAge + index * 10;
+        const int endAge = rangeStartAge + 9;
         fortunes.append(QVariantMap{
             {QStringLiteral("index"), index + 1},
-            {QStringLiteral("startAge"), startAge},
+            {QStringLiteral("startAge"), rangeStartAge},
             {QStringLiteral("endAge"), endAge},
-            {QStringLiteral("label"), QStringLiteral("%1〜%2歳").arg(startAge).arg(endAge)},
+            {QStringLiteral("label"), QStringLiteral("%1〜%2歳").arg(rangeStartAge).arg(endAge)},
             {QStringLiteral("pillar"), pillarAtOffset(monthPillar, index)},
-            {QStringLiteral("note"), QStringLiteral("起運年齢は出生月日から便宜的に求めた参考値です。順逆は未実装です。")}
+            {QStringLiteral("note"), QStringLiteral(
+                "起運年齢は %1 順逆は %2 を参照していますが、大運干支の順逆反映は未実装です。"
+            ).arg(
+                startAgeBasisNote,
+                majorFortuneDirection.value(QStringLiteral("direction")).toString().isEmpty()
+                    ? QStringLiteral("未対応")
+                    : majorFortuneDirection.value(QStringLiteral("direction")).toString()
+            )}
         });
     }
 
     if (statusMessage) {
-        *statusMessage = QStringLiteral("月柱起点で並べた大運表示の仮骨格です。起運年齢は出生月日ベースの参考値、順逆は未実装です。");
+        *statusMessage = QStringLiteral(
+            "月柱起点で並べた大運表示の仮骨格です。起運年齢は節入り差ベースの参考実計算で、%1"
+        ).arg(statusMessageSuffix);
     }
 
     return fortunes;
@@ -1324,11 +1354,24 @@ QVariantMap ChartCalculator::calculateMajorFortuneDirection(
 
 QVariantMap ChartCalculator::calculateSolarTermDifferencePreparation(
     const BirthInfo &birthInfo,
+    const QVariantMap &majorFortuneDirection,
     QString *statusMessage
 ) const
 {
-    const SolarTermDifferenceResolution resolution =
-        m_solarTermResolver.resolveNearestSolarTermDifference(birthInfo);
+    const QString direction = majorFortuneDirection.value(QStringLiteral("direction")).toString();
+    SolarTermDifferenceResolution resolution;
+    QString selectionNote;
+
+    if (direction == QStringLiteral("順行")) {
+        resolution = m_solarTermResolver.resolveNextSolarTermDifference(birthInfo);
+        selectionNote = QStringLiteral("順行のため、出生日時より後の節入りを参照しています。");
+    } else if (direction == QStringLiteral("逆行")) {
+        resolution = m_solarTermResolver.resolvePreviousSolarTermDifference(birthInfo);
+        selectionNote = QStringLiteral("逆行のため、出生日時より前の節入りを参照しています。");
+    } else {
+        resolution = m_solarTermResolver.resolveNearestSolarTermDifference(birthInfo);
+        selectionNote = QStringLiteral("順逆が未確定のため、最寄り節入りを暫定参照しています。");
+    }
 
     if (statusMessage) {
         *statusMessage = resolution.statusMessage;
@@ -1336,6 +1379,7 @@ QVariantMap ChartCalculator::calculateSolarTermDifferencePreparation(
 
     if (!resolution.canDetermineDifference) {
         return {
+            {QStringLiteral("canDetermineDifference"), false},
             {QStringLiteral("birthDateTime"), resolution.birthDateTimeIso.isEmpty()
                  ? QStringLiteral("未対応") : resolution.birthDateTimeIso},
             {QStringLiteral("referenceTerm"), QStringLiteral("未対応")},
@@ -1344,13 +1388,18 @@ QVariantMap ChartCalculator::calculateSolarTermDifferencePreparation(
             {QStringLiteral("differenceMinutes"), 0},
             {QStringLiteral("absoluteDifferenceMinutes"), 0},
             {QStringLiteral("differenceDays"), QStringLiteral("未対応")},
-            {QStringLiteral("note"), QStringLiteral("節入り差から起運日数へ進むための前処理は未対応です。")}
+            {QStringLiteral("calculatedStartAge"), -1},
+            {QStringLiteral("conversionRule"), QStringLiteral("未対応")},
+            {QStringLiteral("note"), QStringLiteral("節入り差から起運日数へ進むための前処理は未対応です。%1").arg(selectionNote)}
         };
     }
 
     const double differenceDays = static_cast<double>(resolution.absoluteDifferenceMinutes) / (60.0 * 24.0);
+    const int calculatedStartAge =
+        calculateFortuneStartAgeFromDifferenceMinutes(resolution.absoluteDifferenceMinutes);
 
     return {
+        {QStringLiteral("canDetermineDifference"), true},
         {QStringLiteral("birthDateTime"), resolution.birthDateTimeIso},
         {QStringLiteral("referenceTerm"), resolution.referenceTermName},
         {QStringLiteral("referenceDirection"), resolution.referenceDirection},
@@ -1358,8 +1407,23 @@ QVariantMap ChartCalculator::calculateSolarTermDifferencePreparation(
         {QStringLiteral("differenceMinutes"), resolution.differenceMinutes},
         {QStringLiteral("absoluteDifferenceMinutes"), resolution.absoluteDifferenceMinutes},
         {QStringLiteral("differenceDays"), QString::number(differenceDays, 'f', 2)},
-        {QStringLiteral("note"), QStringLiteral("出生日時と最寄り節入り日時との差分を保持した参考情報です。起運換算は未実装です。")}
+        {QStringLiteral("calculatedStartAge"), calculatedStartAge},
+        {QStringLiteral("conversionRule"), QStringLiteral("差分 3 日 = 1 年、端数切り上げ")},
+        {QStringLiteral("note"), QStringLiteral(
+            "出生日時と参照節入り日時との差分を使い、差分 3 日 = 1 年・端数切り上げで %1 歳起運の参考実計算に変換しています。%2"
+        ).arg(calculatedStartAge).arg(selectionNote)}
     };
+}
+
+int ChartCalculator::calculateFortuneStartAgeFromDifferenceMinutes(qint64 absoluteDifferenceMinutes) const
+{
+    if (absoluteDifferenceMinutes <= 0) {
+        return 1;
+    }
+
+    const double differenceDays = static_cast<double>(absoluteDifferenceMinutes) / (60.0 * 24.0);
+    const int convertedAge = static_cast<int>(std::ceil(differenceDays / 3.0));
+    return std::clamp(convertedAge, 1, 10);
 }
 
 int ChartCalculator::calculateTentativeFortuneStartAge(const BirthInfo &birthInfo) const
@@ -1397,9 +1461,9 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("寒暖・乾湿評価は月支ベースの調候前提情報を最小実装しています。")
           << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
           << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。")
-          << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢は出生月日ベースの参考値、順逆は未実装です。")
+          << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢は節入り差を 3 日 = 1 年で換算した参考実計算です。")
           << QStringLiteral("大運の順逆は性別入力だけを使った暫定表示または未対応です。")
-          << QStringLiteral("節入り差準備情報は出生日時と最寄り節入り日時との差分を保持する参考表示です。")
+          << QStringLiteral("節入り差準備情報は出生日時と参照節入り日時との差分、および起運年齢への参考換算値を保持する参考表示です。")
           << QStringLiteral("流年一覧は出生年から並べた最小表示骨格です。流年解釈は未実装です。");
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {

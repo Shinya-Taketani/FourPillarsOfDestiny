@@ -31,6 +31,8 @@ class SolarTermResolver
 public:
     SolarTermResolution resolveMonthPillar(const BirthInfo &birthInfo, const QString &yearPillar) const;
     SolarTermDifferenceResolution resolveNearestSolarTermDifference(const BirthInfo &birthInfo) const;
+    SolarTermDifferenceResolution resolvePreviousSolarTermDifference(const BirthInfo &birthInfo) const;
+    SolarTermDifferenceResolution resolveNextSolarTermDifference(const BirthInfo &birthInfo) const;
 
 private:
     SolarTermDataSource m_dataSource;

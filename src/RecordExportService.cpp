@@ -126,6 +126,7 @@ QString buildTextContent(const SavedChartRecord &record)
     stream << "参照方向: " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("referenceDirection")).toString() << "\n";
     stream << "参照節入り日時: " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("referenceDateTime")).toString() << "\n";
     stream << "節入り日時差(日): " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("differenceDays")).toString() << "\n";
+    stream << "参考起運年齢: " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("calculatedStartAge")).toString() << "\n";
     stream << "節入り差注記: " << record.chartResult.solarTermDifferencePreparation.value(QStringLiteral("note")).toString() << "\n";
     stream << "節入り差状態: " << record.chartResult.solarTermDifferencePreparationStatusMessage << "\n";
     stream << "大運一覧:\n" << formatMajorFortunes(record.chartResult.majorFortunes) << "\n";

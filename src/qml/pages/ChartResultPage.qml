@@ -398,6 +398,16 @@ Kirigami.Page {
                     Label {
                         width: parent.width
                         wrapMode: Text.WordWrap
+                        text: "参考起運年齢: " + ((chartResult.solarTermDifferencePreparation && chartResult.solarTermDifferencePreparation.calculatedStartAge !== undefined
+                                                && chartResult.solarTermDifferencePreparation.calculatedStartAge !== null
+                                                && chartResult.solarTermDifferencePreparation.calculatedStartAge >= 0)
+                                                ? chartResult.solarTermDifferencePreparation.calculatedStartAge + "歳"
+                                                : "未対応")
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
                         text: "節入り差注記: " + ((chartResult.solarTermDifferencePreparation && chartResult.solarTermDifferencePreparation.note)
                                               ? chartResult.solarTermDifferencePreparation.note : "未対応")
                     }
@@ -414,7 +424,7 @@ Kirigami.Page {
                         width: parent.width
                         wrapMode: Text.WordWrap
                         color: Kirigami.Theme.disabledTextColor
-                        text: "開始年齢帯は参考値です。厳密な起運計算と順逆は未実装です。"
+                        text: "開始年齢帯は、節入り差と暫定順逆を使った参考実計算です。大運干支の順逆反映は未実装です。"
                     }
 
                     Repeater {

@@ -44,6 +44,7 @@ private slots:
     void chartCalculatorReturnsUndeterminedMajorFortuneDirectionForUnspecifiedGender();
     void chartCalculatorCalculatesSolarTermDifferencePreparationForSupportedSampleYear();
     void chartCalculatorCalculatesMajorFortunesForSupportedSampleYear();
+    void chartCalculatorChangesFortuneStartAgeByDirection();
     void chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
@@ -513,22 +514,26 @@ void CoreTests::chartCalculatorCalculatesSolarTermDifferencePreparationForSuppor
 
     QCOMPARE(
         result.solarTermDifferencePreparation.value(QStringLiteral("referenceTerm")).toString(),
-        QStringLiteral("立春")
+        QStringLiteral("啓蟄")
     );
     QCOMPARE(
         result.solarTermDifferencePreparation.value(QStringLiteral("referenceDirection")).toString(),
-        QStringLiteral("直前節入り")
+        QStringLiteral("直後節入り")
     );
     QCOMPARE(
-        result.solarTermDifferencePreparation.value(QStringLiteral("differenceMinutes")).toLongLong(),
-        2250
+        result.solarTermDifferencePreparation.value(QStringLiteral("absoluteDifferenceMinutes")).toLongLong(),
+        40950
     );
     QCOMPARE(
         result.solarTermDifferencePreparation.value(QStringLiteral("differenceDays")).toString(),
-        QStringLiteral("1.56")
+        QStringLiteral("28.44")
+    );
+    QCOMPARE(
+        result.solarTermDifferencePreparation.value(QStringLiteral("calculatedStartAge")).toInt(),
+        10
     );
     QVERIFY(
-        result.solarTermDifferencePreparation.value(QStringLiteral("note")).toString().contains(QStringLiteral("参考情報"))
+        result.solarTermDifferencePreparation.value(QStringLiteral("note")).toString().contains(QStringLiteral("参考実計算"))
     );
     QVERIFY(result.solarTermDifferencePreparationStatusMessage.contains(QStringLiteral("精密化準備")));
 }
@@ -546,13 +551,41 @@ void CoreTests::chartCalculatorCalculatesMajorFortunesForSupportedSampleYear()
     const QVariantList majorFortunes = result.majorFortunes;
 
     QCOMPARE(majorFortunes.size(), 8);
-    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toInt(), 5);
-    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("endAge")).toInt(), 14);
+    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toInt(), 10);
+    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("endAge")).toInt(), 19);
     QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("戊寅"));
-    QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("startAge")).toInt(), 15);
+    QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("startAge")).toInt(), 20);
     QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("pillar")).toString(), QStringLiteral("己卯"));
-    QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("参考値")));
-    QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("参考値")));
+    QVERIFY(majorFortunes.at(0).toMap().value(QStringLiteral("note")).toString().contains(QStringLiteral("参考実計算")));
+    QVERIFY(result.majorFortunesStatusMessage.contains(QStringLiteral("参考実計算")));
+}
+
+void CoreTests::chartCalculatorChangesFortuneStartAgeByDirection()
+{
+    ChartCalculator calculator;
+    const BirthInfo maleBirthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+    const BirthInfo femaleBirthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("女性")
+    };
+
+    const ChartResult maleResult = calculator.calculate(maleBirthInfo);
+    const ChartResult femaleResult = calculator.calculate(femaleBirthInfo);
+
+    QCOMPARE(
+        maleResult.majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toInt(),
+        10
+    );
+    QCOMPARE(
+        femaleResult.majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toInt(),
+        1
+    );
+    QVERIFY(maleResult.majorFortunes != femaleResult.majorFortunes);
 }
 
 void CoreTests::chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear()
@@ -1024,6 +1057,7 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
             {QStringLiteral("differenceMinutes"), 2250},
             {QStringLiteral("absoluteDifferenceMinutes"), 2250},
             {QStringLiteral("differenceDays"), QStringLiteral("1.56")},
+            {QStringLiteral("calculatedStartAge"), 1},
             {QStringLiteral("note"), QStringLiteral("節入り差の参考情報です。")}
         },
         QStringLiteral("節入り差準備の暫定表示です。")
@@ -1132,6 +1166,10 @@ void CoreTests::chartResultToVariantMapContainsRequiredKeys()
     QCOMPARE(
         resultMap.value(QStringLiteral("solarTermDifferencePreparation")).toMap().value(QStringLiteral("referenceTerm")).toString(),
         QStringLiteral("立春")
+    );
+    QCOMPARE(
+        resultMap.value(QStringLiteral("solarTermDifferencePreparation")).toMap().value(QStringLiteral("calculatedStartAge")).toInt(),
+        1
     );
     QCOMPARE(
         resultMap.value(QStringLiteral("solarTermDifferencePreparationStatusMessage")).toString(),
@@ -1529,6 +1567,7 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
                 {QStringLiteral("differenceMinutes"), -2260},
                 {QStringLiteral("absoluteDifferenceMinutes"), 2260},
                 {QStringLiteral("differenceDays"), QStringLiteral("1.57")},
+                {QStringLiteral("calculatedStartAge"), 1},
                 {QStringLiteral("note"), QStringLiteral("保存確認用の節入り差参考情報です。")}
             },
             QStringLiteral("節入り差準備の保存確認用データです。")
@@ -1624,6 +1663,10 @@ void CoreTests::jsonRecordStorageLoadsSavedRecord()
     QCOMPARE(
         loadedRecord.chartResult.solarTermDifferencePreparation.value(QStringLiteral("referenceTerm")).toString(),
         QStringLiteral("啓蟄")
+    );
+    QCOMPARE(
+        loadedRecord.chartResult.solarTermDifferencePreparation.value(QStringLiteral("calculatedStartAge")).toInt(),
+        1
     );
     QCOMPARE(
         loadedRecord.chartResult.solarTermDifferencePreparationStatusMessage,
@@ -1726,6 +1769,7 @@ void CoreTests::recordExportServiceWritesTextFile()
     QVERIFY(content.contains(QStringLiteral("格局候補:")));
     QVERIFY(content.contains(QStringLiteral("順逆:")));
     QVERIFY(content.contains(QStringLiteral("出生日時(節入り差準備):")));
+    QVERIFY(content.contains(QStringLiteral("参考起運年齢:")));
     QVERIFY(content.contains(QStringLiteral("大運一覧:")));
     QVERIFY(content.contains(QStringLiteral("流年一覧:")));
     QVERIFY(content.contains(QStringLiteral("summaryText: これは仮の解釈結果です。")));
