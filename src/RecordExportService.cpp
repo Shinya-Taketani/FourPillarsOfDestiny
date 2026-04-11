@@ -31,13 +31,18 @@ QString formatMajorFortunes(const QVariantList &majorFortunes)
     for (const QVariant &fortuneValue : majorFortunes) {
         const QVariantMap fortune = fortuneValue.toMap();
         lines << QStringLiteral(
-                     "  [%1] %2 / %3 / 通変星:%4 / 十二運:%5 / %6"
+                     "  [%1] %2 / %3 / 通変星:%4 / 十二運:%5"
                  ).arg(fortune.value(QStringLiteral("index")).toInt())
                   .arg(fortune.value(QStringLiteral("label")).toString())
                   .arg(fortune.value(QStringLiteral("pillar")).toString())
                   .arg(fortune.value(QStringLiteral("tenGod")).toString())
-                  .arg(fortune.value(QStringLiteral("twelvePhase")).toString())
-                  .arg(fortune.value(QStringLiteral("note")).toString());
+                  .arg(fortune.value(QStringLiteral("twelvePhase")).toString());
+        if (!fortune.value(QStringLiteral("relationSummary")).toString().isEmpty()) {
+            lines << QStringLiteral("    関係: %1")
+                         .arg(fortune.value(QStringLiteral("relationSummary")).toString());
+        }
+        lines << QStringLiteral("    %1")
+                     .arg(fortune.value(QStringLiteral("note")).toString());
     }
 
     if (lines.isEmpty()) {
@@ -53,13 +58,17 @@ QString formatAnnualFortunes(const QVariantList &annualFortunes)
     for (const QVariant &fortuneValue : annualFortunes) {
         const QVariantMap fortune = fortuneValue.toMap();
         lines << QStringLiteral(
-                     "  %1年 / %2 / 通変星:%3 / 十二運:%4 / 関係:%5 / %6"
+                     "  %1年 / %2 / 通変星:%3 / 十二運:%4"
                  ).arg(fortune.value(QStringLiteral("year")).toInt())
                   .arg(fortune.value(QStringLiteral("pillar")).toString())
                   .arg(fortune.value(QStringLiteral("tenGod")).toString())
-                  .arg(fortune.value(QStringLiteral("twelvePhase")).toString())
-                  .arg(fortune.value(QStringLiteral("relationSummary")).toString())
-                  .arg(fortune.value(QStringLiteral("note")).toString());
+                  .arg(fortune.value(QStringLiteral("twelvePhase")).toString());
+        if (!fortune.value(QStringLiteral("relationSummary")).toString().isEmpty()) {
+            lines << QStringLiteral("    関係: %1")
+                         .arg(fortune.value(QStringLiteral("relationSummary")).toString());
+        }
+        lines << QStringLiteral("    %1")
+                     .arg(fortune.value(QStringLiteral("note")).toString());
     }
 
     if (lines.isEmpty()) {
