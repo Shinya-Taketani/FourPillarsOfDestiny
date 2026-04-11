@@ -1699,7 +1699,7 @@ QVariantList ChartCalculator::calculateMajorFortunes(
                 || fortuneTwelvePhase == QStringLiteral("未対応"))
             ? QStringLiteral(" 通変星と十二運は日干または行運干支を取得できないため未対応です。")
             : QStringLiteral(" 通変星と十二運は日干基準の最小本実装です。");
-        fortunes.append(QVariantMap{
+        QVariantMap majorFortune{
             {QStringLiteral("index"), index + 1},
             {QStringLiteral("startAge"), rangeStartAge},
             {QStringLiteral("endAge"), endAge},
@@ -1707,17 +1707,6 @@ QVariantList ChartCalculator::calculateMajorFortunes(
             {QStringLiteral("pillar"), fortunePillar},
             {QStringLiteral("tenGod"), fortuneTenGod},
             {QStringLiteral("twelvePhase"), fortuneTwelvePhase},
-            {QStringLiteral("sameStemMatches"), relation.value(QStringLiteral("sameStemMatches")).toStringList()},
-            {QStringLiteral("sameBranchMatches"), relation.value(QStringLiteral("sameBranchMatches")).toStringList()},
-            {QStringLiteral("clashBranches"), relation.value(QStringLiteral("clashBranches")).toStringList()},
-            {QStringLiteral("harmBranches"), relation.value(QStringLiteral("harmBranches")).toStringList()},
-            {QStringLiteral("breakBranches"), relation.value(QStringLiteral("breakBranches")).toStringList()},
-            {QStringLiteral("punishmentBranches"), relation.value(QStringLiteral("punishmentBranches")).toStringList()},
-            {QStringLiteral("stemCombinationCandidates"), relation.value(QStringLiteral("stemCombinationCandidates")).toStringList()},
-            {QStringLiteral("threeHarmonyCandidates"), relation.value(QStringLiteral("threeHarmonyCandidates")).toStringList()},
-            {QStringLiteral("directionalCombinationCandidates"), relation.value(QStringLiteral("directionalCombinationCandidates")).toStringList()},
-            {QStringLiteral("relationSummary"), relation.value(QStringLiteral("relationSummary")).toString()},
-            {QStringLiteral("relationNote"), relation.value(QStringLiteral("relationNote")).toString()},
             {QStringLiteral("note"), QStringLiteral(
                 "起運年齢は %1 順逆は %2 を参照した確定計算で、大運干支は月柱から %3 方向へ %4 として順逆反映済みです。%5 %6"
             ).arg(
@@ -1728,7 +1717,34 @@ QVariantList ChartCalculator::calculateMajorFortunes(
                 relation.value(QStringLiteral("relationNote")).toString(),
                 traitsNote
             )}
-        });
+        };
+        majorFortune.insert(
+            QStringLiteral("relationSummary"),
+            relation.value(QStringLiteral("relationSummary")).toString().isEmpty()
+                ? QStringLiteral("該当なし")
+                : relation.value(QStringLiteral("relationSummary")).toString()
+        );
+        majorFortune.insert(
+            QStringLiteral("sameStemMatches"),
+            relation.value(QStringLiteral("sameStemMatches")).toStringList()
+        );
+        majorFortune.insert(
+            QStringLiteral("sameBranchMatches"),
+            relation.value(QStringLiteral("sameBranchMatches")).toStringList()
+        );
+        majorFortune.insert(
+            QStringLiteral("clashBranches"),
+            relation.value(QStringLiteral("clashBranches")).toStringList()
+        );
+        majorFortune.insert(
+            QStringLiteral("stemCombinationCandidates"),
+            relation.value(QStringLiteral("stemCombinationCandidates")).toStringList()
+        );
+        majorFortune.insert(
+            QStringLiteral("relationNote"),
+            QStringLiteral("吉凶断定ではなく、原命式との関係候補の参考表示です。")
+        );
+        fortunes.append(majorFortune);
     }
 
     if (statusMessage) {
