@@ -872,7 +872,7 @@ QVariantMap calculatePillarRelation(
         summaryParts << QStringLiteral("方合候補: %1").arg(joinLabelsOrFallback(directionalCombinationCandidates));
     }
     if (summaryParts.isEmpty()) {
-        summaryParts << QStringLiteral("主要関係候補なし");
+        summaryParts << QStringLiteral("該当なし");
     }
 
     return {
