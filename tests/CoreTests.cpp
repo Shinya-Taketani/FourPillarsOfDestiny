@@ -54,6 +54,8 @@ private slots:
     void chartCalculatorCalculatesAnnualFortunesForSupportedSampleYear();
     void chartCalculatorAddsAnnualFortuneRelationsForSupportedSampleYear();
     void chartCalculatorAddsExtendedMajorFortuneRelationsForSupportedSampleYear();
+    void chartCalculatorAddsMajorFortuneRelationsForSupportedSampleYear();
+    void chartCalculatorPreservesMajorFortuneCoreFieldsWhenAddingRelations();
     void chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary();
     void chartCalculatorChangesMonthPillarAcross1971Boundary();
     void chartCalculatorChangesMonthPillarAcross1985SolarTermBoundary();
@@ -952,6 +954,60 @@ void CoreTests::chartCalculatorAddsExtendedMajorFortuneRelationsForSupportedSamp
     QVERIFY(firstMajorFortune.contains(QStringLiteral("relationSummary")));
     QVERIFY(firstMajorFortune.value(QStringLiteral("relationSummary")).toString().contains(QStringLiteral("三合候補")));
     QVERIFY(firstMajorFortune.value(QStringLiteral("relationSummary")).toString().contains(QStringLiteral("方合候補")));
+}
+
+void CoreTests::chartCalculatorAddsMajorFortuneRelationsForSupportedSampleYear()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+    const QVariantMap firstMajorFortune = result.majorFortunes.at(0).toMap();
+
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("relationSummary")));
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("sameStemMatches")));
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("sameBranchMatches")));
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("clashBranches")));
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("stemCombinationCandidates")));
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("relationNote")));
+    QVERIFY(!firstMajorFortune.value(QStringLiteral("relationSummary")).toString().isEmpty());
+
+    const QVariant sameStemMatches = firstMajorFortune.value(QStringLiteral("sameStemMatches"));
+    const QVariant sameBranchMatches = firstMajorFortune.value(QStringLiteral("sameBranchMatches"));
+    const QVariant clashBranches = firstMajorFortune.value(QStringLiteral("clashBranches"));
+    const QVariant stemCombinationCandidates = firstMajorFortune.value(QStringLiteral("stemCombinationCandidates"));
+
+    QVERIFY(sameStemMatches.canConvert<QStringList>());
+    QVERIFY(sameBranchMatches.canConvert<QStringList>());
+    QVERIFY(clashBranches.canConvert<QStringList>());
+    QVERIFY(stemCombinationCandidates.canConvert<QStringList>());
+}
+
+void CoreTests::chartCalculatorPreservesMajorFortuneCoreFieldsWhenAddingRelations()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+    const QVariantMap firstMajorFortune = result.majorFortunes.at(0).toMap();
+
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("pillar")));
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("tenGod")));
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("twelvePhase")));
+    QVERIFY(firstMajorFortune.contains(QStringLiteral("note")));
+
+    QVERIFY(!firstMajorFortune.value(QStringLiteral("pillar")).toString().isEmpty());
+    QVERIFY(!firstMajorFortune.value(QStringLiteral("tenGod")).toString().isEmpty());
+    QVERIFY(!firstMajorFortune.value(QStringLiteral("twelvePhase")).toString().isEmpty());
+    QVERIFY(!firstMajorFortune.value(QStringLiteral("note")).toString().isEmpty());
 }
 
 void CoreTests::chartCalculatorChangesMonthPillarAcross1955SolarTermBoundary()
