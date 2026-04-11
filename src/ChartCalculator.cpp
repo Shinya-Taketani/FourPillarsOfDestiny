@@ -560,6 +560,7 @@ ChartResult ChartCalculator::calculate(const BirthInfo &birthInfo) const
     );
     QString majorFortuneDirectionStatusMessage;
     const QVariantMap majorFortuneDirection = calculateMajorFortuneDirection(
+        yearPillar,
         birthInfo,
         &majorFortuneDirectionStatusMessage
     );
@@ -1313,42 +1314,59 @@ QVariantList ChartCalculator::calculateAnnualFortunes(
 }
 
 QVariantMap ChartCalculator::calculateMajorFortuneDirection(
+    const QString &yearPillar,
     const BirthInfo &birthInfo,
     QString *statusMessage
 ) const
 {
-    if (birthInfo.gender == QStringLiteral("男性")) {
+    const int yearStemIndex = heavenlyStemIndex(yearPillar);
+    if (yearStemIndex < 0) {
         if (statusMessage) {
-            *statusMessage = QStringLiteral("性別入力のみを使った暫定表示です。年干陰陽や節入り差は未考慮です。");
+            *statusMessage = QStringLiteral("年干を取得できないため、一般ルールによる順逆判定は未対応です。");
         }
 
         return {
-            {QStringLiteral("direction"), QStringLiteral("順行")},
-            {QStringLiteral("reason"), QStringLiteral("性別入力が男性のため、共通基盤の暫定値として順行を設定しています。")},
-            {QStringLiteral("note"), QStringLiteral("厳密な男女順逆判定ではなく、参考表示です。")}
+            {QStringLiteral("direction"), QStringLiteral("未対応")},
+            {QStringLiteral("reason"), QStringLiteral("年干を取得できないため、陰陽判定ができません。")},
+            {QStringLiteral("note"), QStringLiteral("一般四柱推命の順逆ルールを適用できないため未対応です。")}
         };
     }
 
-    if (birthInfo.gender == QStringLiteral("女性")) {
+    if (birthInfo.gender != QStringLiteral("男性") && birthInfo.gender != QStringLiteral("女性")) {
         if (statusMessage) {
-            *statusMessage = QStringLiteral("性別入力のみを使った暫定表示です。年干陰陽や節入り差は未考慮です。");
+            *statusMessage = QStringLiteral("性別入力が未設定のため、一般ルールによる順逆判定は未対応です。");
         }
 
         return {
-            {QStringLiteral("direction"), QStringLiteral("逆行")},
-            {QStringLiteral("reason"), QStringLiteral("性別入力が女性のため、共通基盤の暫定値として逆行を設定しています。")},
-            {QStringLiteral("note"), QStringLiteral("厳密な男女順逆判定ではなく、参考表示です。")}
+            {QStringLiteral("direction"), QStringLiteral("未対応")},
+            {QStringLiteral("reason"), QStringLiteral("性別入力が未設定または未対応値のため、順逆を判定できません。")},
+            {QStringLiteral("note"), QStringLiteral("一般四柱推命では性別と年干陰陽の組み合わせを使うため未対応です。")}
         };
     }
+
+    const bool yangYearStem = isYangStem(yearStemIndex);
+    const QString yearStem = yearPillar.left(1);
+    const QString yinYangLabel = yangYearStem ? QStringLiteral("陽") : QStringLiteral("陰");
+    const bool isForward = (birthInfo.gender == QStringLiteral("男性") && yangYearStem)
+        || (birthInfo.gender == QStringLiteral("女性") && !yangYearStem);
 
     if (statusMessage) {
-        *statusMessage = QStringLiteral("性別入力だけでは厳密判定を行わないため、順逆は未対応です。");
+        *statusMessage = QStringLiteral(
+            "一般四柱推命の共通基盤として、男性+陽年干 / 女性+陰年干を順行、男性+陰年干 / 女性+陽年干を逆行とする実判定です。"
+        );
     }
 
     return {
-        {QStringLiteral("direction"), QStringLiteral("未対応")},
-        {QStringLiteral("reason"), QStringLiteral("順逆判定に使う本来の条件をまだ実装していません。")},
-        {QStringLiteral("note"), QStringLiteral("現段階では参考表示を出せないため未対応としています。")}
+        {QStringLiteral("direction"), isForward ? QStringLiteral("順行") : QStringLiteral("逆行")},
+        {QStringLiteral("reason"), QStringLiteral(
+            "年干 %1 は %2、性別は %3 のため、一般ルールにより %4 と判定しています。"
+        ).arg(
+            yearStem,
+            yinYangLabel,
+            birthInfo.gender,
+            isForward ? QStringLiteral("順行") : QStringLiteral("逆行")
+        )},
+        {QStringLiteral("note"), QStringLiteral("泰山流固有ルールではなく、一般四柱推命の共通ルールによる実判定です。")}
     };
 }
 
@@ -1462,7 +1480,7 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("用神候補は不足傾向などを使った断定しない暫定表示です。")
           << QStringLiteral("格局候補は月干通変星と月令参照を使った断定しない暫定表示です。")
           << QStringLiteral("大運一覧は月柱起点の仮表示骨格です。起運年齢は節入り差を 3 日 = 1 年で換算した参考実計算です。")
-          << QStringLiteral("大運の順逆は性別入力だけを使った暫定表示または未対応です。")
+          << QStringLiteral("大運の順逆は年干陰陽と性別の組み合わせによる一般ルールで実判定しています。")
           << QStringLiteral("節入り差準備情報は出生日時と参照節入り日時との差分、および起運年齢への参考換算値を保持する参考表示です。")
           << QStringLiteral("流年一覧は出生年から並べた最小表示骨格です。流年解釈は未実装です。");
 

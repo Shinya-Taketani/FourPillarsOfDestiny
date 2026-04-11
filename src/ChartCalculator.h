@@ -82,6 +82,7 @@ private:
         QString *statusMessage
     ) const;
     QVariantMap calculateMajorFortuneDirection(
+        const QString &yearPillar,
         const BirthInfo &birthInfo,
         QString *statusMessage
     ) const;
