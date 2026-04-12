@@ -535,12 +535,17 @@ private slots:
     void solarTermDataSourceLoads1883YearData();
     void solarTermDataSourceLoads1923YearData();
     void solarTermDataSourceLoads2026YearData();
+    void solarTermDataSourceLoads2026VerifiedData();
+    void solarTermDataSourceLoads1952ProvisionalData();
+    void solarTermDataSourceLoads1923ProvisionalData();
+    void solarTermDataSourceLoads1883ProvisionalData();
     void solarTermDataSourceLoadsSampleYearData();
     void solarTermDataSourceHandlesMissingYearData();
     void chartCalculatorMatches2026LichunBoundaryCaseYearAndMonthPillars();
     void chartCalculatorChangesYearAndMonthPillarsAcross2026LichunBoundary();
     void chartCalculatorMatchesTz001MonthPillarIf1923DataIsSupported();
     void chartCalculatorMatchesTz002MonthPillarIf1883DataIsSupported();
+    void chartCalculatorProvidesMonthPillarStatusMessageWithDataQuality();
     void solarTermResolverReturnsSupportedSampleContract();
     void chartResultToVariantMapContainsRequiredKeys();
     void birthInfoValidationAcceptsValidInput();
@@ -2416,6 +2421,8 @@ void CoreTests::solarTermDataSourceLoads1955YearData()
     QVERIFY(yearData.hasYearData);
     QCOMPARE(yearData.year, 1955);
     QVERIFY(!yearData.entries.isEmpty());
+    QCOMPARE(yearData.adoptable, QStringLiteral("provisional"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("provisional"));
 }
 
 void CoreTests::solarTermDataSourceLoads1971YearData()
@@ -2428,6 +2435,8 @@ void CoreTests::solarTermDataSourceLoads1971YearData()
     QVERIFY(yearData.hasYearData);
     QCOMPARE(yearData.year, 1971);
     QVERIFY(!yearData.entries.isEmpty());
+    QCOMPARE(yearData.adoptable, QStringLiteral("provisional"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("provisional"));
 }
 
 void CoreTests::solarTermDataSourceLoads1985YearData()
@@ -2466,6 +2475,8 @@ void CoreTests::solarTermDataSourceLoads1883YearData()
     QCOMPARE(yearData.entries.size(), 12);
     QCOMPARE(yearData.entries.first().termName, QStringLiteral("小寒"));
     QCOMPARE(yearData.entries.last().termName, QStringLiteral("大雪"));
+    QCOMPARE(yearData.adoptable, QStringLiteral("provisional"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("provisional"));
     QCOMPARE(
         yearData.entries.last().atDateTime.toString(Qt::ISODate),
         QStringLiteral("1883-12-07T12:00:00+09:00")
@@ -2484,6 +2495,8 @@ void CoreTests::solarTermDataSourceLoads1923YearData()
     QCOMPARE(yearData.entries.size(), 12);
     QCOMPARE(yearData.entries.first().termName, QStringLiteral("小寒"));
     QCOMPARE(yearData.entries.at(1).termName, QStringLiteral("立春"));
+    QCOMPARE(yearData.adoptable, QStringLiteral("provisional"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("provisional"));
     QCOMPARE(
         yearData.entries.first().atDateTime.toString(Qt::ISODate),
         QStringLiteral("1923-01-06T12:00:00+09:00")
@@ -2501,10 +2514,66 @@ void CoreTests::solarTermDataSourceLoads2026YearData()
     QCOMPARE(yearData.year, 2026);
     QVERIFY(!yearData.entries.isEmpty());
     QCOMPARE(yearData.entries.at(1).termName, QStringLiteral("立春"));
+    QCOMPARE(yearData.adoptable, QStringLiteral("verified"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("verified"));
     QCOMPARE(
         yearData.entries.at(1).atDateTime.toString(Qt::ISODate),
         QStringLiteral("2026-02-04T05:02:00+09:00")
     );
+}
+
+void CoreTests::solarTermDataSourceLoads2026VerifiedData()
+{
+    SolarTermDataSource dataSource;
+
+    const SolarTermYearData yearData = dataSource.loadYearData(2026);
+
+    QVERIFY(yearData.dataSourceAvailable);
+    QVERIFY(yearData.hasYearData);
+    QCOMPARE(yearData.sourceQuality, QStringLiteral("S"));
+    QCOMPARE(yearData.adoptable, QStringLiteral("verified"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("verified"));
+    QVERIFY(yearData.notes.contains(QStringLiteral("公的ソース")));
+}
+
+void CoreTests::solarTermDataSourceLoads1952ProvisionalData()
+{
+    SolarTermDataSource dataSource;
+
+    const SolarTermYearData yearData = dataSource.loadYearData(1952);
+
+    QVERIFY(yearData.dataSourceAvailable);
+    QVERIFY(yearData.hasYearData);
+    QCOMPARE(yearData.year, 1952);
+    QCOMPARE(yearData.adoptable, QStringLiteral("provisional"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("provisional"));
+    QVERIFY(yearData.notes.contains(QStringLiteral("暫定")));
+}
+
+void CoreTests::solarTermDataSourceLoads1923ProvisionalData()
+{
+    SolarTermDataSource dataSource;
+
+    const SolarTermYearData yearData = dataSource.loadYearData(1923);
+
+    QVERIFY(yearData.dataSourceAvailable);
+    QVERIFY(yearData.hasYearData);
+    QCOMPARE(yearData.adoptable, QStringLiteral("provisional"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("provisional"));
+    QVERIFY(yearData.notes.contains(QStringLiteral("1883年と1923年")));
+}
+
+void CoreTests::solarTermDataSourceLoads1883ProvisionalData()
+{
+    SolarTermDataSource dataSource;
+
+    const SolarTermYearData yearData = dataSource.loadYearData(1883);
+
+    QVERIFY(yearData.dataSourceAvailable);
+    QVERIFY(yearData.hasYearData);
+    QCOMPARE(yearData.adoptable, QStringLiteral("provisional"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("provisional"));
+    QVERIFY(yearData.notes.contains(QStringLiteral("要確認")));
 }
 
 void CoreTests::solarTermDataSourceLoadsSampleYearData()
@@ -2522,6 +2591,8 @@ void CoreTests::solarTermDataSourceLoadsSampleYearData()
     QCOMPARE(yearData.entries.at(1).termName, QStringLiteral("立春"));
     QVERIFY(yearData.entries.first().atDateTime.isValid());
     QCOMPARE(yearData.entries.first().timeZoneOffsetText, QStringLiteral("+09:00"));
+    QCOMPARE(yearData.adoptable, QStringLiteral("provisional"));
+    QCOMPARE(yearData.yearStatus, QStringLiteral("provisional"));
 }
 
 void CoreTests::solarTermDataSourceHandlesMissingYearData()
@@ -2804,6 +2875,25 @@ void CoreTests::chartCalculatorProvidesMonthPillarStatusMessage()
     QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("小寒")));
 }
 
+void CoreTests::chartCalculatorProvidesMonthPillarStatusMessageWithDataQuality()
+{
+    ChartCalculator calculator;
+
+    const ChartResult verifiedResult = calculator.calculate(BirthInfo{
+        QStringLiteral("2026-02-04"),
+        QStringLiteral("06:00"),
+        QStringLiteral("女性")
+    });
+    const ChartResult provisionalResult = calculator.calculate(BirthInfo{
+        QStringLiteral("1923-01-15"),
+        QStringLiteral("14:00"),
+        QStringLiteral("男性")
+    });
+
+    QVERIFY(verifiedResult.monthPillarStatusMessage.contains(QStringLiteral("verified")));
+    QVERIFY(provisionalResult.monthPillarStatusMessage.contains(QStringLiteral("provisional")));
+}
+
 void CoreTests::solarTermResolverReturnsSupportedSampleContract()
 {
     SolarTermResolver resolver;
@@ -2820,6 +2910,8 @@ void CoreTests::solarTermResolverReturnsSupportedSampleContract()
     QVERIFY(resolution.canDetermineMonthPillar);
     QCOMPARE(resolution.monthPillar, QStringLiteral("戊寅"));
     QVERIFY(resolution.statusMessage.contains(QStringLiteral("本アプリ採用仕様")));
+    QVERIFY(!resolution.dataQuality.isEmpty());
+    QVERIFY(!resolution.adoptable.isEmpty());
 }
 
 void CoreTests::chartResultToVariantMapContainsRequiredKeys()

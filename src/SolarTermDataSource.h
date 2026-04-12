@@ -11,6 +11,13 @@ struct SolarTermEntry
     QString atIsoString;
     QDateTime atDateTime;
     QString timeZoneOffsetText;
+    QString sourceType;
+    QString sourceTitle;
+    QString sourceAuthor;
+    QString sourceUrl;
+    QString confidence;
+    QString adoptable;
+    QString notes;
 };
 
 struct SolarTermYearData
@@ -20,6 +27,10 @@ struct SolarTermYearData
     int year;
     QList<SolarTermEntry> entries;
     QString statusMessage;
+    QString sourceQuality;
+    QString adoptable;
+    QString yearStatus;
+    QString notes;
 };
 
 class SolarTermDataSource

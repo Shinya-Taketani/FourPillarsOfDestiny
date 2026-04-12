@@ -11,6 +11,9 @@ struct SolarTermResolution
     bool canDetermineMonthPillar;
     QString monthPillar;
     QString statusMessage;
+    QString dataQuality;
+    QString adoptable;
+    QString dataNotes;
 };
 
 struct SolarTermDifferenceResolution

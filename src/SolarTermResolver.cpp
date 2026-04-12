@@ -13,6 +13,23 @@ struct SolarTermMoment
     QDateTime at;
 };
 
+QString dataQualityLabel(const SolarTermYearData &yearData)
+{
+    if (yearData.adoptable == QStringLiteral("verified")) {
+        return QStringLiteral("verified（公的または採用済みデータ）");
+    }
+
+    if (yearData.adoptable == QStringLiteral("provisional")) {
+        if (yearData.yearStatus == QStringLiteral("legacy_sample")) {
+            return QStringLiteral("provisional（既存サンプルの legacy fallback）");
+        }
+
+        return QStringLiteral("provisional（暫定データ）");
+    }
+
+    return QStringLiteral("未対応");
+}
+
 enum class SolarTermReferenceMode
 {
     Nearest = 0,
@@ -436,7 +453,10 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
             false,
             false,
             QStringLiteral("月柱未計算"),
-            QStringLiteral("生年月日が不正のため、節入り判定の前提が不足しています。")
+            QStringLiteral("生年月日が不正のため、節入り判定の前提が不足しています。"),
+            QStringLiteral("未対応"),
+            QStringLiteral("未対応"),
+            QString()
         };
     }
 
@@ -446,7 +466,10 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
             false,
             false,
             QStringLiteral("月柱未対応"),
-            QStringLiteral("正節データを参照できないため、月柱を確定できません。")
+            QStringLiteral("正節データを参照できないため、月柱を確定できません。"),
+            QStringLiteral("未対応"),
+            QStringLiteral("未対応"),
+            QString()
         };
     }
 
@@ -455,7 +478,10 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
             false,
             false,
             QStringLiteral("月柱未対応"),
-            QStringLiteral("指定年の正節データが未整備のため、月柱を確定できません。")
+            QStringLiteral("指定年の正節データが未整備のため、月柱を確定できません。"),
+            yearData.sourceQuality,
+            yearData.adoptable,
+            yearData.notes
         };
     }
 
@@ -467,7 +493,10 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
             false,
             false,
             QStringLiteral("月柱未計算"),
-            QStringLiteral("出生日時を組み立てられないため、月柱を確定できません。")
+            QStringLiteral("出生日時を組み立てられないため、月柱を確定できません。"),
+            yearData.sourceQuality,
+            yearData.adoptable,
+            yearData.notes
         };
     }
 
@@ -490,7 +519,10 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
                 false,
                 false,
                 QStringLiteral("月柱未対応"),
-                QStringLiteral("年初の最初の正節前ですが、前年の正節データが未整備のため月柱を確定できません。")
+                QStringLiteral("年初の最初の正節前ですが、前年の正節データが未整備のため月柱を確定できません。"),
+                previousYearData.sourceQuality,
+                previousYearData.adoptable,
+                previousYearData.notes
             };
         }
 
@@ -501,7 +533,10 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
                 false,
                 false,
                 QStringLiteral("月柱未対応"),
-                QStringLiteral("前年基準の丑月計算に失敗しました。")
+                QStringLiteral("前年基準の丑月計算に失敗しました。"),
+                previousYearData.sourceQuality,
+                previousYearData.adoptable,
+                previousYearData.notes
             };
         }
 
@@ -509,7 +544,12 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
             true,
             true,
             monthPillar,
-            QStringLiteral("本アプリ採用仕様として、正節の節入り日時比較により前年の丑月区間と判定しました。")
+            QStringLiteral(
+                "本アプリ採用仕様として、正節の節入り日時比較により前年の丑月区間と判定しました。 使用データ品質: %1。"
+            ).arg(dataQualityLabel(previousYearData)),
+            previousYearData.sourceQuality,
+            previousYearData.adoptable,
+            previousYearData.notes
         };
     }
 
@@ -519,7 +559,10 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
             false,
             false,
             QStringLiteral("月柱未対応"),
-            QStringLiteral("年干から月干を導く一般ルール計算に失敗しました。")
+            QStringLiteral("年干から月干を導く一般ルール計算に失敗しました。"),
+            yearData.sourceQuality,
+            yearData.adoptable,
+            yearData.notes
         };
     }
 
@@ -527,8 +570,12 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
         true,
         true,
         monthPillar,
-        QStringLiteral("本アプリ採用仕様として、正節 %1 の節入り日時以後の区間から月柱を確定しました。")
-            .arg(matchedTermName)
+        QStringLiteral(
+            "本アプリ採用仕様として、正節 %1 の節入り日時以後の区間から月柱を確定しました。 使用データ品質: %2。"
+        ).arg(matchedTermName, dataQualityLabel(yearData)),
+        yearData.sourceQuality,
+        yearData.adoptable,
+        yearData.notes
     };
 }
 
