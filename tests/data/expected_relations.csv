@@ -1,0 +1,9 @@
+sample_id,target_scope,relation_type,subject_a,subject_b,subject_c,is_established,priority,transformed_element,interpretation_effect,note
+REG-1990-0130,natal_vs_year,same_stem,annualFortune[0],yearPillar,,true,primary,,,流年初年は年柱と同干
+REG-1990-0130,natal_vs_year,same_branch,annualFortune[0],yearPillar,,true,primary,,,流年初年は年柱と同支
+REG-1990-0130,natal_vs_year,stem_combination,annualFortune[0],hourPillar,,true,secondary,,,流年初年は時柱と干合候補
+REG-1990-0130,natal_vs_year,clash,annualFortune[1],dayPillar,,true,primary,,,翌年流年は日柱と冲候補
+REG-1990-0130,natal_vs_luck,same_stem,majorFortune[0],dayPillar,,false,secondary,,,大運初項目には同干候補なし
+REG-1990-0130,natal_vs_luck,clash,majorFortune[0],yearPillar,,false,secondary,,,大運初項目には冲候補なし
+REG-1990-2259,natal,stem_combination,yearPillar,dayPillar,,false,reference,,,natal scope の雛形行
+TZ-003,natal_vs_year,clash,annualFortune[0],monthPillar,,false,review,,,"external ケース用の参考行。review_needed 相当"

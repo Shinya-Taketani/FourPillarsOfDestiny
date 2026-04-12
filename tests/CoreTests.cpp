@@ -53,6 +53,12 @@ QString expectedJudgementCsvFilePath()
         + QStringLiteral("/tests/data/expected_judgement.csv");
 }
 
+QString expectedRelationsCsvFilePath()
+{
+    return QString::fromUtf8(FPOFD_SOURCE_DIR)
+        + QStringLiteral("/tests/data/expected_relations.csv");
+}
+
 QStringList parseCsvLine(const QString &line)
 {
     QStringList columns;
@@ -170,6 +176,45 @@ bool isSupportedReviewStatus(const QString &reviewStatus)
     };
 
     return supportedStatuses.contains(reviewStatus);
+}
+
+bool isSupportedRelationScope(const QString &targetScope)
+{
+    return targetScope == QStringLiteral("natal")
+        || targetScope == QStringLiteral("natal_vs_luck")
+        || targetScope == QStringLiteral("natal_vs_year");
+}
+
+bool tryParseBooleanText(const QString &text, bool *value)
+{
+    if (text == QStringLiteral("true")) {
+        *value = true;
+        return true;
+    }
+    if (text == QStringLiteral("false")) {
+        *value = false;
+        return true;
+    }
+
+    return false;
+}
+
+QString pillarKeyToLabel(const QString &pillarKey)
+{
+    if (pillarKey == QStringLiteral("yearPillar")) {
+        return QStringLiteral("年柱");
+    }
+    if (pillarKey == QStringLiteral("monthPillar")) {
+        return QStringLiteral("月柱");
+    }
+    if (pillarKey == QStringLiteral("dayPillar")) {
+        return QStringLiteral("日柱");
+    }
+    if (pillarKey == QStringLiteral("hourPillar")) {
+        return QStringLiteral("時柱");
+    }
+
+    return pillarKey;
 }
 
 QStringList mismatchFields(
@@ -374,6 +419,9 @@ private slots:
     void expectedJudgementCsvLoadsRows();
     void expectedJudgementCsvMatchesKnownSampleIds();
     void expectedJudgementCsvContainsRegressionCases();
+    void expectedRelationsCsvLoadsRows();
+    void expectedRelationsCsvMatchesKnownSampleIds();
+    void expectedRelationsCsvContainsSupportedScopes();
     void verificationNonRegressionCasesContainReviewMetadata();
     void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
@@ -397,6 +445,7 @@ private slots:
     void chartCalculatorCalculatesUsefulGodCandidatesForSupportedSampleYear();
     void chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear();
     void chartCalculatorMatchesRegressionJudgementCsvForSupportedSampleYear();
+    void chartCalculatorMatchesRegressionRelationsCsvForSupportedSampleYear();
     void chartCalculatorCalculatesMajorFortuneDirectionForSupportedSampleYear();
     void chartCalculatorChangesMajorFortuneDirectionWithYearStemPolarity();
     void chartCalculatorReturnsUndeterminedMajorFortuneDirectionForUnspecifiedGender();
@@ -734,6 +783,79 @@ void CoreTests::expectedJudgementCsvContainsRegressionCases()
     }
 
     QVERIFY(regressionCaseCount > 0);
+}
+
+void CoreTests::expectedRelationsCsvLoadsRows()
+{
+    const QList<QHash<QString, QString>> rows = loadCsvRows(expectedRelationsCsvFilePath());
+
+    QVERIFY2(!rows.isEmpty(), "expected_relations.csv を読み込めません。");
+    QVERIFY(rows.size() >= 6);
+
+    for (const QHash<QString, QString> &row : rows) {
+        QVERIFY2(!row.value(QStringLiteral("sample_id")).isEmpty(), "sample_id が空の関係正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("target_scope")).isEmpty(), "target_scope が空の関係正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("relation_type")).isEmpty(), "relation_type が空の関係正答表行があります。");
+    }
+}
+
+void CoreTests::expectedRelationsCsvMatchesKnownSampleIds()
+{
+    const QList<QHash<QString, QString>> relationRows = loadCsvRows(expectedRelationsCsvFilePath());
+    QVERIFY2(!relationRows.isEmpty(), "expected_relations.csv を読み込めません。");
+
+    const QList<QHash<QString, QString>> sampleRows = loadCsvRows(testSamplesMasterCsvFilePath());
+    QVERIFY2(!sampleRows.isEmpty(), "test_samples_master.csv を読み込めません。");
+
+    QSet<QString> sampleIds;
+    for (const QHash<QString, QString> &row : sampleRows) {
+        sampleIds.insert(row.value(QStringLiteral("sample_id")));
+    }
+
+    for (const QHash<QString, QString> &row : relationRows) {
+        const QString sampleId = row.value(QStringLiteral("sample_id"));
+        QVERIFY2(
+            sampleIds.contains(sampleId),
+            qPrintable(QStringLiteral("関係正答表の sample_id %1 がサンプル台帳に存在しません。").arg(sampleId))
+        );
+    }
+}
+
+void CoreTests::expectedRelationsCsvContainsSupportedScopes()
+{
+    const QList<QHash<QString, QString>> relationRows = loadCsvRows(expectedRelationsCsvFilePath());
+    QVERIFY2(!relationRows.isEmpty(), "expected_relations.csv を読み込めません。");
+
+    bool containsNatalScope = false;
+    bool containsLuckScope = false;
+    bool containsYearScope = false;
+
+    for (const QHash<QString, QString> &row : relationRows) {
+        const QString targetScope = row.value(QStringLiteral("target_scope"));
+        QVERIFY2(
+            isSupportedRelationScope(targetScope),
+            qPrintable(QStringLiteral("未対応の target_scope %1 があります。").arg(targetScope))
+        );
+
+        bool isEstablished = false;
+        QVERIFY2(
+            tryParseBooleanText(row.value(QStringLiteral("is_established")), &isEstablished),
+            qPrintable(QStringLiteral("is_established=%1 を true/false として解釈できません。")
+                .arg(row.value(QStringLiteral("is_established"))))
+        );
+
+        if (targetScope == QStringLiteral("natal")) {
+            containsNatalScope = true;
+        } else if (targetScope == QStringLiteral("natal_vs_luck")) {
+            containsLuckScope = true;
+        } else if (targetScope == QStringLiteral("natal_vs_year")) {
+            containsYearScope = true;
+        }
+    }
+
+    QVERIFY(containsNatalScope);
+    QVERIFY(containsLuckScope);
+    QVERIFY(containsYearScope);
 }
 
 void CoreTests::verificationSpecGapRegistryCoversKeepAsSpecGapCases()
@@ -1322,6 +1444,74 @@ void CoreTests::chartCalculatorMatchesRegressionJudgementCsvForSupportedSampleYe
     QCOMPARE(result.strengthEvaluation.value(QStringLiteral("balanceState")).toString(), targetRow.value(QStringLiteral("strength")));
     QCOMPARE(result.patternCandidates.value(QStringLiteral("candidates")).toStringList().value(0), targetRow.value(QStringLiteral("pattern_name")));
     QCOMPARE(result.usefulGodCandidates.value(QStringLiteral("candidates")).toStringList().value(0), targetRow.value(QStringLiteral("useful_god")));
+}
+
+void CoreTests::chartCalculatorMatchesRegressionRelationsCsvForSupportedSampleYear()
+{
+    const QList<QHash<QString, QString>> relationRows = loadCsvRows(expectedRelationsCsvFilePath());
+    QVERIFY2(!relationRows.isEmpty(), "expected_relations.csv を読み込めません。");
+
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    for (const QHash<QString, QString> &row : relationRows) {
+        if (row.value(QStringLiteral("sample_id")) != QStringLiteral("REG-1990-0130")) {
+            continue;
+        }
+        if (row.value(QStringLiteral("target_scope")) != QStringLiteral("natal_vs_year")) {
+            continue;
+        }
+
+        bool isEstablished = false;
+        QVERIFY(tryParseBooleanText(row.value(QStringLiteral("is_established")), &isEstablished));
+
+        const QString subjectA = row.value(QStringLiteral("subject_a"));
+        const QString subjectB = row.value(QStringLiteral("subject_b"));
+        const QString targetLabel = pillarKeyToLabel(subjectB);
+
+        QVariantMap relationSource;
+        if (subjectA == QStringLiteral("annualFortune[0]")) {
+            relationSource = result.annualFortunes.at(0).toMap();
+        } else if (subjectA == QStringLiteral("annualFortune[1]")) {
+            relationSource = result.annualFortunes.at(1).toMap();
+        } else {
+            continue;
+        }
+
+        QStringList actualMatches;
+        const QString relationType = row.value(QStringLiteral("relation_type"));
+        if (relationType == QStringLiteral("same_stem")) {
+            actualMatches = relationSource.value(QStringLiteral("sameStemMatches")).toStringList();
+        } else if (relationType == QStringLiteral("same_branch")) {
+            actualMatches = relationSource.value(QStringLiteral("sameBranchMatches")).toStringList();
+        } else if (relationType == QStringLiteral("clash")) {
+            actualMatches = relationSource.value(QStringLiteral("clashBranches")).toStringList();
+        } else if (relationType == QStringLiteral("stem_combination")) {
+            actualMatches = relationSource.value(QStringLiteral("stemCombinationCandidates")).toStringList();
+        } else {
+            continue;
+        }
+
+        if (isEstablished) {
+            QVERIFY2(
+                actualMatches.contains(targetLabel),
+                qPrintable(QStringLiteral("%1 / %2 が %3 に含まれていません。")
+                    .arg(subjectA, relationType, targetLabel))
+            );
+        } else {
+            QVERIFY2(
+                !actualMatches.contains(targetLabel),
+                qPrintable(QStringLiteral("%1 / %2 に %3 が含まれています。")
+                    .arg(subjectA, relationType, targetLabel))
+            );
+        }
+    }
 }
 
 void CoreTests::chartCalculatorCalculatesMajorFortuneDirectionForSupportedSampleYear()
