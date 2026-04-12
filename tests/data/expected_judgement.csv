@@ -1,0 +1,8 @@
+sample_id,strength,strength_basis,pattern_name,pattern_status,useful_god,favorable_gods,unfavorable_gods,seasonal_adjustment,final_priority,judgement_note
+REG-1990-0130,strong,finalScore=4 balanceState=strong,印綬格,tentative,水,水|木,土|火,春月で不利寄りのため調候を補助,用神候補>格局候補>季節評価,既存 regression ケースに対する最小判定正答表
+REG-1990-2259,strong,23時境界直前の内部回帰ケース,印綬格,tentative,水,水|木,土|火,春月で不利寄り,日界直前ケースとして継続確認,判定は基盤用の暫定値
+REG-1990-2300,strong,23時境界到達後の内部回帰ケース,印綬格,tentative,水,水|木,土|火,春月で不利寄り,日界到達ケースとして継続確認,判定は基盤用の暫定値
+TZ-001,review_needed,旧年代外部比較ケースで残差分あり,印綬格,review_needed,水,水|木,,旧年代データ整備後も残差分あり,monthPillar 改善後の継続確認,external ケースのため判定は保留
+TZ-002,review_needed,旧年代外部比較ケースで残差分あり,印綬格,review_needed,水,水|木,,旧年代データ整備後も残差分あり,monthPillar 改善後の継続確認,external ケースのため判定は保留
+TZ-003,review_needed,day boundary の spec gap 候補,review_needed,review_needed,,水,,日界仕様差の影響を受ける,仕様差確認優先,external ケースのため判定は保留
+DOC-2026-0204-0600,review_needed,principal term boundary 確認ケース,review_needed,review_needed,,木,,year/month は一致したが判定は未固定,境界確認優先,regression 候補だが判定正答は未固定

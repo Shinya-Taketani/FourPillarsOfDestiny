@@ -47,6 +47,12 @@ QString expectedPillarsCsvFilePath()
         + QStringLiteral("/tests/data/expected_pillars.csv");
 }
 
+QString expectedJudgementCsvFilePath()
+{
+    return QString::fromUtf8(FPOFD_SOURCE_DIR)
+        + QStringLiteral("/tests/data/expected_judgement.csv");
+}
+
 QStringList parseCsvLine(const QString &line)
 {
     QStringList columns;
@@ -365,6 +371,9 @@ private slots:
     void testSamplesMasterCsvLoadsRows();
     void expectedPillarsCsvLoadsRows();
     void expectedPillarsCsvMatchesRegressionCaseIds();
+    void expectedJudgementCsvLoadsRows();
+    void expectedJudgementCsvMatchesKnownSampleIds();
+    void expectedJudgementCsvContainsRegressionCases();
     void verificationNonRegressionCasesContainReviewMetadata();
     void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
@@ -387,6 +396,7 @@ private slots:
     void chartCalculatorCalculatesClimateEvaluationForSupportedSampleYear();
     void chartCalculatorCalculatesUsefulGodCandidatesForSupportedSampleYear();
     void chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear();
+    void chartCalculatorMatchesRegressionJudgementCsvForSupportedSampleYear();
     void chartCalculatorCalculatesMajorFortuneDirectionForSupportedSampleYear();
     void chartCalculatorChangesMajorFortuneDirectionWithYearStemPolarity();
     void chartCalculatorReturnsUndeterminedMajorFortuneDirectionForUnspecifiedGender();
@@ -649,6 +659,81 @@ void CoreTests::expectedPillarsCsvMatchesRegressionCaseIds()
 
     QVERIFY(regressionCaseCount > 0);
     QVERIFY2(overlappedCaseCount >= 3, "expected_pillars.csv と verification_cases.json の整合ケース数が不足しています。");
+}
+
+void CoreTests::expectedJudgementCsvLoadsRows()
+{
+    const QList<QHash<QString, QString>> rows = loadCsvRows(expectedJudgementCsvFilePath());
+
+    QVERIFY2(!rows.isEmpty(), "expected_judgement.csv を読み込めません。");
+    QVERIFY(rows.size() >= 4);
+
+    for (const QHash<QString, QString> &row : rows) {
+        QVERIFY2(!row.value(QStringLiteral("sample_id")).isEmpty(), "sample_id が空の判定正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("strength")).isEmpty(), "strength が空の判定正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("pattern_status")).isEmpty(), "pattern_status が空の判定正答表行があります。");
+    }
+}
+
+void CoreTests::expectedJudgementCsvMatchesKnownSampleIds()
+{
+    const QList<QHash<QString, QString>> judgementRows = loadCsvRows(expectedJudgementCsvFilePath());
+    QVERIFY2(!judgementRows.isEmpty(), "expected_judgement.csv を読み込めません。");
+
+    const QList<QHash<QString, QString>> sampleRows = loadCsvRows(testSamplesMasterCsvFilePath());
+    QVERIFY2(!sampleRows.isEmpty(), "test_samples_master.csv を読み込めません。");
+
+    QSet<QString> sampleIds;
+    for (const QHash<QString, QString> &row : sampleRows) {
+        sampleIds.insert(row.value(QStringLiteral("sample_id")));
+    }
+
+    bool containsReviewNeeded = false;
+    for (const QHash<QString, QString> &row : judgementRows) {
+        const QString sampleId = row.value(QStringLiteral("sample_id"));
+        QVERIFY2(
+            sampleIds.contains(sampleId),
+            qPrintable(QStringLiteral("判定正答表の sample_id %1 がサンプル台帳に存在しません。").arg(sampleId))
+        );
+
+        const QString patternStatus = row.value(QStringLiteral("pattern_status"));
+        if (patternStatus == QStringLiteral("review_needed")) {
+            containsReviewNeeded = true;
+        }
+    }
+
+    QVERIFY2(containsReviewNeeded, "external ケース向けの review_needed 行が expected_judgement.csv にありません。");
+}
+
+void CoreTests::expectedJudgementCsvContainsRegressionCases()
+{
+    const QList<QHash<QString, QString>> judgementRows = loadCsvRows(expectedJudgementCsvFilePath());
+    QVERIFY2(!judgementRows.isEmpty(), "expected_judgement.csv を読み込めません。");
+
+    QSet<QString> judgementSampleIds;
+    for (const QHash<QString, QString> &row : judgementRows) {
+        judgementSampleIds.insert(row.value(QStringLiteral("sample_id")));
+    }
+
+    const QJsonArray verificationCases = loadVerificationCases();
+    QVERIFY2(!verificationCases.isEmpty(), "verification_cases.json を読み込めません。");
+
+    int regressionCaseCount = 0;
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        if (!caseObject.value(QStringLiteral("enabledForRegression")).toBool(true)) {
+            continue;
+        }
+
+        const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
+        ++regressionCaseCount;
+        QVERIFY2(
+            judgementSampleIds.contains(caseId),
+            qPrintable(QStringLiteral("regression ケース %1 が expected_judgement.csv に存在しません。").arg(caseId))
+        );
+    }
+
+    QVERIFY(regressionCaseCount > 0);
 }
 
 void CoreTests::verificationSpecGapRegistryCoversKeepAsSpecGapCases()
@@ -1208,6 +1293,35 @@ void CoreTests::chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear
     QVERIFY(result.patternCandidates.value(QStringLiteral("reason")).toString().contains(QStringLiteral("五行分布")));
     QVERIFY(result.patternCandidates.value(QStringLiteral("note")).toString().contains(QStringLiteral("断定")));
     QVERIFY(result.patternCandidatesStatusMessage.contains(QStringLiteral("暫定候補")));
+}
+
+void CoreTests::chartCalculatorMatchesRegressionJudgementCsvForSupportedSampleYear()
+{
+    const QList<QHash<QString, QString>> judgementRows = loadCsvRows(expectedJudgementCsvFilePath());
+    QVERIFY2(!judgementRows.isEmpty(), "expected_judgement.csv を読み込めません。");
+
+    QHash<QString, QString> targetRow;
+    for (const QHash<QString, QString> &row : judgementRows) {
+        if (row.value(QStringLiteral("sample_id")) == QStringLiteral("REG-1990-0130")) {
+            targetRow = row;
+            break;
+        }
+    }
+
+    QVERIFY2(!targetRow.isEmpty(), "REG-1990-0130 が expected_judgement.csv にありません。");
+
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.strengthEvaluation.value(QStringLiteral("balanceState")).toString(), targetRow.value(QStringLiteral("strength")));
+    QCOMPARE(result.patternCandidates.value(QStringLiteral("candidates")).toStringList().value(0), targetRow.value(QStringLiteral("pattern_name")));
+    QCOMPARE(result.usefulGodCandidates.value(QStringLiteral("candidates")).toStringList().value(0), targetRow.value(QStringLiteral("useful_god")));
 }
 
 void CoreTests::chartCalculatorCalculatesMajorFortuneDirectionForSupportedSampleYear()
