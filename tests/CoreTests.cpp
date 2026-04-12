@@ -76,6 +76,24 @@ QJsonObject findSpecGapByRuleHint(const QJsonArray &specGaps, const QString &rul
     return {};
 }
 
+bool isExternalConfidence(const QString &confidence)
+{
+    return confidence == QStringLiteral("external")
+        || confidence.startsWith(QStringLiteral("external_"));
+}
+
+bool isSupportedReviewStatus(const QString &reviewStatus)
+{
+    static const QSet<QString> supportedStatuses{
+        QStringLiteral("pending"),
+        QStringLiteral("confirmed_spec_gap_candidate"),
+        QStringLiteral("investigate_implementation_candidate"),
+        QStringLiteral("ready_for_regression_review")
+    };
+
+    return supportedStatuses.contains(reviewStatus);
+}
+
 QStringList mismatchFields(
     const QString &expectedYearPillar,
     const QString &expectedMonthPillar,
@@ -106,6 +124,12 @@ QString classifyVerificationDifference(const QStringList &fields)
 {
     if (fields.isEmpty()) {
         return QStringLiteral("match");
+    }
+
+    if (fields.size() == 2
+        && fields.contains(QStringLiteral("dayPillar"))
+        && fields.contains(QStringLiteral("hourPillar"))) {
+        return QStringLiteral("possible_day_boundary_rule_gap");
     }
 
     if (fields.size() > 1) {
@@ -176,6 +200,9 @@ QString determineReviewOutcome(
     }
     if (expectedAction == QStringLiteral("manual_review_required")) {
         return QStringLiteral("manual_review_required");
+    }
+    if (expectedAction == QStringLiteral("no_action_needed")) {
+        return QStringLiteral("ready_for_regression_review");
     }
 
     return QStringLiteral("manual_review_required");
@@ -431,7 +458,7 @@ void CoreTests::chartCalculatorReportsNonRegressionVerificationDifferences()
         const QJsonObject caseObject = caseValue.toObject();
         const bool enabledForRegression = caseObject.value(QStringLiteral("enabledForRegression")).toBool(true);
         const QString confidence = caseObject.value(QStringLiteral("confidence")).toString();
-        if (enabledForRegression && confidence != QStringLiteral("external")) {
+        if (enabledForRegression && !isExternalConfidence(confidence)) {
             continue;
         }
 
@@ -465,13 +492,14 @@ void CoreTests::chartCalculatorReportsNonRegressionVerificationDifferences()
 
     QVERIFY2(reportedCaseCount > 0, "比較レポート対象の non-regression ケースが 1 件もありません。");
     const QString summary = QStringLiteral(
-        "summary: confirmed_spec_gap=%1, confirmed_bug_candidate=%2, classification_mismatch=%3, action_mismatch=%4, manual_review_required=%5"
+        "summary: confirmed_spec_gap=%1, confirmed_bug_candidate=%2, classification_mismatch=%3, action_mismatch=%4, manual_review_required=%5, ready_for_regression_review=%6"
     )
         .arg(reviewOutcomeCounts.value(QStringLiteral("confirmed_spec_gap")))
         .arg(reviewOutcomeCounts.value(QStringLiteral("confirmed_bug_candidate")))
         .arg(reviewOutcomeCounts.value(QStringLiteral("classification_mismatch")))
         .arg(reviewOutcomeCounts.value(QStringLiteral("action_mismatch")))
-        .arg(reviewOutcomeCounts.value(QStringLiteral("manual_review_required")));
+        .arg(reviewOutcomeCounts.value(QStringLiteral("manual_review_required")))
+        .arg(reviewOutcomeCounts.value(QStringLiteral("ready_for_regression_review")));
     QWARN(qPrintable(summary));
 }
 
@@ -546,7 +574,7 @@ void CoreTests::verificationNonRegressionCasesContainReviewMetadata()
         if (caseObject.value(QStringLiteral("enabledForRegression")).toBool(true)) {
             continue;
         }
-        if (caseObject.value(QStringLiteral("confidence")).toString() != QStringLiteral("external")) {
+        if (!isExternalConfidence(caseObject.value(QStringLiteral("confidence")).toString())) {
             continue;
         }
 
@@ -567,6 +595,10 @@ void CoreTests::verificationNonRegressionCasesContainReviewMetadata()
         QVERIFY2(
             !caseObject.value(QStringLiteral("reviewStatus")).toString().isEmpty(),
             qPrintable(QStringLiteral("%1 の reviewStatus が空です。").arg(caseId))
+        );
+        QVERIFY2(
+            isSupportedReviewStatus(caseObject.value(QStringLiteral("reviewStatus")).toString()),
+            qPrintable(QStringLiteral("%1 の reviewStatus が未対応値です。").arg(caseId))
         );
         QVERIFY2(
             !caseObject.value(QStringLiteral("reviewNotes")).toString().isEmpty(),
