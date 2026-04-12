@@ -2,6 +2,8 @@
 
 #include <QFile>
 #include <QHash>
+#include <QMap>
+#include <QSet>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -69,6 +71,37 @@ QString expectedAnnualFortunesCsvFilePath()
 {
     return QString::fromUtf8(FPOFD_SOURCE_DIR)
         + QStringLiteral("/tests/data/expected_annual_fortunes.csv");
+}
+
+QSet<QString> sampleIdsFromRows(const QList<QHash<QString, QString>> &rows)
+{
+    QSet<QString> sampleIds;
+    for (const QHash<QString, QString> &row : rows) {
+        const QString sampleId = row.value(QStringLiteral("sample_id"));
+        if (!sampleId.isEmpty()) {
+            sampleIds.insert(sampleId);
+        }
+    }
+    return sampleIds;
+}
+
+QStringList duplicateValues(const QStringList &values)
+{
+    QMap<QString, int> counts;
+    for (const QString &value : values) {
+        if (!value.isEmpty()) {
+            counts[value] += 1;
+        }
+    }
+
+    QStringList duplicates;
+    for (auto it = counts.cbegin(); it != counts.cend(); ++it) {
+        if (it.value() > 1) {
+            duplicates << it.key();
+        }
+    }
+
+    return duplicates;
 }
 
 QStringList parseCsvLine(const QString &line)
@@ -440,6 +473,8 @@ private slots:
     void expectedAnnualFortunesCsvLoadsRows();
     void expectedAnnualFortunesCsvMatchesKnownSampleIds();
     void expectedAnnualFortunesCsvContainsRegressionCases();
+    void verificationDatasetIdsRemainConsistentAcrossFiles();
+    void verificationCasesSpecGapRulesAreCoveredByRegistry();
     void verificationNonRegressionCasesContainReviewMetadata();
     void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
@@ -1012,6 +1047,83 @@ void CoreTests::expectedAnnualFortunesCsvContainsRegressionCases()
     }
 
     QVERIFY(regressionCaseCount > 0);
+}
+
+void CoreTests::verificationDatasetIdsRemainConsistentAcrossFiles()
+{
+    const QList<QHash<QString, QString>> masterRows = loadCsvRows(testSamplesMasterCsvFilePath());
+    const QList<QHash<QString, QString>> pillarRows = loadCsvRows(expectedPillarsCsvFilePath());
+    const QList<QHash<QString, QString>> judgementRows = loadCsvRows(expectedJudgementCsvFilePath());
+    const QList<QHash<QString, QString>> relationRows = loadCsvRows(expectedRelationsCsvFilePath());
+    const QList<QHash<QString, QString>> luckRows = loadCsvRows(expectedLuckCycleCsvFilePath());
+    const QList<QHash<QString, QString>> annualRows = loadCsvRows(expectedAnnualFortunesCsvFilePath());
+    const QJsonArray verificationCases = loadVerificationCases();
+
+    QVERIFY(!masterRows.isEmpty());
+    QVERIFY(!pillarRows.isEmpty());
+    QVERIFY(!judgementRows.isEmpty());
+    QVERIFY(!relationRows.isEmpty());
+    QVERIFY(!luckRows.isEmpty());
+    QVERIFY(!annualRows.isEmpty());
+    QVERIFY(!verificationCases.isEmpty());
+
+    const QSet<QString> masterIds = sampleIdsFromRows(masterRows);
+    const QSet<QString> pillarIds = sampleIdsFromRows(pillarRows);
+    const QSet<QString> judgementIds = sampleIdsFromRows(judgementRows);
+    const QSet<QString> relationIds = sampleIdsFromRows(relationRows);
+    const QSet<QString> luckIds = sampleIdsFromRows(luckRows);
+    const QSet<QString> annualIds = sampleIdsFromRows(annualRows);
+
+    QVERIFY((pillarIds - masterIds).isEmpty());
+    QVERIFY((judgementIds - masterIds).isEmpty());
+    QVERIFY((relationIds - masterIds).isEmpty());
+    QVERIFY((luckIds - masterIds).isEmpty());
+    QVERIFY((annualIds - masterIds).isEmpty());
+
+    QStringList masterIdValues;
+    for (const QHash<QString, QString> &row : masterRows) {
+        masterIdValues << row.value(QStringLiteral("sample_id"));
+    }
+    QCOMPARE(duplicateValues(masterIdValues).size(), 0);
+
+    QStringList verificationCaseIds;
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
+        QVERIFY2(!caseId.isEmpty(), "verification_cases.json に空の caseId があります。");
+        verificationCaseIds << caseId;
+    }
+    QCOMPARE(duplicateValues(verificationCaseIds).size(), 0);
+}
+
+void CoreTests::verificationCasesSpecGapRulesAreCoveredByRegistry()
+{
+    const QJsonArray verificationCases = loadVerificationCases();
+    const QJsonArray specGaps = loadSpecGapRegistry();
+
+    QVERIFY(!verificationCases.isEmpty());
+    QVERIFY(!specGaps.isEmpty());
+
+    int coveredCaseCount = 0;
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        if (caseObject.value(QStringLiteral("expectedAction")).toString() != QStringLiteral("keep_as_spec_gap")) {
+            continue;
+        }
+
+        const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
+        const QString ruleHint = caseObject.value(QStringLiteral("ruleHint")).toString();
+        QVERIFY2(!ruleHint.isEmpty(), qPrintable(QStringLiteral("%1 の ruleHint が空です。").arg(caseId)));
+
+        const QJsonObject specGapObject = findSpecGapByRuleHint(specGaps, ruleHint);
+        QVERIFY2(
+            !specGapObject.isEmpty(),
+            qPrintable(QStringLiteral("%1 の ruleHint %2 が spec gap registry にありません。").arg(caseId, ruleHint))
+        );
+        ++coveredCaseCount;
+    }
+
+    QVERIFY(coveredCaseCount > 0);
 }
 
 void CoreTests::verificationSpecGapRegistryCoversKeepAsSpecGapCases()
