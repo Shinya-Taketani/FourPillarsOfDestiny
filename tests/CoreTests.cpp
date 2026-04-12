@@ -217,7 +217,8 @@ bool isSupportedReviewStatus(const QString &reviewStatus)
         QStringLiteral("pending"),
         QStringLiteral("confirmed_spec_gap_candidate"),
         QStringLiteral("investigate_implementation_candidate"),
-        QStringLiteral("ready_for_regression_review")
+        QStringLiteral("ready_for_regression_review"),
+        QStringLiteral("promoted_to_regression")
     };
 
     return supportedStatuses.contains(reviewStatus);
@@ -476,6 +477,7 @@ private slots:
     void verificationDatasetIdsRemainConsistentAcrossFiles();
     void verificationCasesSpecGapRulesAreCoveredByRegistry();
     void verificationCasesReadyForRegressionReviewRemainNonRegression();
+    void verificationPromotedCaseParticipatesInRegressionSet();
     void verificationNonRegressionCasesContainReviewMetadata();
     void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
@@ -1153,6 +1155,30 @@ void CoreTests::verificationCasesReadyForRegressionReviewRemainNonRegression()
     }
 
     QVERIFY(readyCaseCount > 0);
+}
+
+void CoreTests::verificationPromotedCaseParticipatesInRegressionSet()
+{
+    const QJsonArray verificationCases = loadVerificationCases();
+    QVERIFY(!verificationCases.isEmpty());
+
+    bool promotedCaseFound = false;
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        if (caseObject.value(QStringLiteral("caseId")).toString()
+            != QStringLiteral("DOC-2026-0204-0600")) {
+            continue;
+        }
+
+        promotedCaseFound = true;
+        QVERIFY(caseObject.value(QStringLiteral("enabledForRegression")).toBool(false));
+        QCOMPARE(
+            caseObject.value(QStringLiteral("reviewStatus")).toString(),
+            QStringLiteral("promoted_to_regression")
+        );
+    }
+
+    QVERIFY(promotedCaseFound);
 }
 
 void CoreTests::verificationSpecGapRegistryCoversKeepAsSpecGapCases()
