@@ -13,8 +13,8 @@
       "expectedAction": "investigate_implementation",
       "ruleHint": "calendar_rule_general",
       "reviewStatus": "investigate_implementation_candidate",
-      "reviewNotes": "再調査後も年・月・日の複数差分が残るため、supported year handling と暦法実装の見直し候補として保持する。",
-      "notes": "『四柱推命学奥義伝』由来。旧年代かつ月柱未対応を含むため、まずは実装修正候補として管理する。",
+      "reviewNotes": "1923 年の正節データ追加により monthPillar は癸丑まで改善済み。year/day/hour の差分は継続して investigate_implementation として保持する。",
+      "notes": "『四柱推命学奥義伝』由来。旧年代ケースで monthPillar 未対応の主因は 1923 年データ不足だったため、まずは月柱だけ改善したうえで残差分を継続確認する。",
       "expected": {
         "yearPillar": "壬戌",
         "monthPillar": "癸丑",
