@@ -475,6 +475,7 @@ private slots:
     void expectedAnnualFortunesCsvContainsRegressionCases();
     void verificationDatasetIdsRemainConsistentAcrossFiles();
     void verificationCasesSpecGapRulesAreCoveredByRegistry();
+    void verificationCasesReadyForRegressionReviewRemainNonRegression();
     void verificationNonRegressionCasesContainReviewMetadata();
     void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
@@ -1091,6 +1092,10 @@ void CoreTests::verificationDatasetIdsRemainConsistentAcrossFiles()
         const QJsonObject caseObject = caseValue.toObject();
         const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
         QVERIFY2(!caseId.isEmpty(), "verification_cases.json に空の caseId があります。");
+        QVERIFY2(
+            masterIds.contains(caseId),
+            qPrintable(QStringLiteral("verification ケース %1 が test_samples_master.csv に存在しません。").arg(caseId))
+        );
         verificationCaseIds << caseId;
     }
     QCOMPARE(duplicateValues(verificationCaseIds).size(), 0);
@@ -1124,6 +1129,30 @@ void CoreTests::verificationCasesSpecGapRulesAreCoveredByRegistry()
     }
 
     QVERIFY(coveredCaseCount > 0);
+}
+
+void CoreTests::verificationCasesReadyForRegressionReviewRemainNonRegression()
+{
+    const QJsonArray verificationCases = loadVerificationCases();
+    QVERIFY(!verificationCases.isEmpty());
+
+    int readyCaseCount = 0;
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        if (caseObject.value(QStringLiteral("reviewStatus")).toString()
+            != QStringLiteral("ready_for_regression_review")) {
+            continue;
+        }
+
+        ++readyCaseCount;
+        QVERIFY2(
+            !caseObject.value(QStringLiteral("enabledForRegression")).toBool(true),
+            qPrintable(QStringLiteral("%1 は ready_for_regression_review ですが enabledForRegression=true です。")
+                .arg(caseObject.value(QStringLiteral("caseId")).toString()))
+        );
+    }
+
+    QVERIFY(readyCaseCount > 0);
 }
 
 void CoreTests::verificationSpecGapRegistryCoversKeepAsSpecGapCases()

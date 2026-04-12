@@ -5,5 +5,6 @@ REG-1990-2300,general,S,内部回帰ケース,FourPillarsOfDestiny,regression,3,
 TZ-001,taizan_primary,A,四柱推命学奥義伝,阿部泰山,命式例,unknown,,旧年代外部比較ケース,1923-01-15,14:00,minute,男性,unknown,gregorian,partial,monthPillar は改善済みで残差分あり
 TZ-002,taizan_secondary,A,阿部泰山全集,阿部泰山,命式例,unknown,,旧年代外部比較ケース,1883-12-14,04:00,minute,男性,unknown,gregorian,partial,monthPillar は改善済みで残差分あり
 TZ-003,reference,B,検証用正答表,external_source,比較表,unknown,,日界仕様差比較ケース,1952-05-10,10:30,minute,女性,unknown,gregorian,usable,day boundary の spec gap 候補
+DOC-2026-0203-2330,reference,A,既知命式サンプル整理資料,DeepResearch,2026日界境界,unknown,,day boundary 再調査ケース,2026-02-03,23:30,minute,男性,unknown,gregorian,usable,current 実装と一致しているため regression 候補
 DOC-2026-0204-0600,reference,A,既知命式サンプル整理資料,DeepResearch,2026立春境界,unknown,,principal term boundary 再調査ケース,2026-02-04,06:00,minute,女性,unknown,gregorian,usable,year/month 一致で regression 候補
 DOC-2026-1220-2230,reference,A,既知命式サンプル整理資料,DeepResearch,2026時柱確認,unknown,,hour rule 確認ケース,2026-12-20,22:30,minute,女性,unknown,gregorian,usable,current 実装と一致している確認用

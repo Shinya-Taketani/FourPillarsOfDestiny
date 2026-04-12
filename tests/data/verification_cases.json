@@ -141,6 +141,7 @@
       "enabledForRegression": true,
       "source": "coretests_existing_contract",
       "confidence": "internal",
+      "reviewStatus": "pending",
       "notes": "立春後・寅月区間の標準ケース。",
       "expected": {
         "yearPillar": "庚午",
@@ -158,6 +159,7 @@
       "enabledForRegression": true,
       "source": "coretests_existing_contract",
       "confidence": "internal",
+      "reviewStatus": "pending",
       "notes": "前日 23:00 開始の日界に切り替わる直前。",
       "expected": {
         "yearPillar": "庚午",
@@ -175,6 +177,7 @@
       "enabledForRegression": true,
       "source": "coretests_existing_contract",
       "confidence": "internal",
+      "reviewStatus": "pending",
       "notes": "日柱が翌日扱いへ切り替わる境界。",
       "expected": {
         "yearPillar": "庚午",
