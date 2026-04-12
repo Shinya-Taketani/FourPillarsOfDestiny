@@ -59,6 +59,12 @@ QString expectedRelationsCsvFilePath()
         + QStringLiteral("/tests/data/expected_relations.csv");
 }
 
+QString expectedLuckCycleCsvFilePath()
+{
+    return QString::fromUtf8(FPOFD_SOURCE_DIR)
+        + QStringLiteral("/tests/data/expected_luck_cycle.csv");
+}
+
 QStringList parseCsvLine(const QString &line)
 {
     QStringList columns;
@@ -422,6 +428,9 @@ private slots:
     void expectedRelationsCsvLoadsRows();
     void expectedRelationsCsvMatchesKnownSampleIds();
     void expectedRelationsCsvContainsSupportedScopes();
+    void expectedLuckCycleCsvLoadsRows();
+    void expectedLuckCycleCsvMatchesKnownSampleIds();
+    void expectedLuckCycleCsvContainsRegressionCases();
     void verificationNonRegressionCasesContainReviewMetadata();
     void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
@@ -446,6 +455,7 @@ private slots:
     void chartCalculatorCalculatesPatternCandidatesForSupportedSampleYear();
     void chartCalculatorMatchesRegressionJudgementCsvForSupportedSampleYear();
     void chartCalculatorMatchesRegressionRelationsCsvForSupportedSampleYear();
+    void chartCalculatorMatchesRegressionLuckCycleCsvForSupportedSampleYear();
     void chartCalculatorCalculatesMajorFortuneDirectionForSupportedSampleYear();
     void chartCalculatorChangesMajorFortuneDirectionWithYearStemPolarity();
     void chartCalculatorReturnsUndeterminedMajorFortuneDirectionForUnspecifiedGender();
@@ -856,6 +866,74 @@ void CoreTests::expectedRelationsCsvContainsSupportedScopes()
     QVERIFY(containsNatalScope);
     QVERIFY(containsLuckScope);
     QVERIFY(containsYearScope);
+}
+
+void CoreTests::expectedLuckCycleCsvLoadsRows()
+{
+    const QList<QHash<QString, QString>> rows = loadCsvRows(expectedLuckCycleCsvFilePath());
+
+    QVERIFY2(!rows.isEmpty(), "expected_luck_cycle.csv を読み込めません。");
+    QVERIFY(rows.size() >= 4);
+
+    for (const QHash<QString, QString> &row : rows) {
+        QVERIFY2(!row.value(QStringLiteral("sample_id")).isEmpty(), "sample_id が空の大運正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("luck_direction")).isEmpty(), "luck_direction が空の大運正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("qiyun_age")).isEmpty(), "qiyun_age が空の大運正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("luck_1")).isEmpty(), "luck_1 が空の大運正答表行があります。");
+    }
+}
+
+void CoreTests::expectedLuckCycleCsvMatchesKnownSampleIds()
+{
+    const QList<QHash<QString, QString>> luckRows = loadCsvRows(expectedLuckCycleCsvFilePath());
+    QVERIFY2(!luckRows.isEmpty(), "expected_luck_cycle.csv を読み込めません。");
+
+    const QList<QHash<QString, QString>> sampleRows = loadCsvRows(testSamplesMasterCsvFilePath());
+    QVERIFY2(!sampleRows.isEmpty(), "test_samples_master.csv を読み込めません。");
+
+    QSet<QString> sampleIds;
+    for (const QHash<QString, QString> &row : sampleRows) {
+        sampleIds.insert(row.value(QStringLiteral("sample_id")));
+    }
+
+    for (const QHash<QString, QString> &row : luckRows) {
+        const QString sampleId = row.value(QStringLiteral("sample_id"));
+        QVERIFY2(
+            sampleIds.contains(sampleId),
+            qPrintable(QStringLiteral("大運正答表の sample_id %1 がサンプル台帳に存在しません。").arg(sampleId))
+        );
+    }
+}
+
+void CoreTests::expectedLuckCycleCsvContainsRegressionCases()
+{
+    const QList<QHash<QString, QString>> luckRows = loadCsvRows(expectedLuckCycleCsvFilePath());
+    QVERIFY2(!luckRows.isEmpty(), "expected_luck_cycle.csv を読み込めません。");
+
+    QSet<QString> luckSampleIds;
+    for (const QHash<QString, QString> &row : luckRows) {
+        luckSampleIds.insert(row.value(QStringLiteral("sample_id")));
+    }
+
+    const QJsonArray verificationCases = loadVerificationCases();
+    QVERIFY2(!verificationCases.isEmpty(), "verification_cases.json を読み込めません。");
+
+    int regressionCaseCount = 0;
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        if (!caseObject.value(QStringLiteral("enabledForRegression")).toBool(true)) {
+            continue;
+        }
+
+        const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
+        ++regressionCaseCount;
+        QVERIFY2(
+            luckSampleIds.contains(caseId),
+            qPrintable(QStringLiteral("regression ケース %1 が expected_luck_cycle.csv に存在しません。").arg(caseId))
+        );
+    }
+
+    QVERIFY(regressionCaseCount > 0);
 }
 
 void CoreTests::verificationSpecGapRegistryCoversKeepAsSpecGapCases()
@@ -1512,6 +1590,37 @@ void CoreTests::chartCalculatorMatchesRegressionRelationsCsvForSupportedSampleYe
             );
         }
     }
+}
+
+void CoreTests::chartCalculatorMatchesRegressionLuckCycleCsvForSupportedSampleYear()
+{
+    const QList<QHash<QString, QString>> luckRows = loadCsvRows(expectedLuckCycleCsvFilePath());
+    QVERIFY2(!luckRows.isEmpty(), "expected_luck_cycle.csv を読み込めません。");
+
+    QHash<QString, QString> targetRow;
+    for (const QHash<QString, QString> &row : luckRows) {
+        if (row.value(QStringLiteral("sample_id")) == QStringLiteral("REG-1990-0130")) {
+            targetRow = row;
+            break;
+        }
+    }
+
+    QVERIFY2(!targetRow.isEmpty(), "REG-1990-0130 が expected_luck_cycle.csv にありません。");
+
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1990-02-05"),
+        QStringLiteral("13:30"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+    const QVariantList majorFortunes = result.majorFortunes;
+
+    QCOMPARE(result.majorFortuneDirection.value(QStringLiteral("direction")).toString(), targetRow.value(QStringLiteral("luck_direction")));
+    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("startAge")).toString(), targetRow.value(QStringLiteral("qiyun_age")));
+    QCOMPARE(majorFortunes.at(0).toMap().value(QStringLiteral("pillar")).toString(), targetRow.value(QStringLiteral("luck_1")));
+    QCOMPARE(majorFortunes.at(1).toMap().value(QStringLiteral("pillar")).toString(), targetRow.value(QStringLiteral("luck_2")));
 }
 
 void CoreTests::chartCalculatorCalculatesMajorFortuneDirectionForSupportedSampleYear()
