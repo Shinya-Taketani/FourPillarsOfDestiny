@@ -35,8 +35,8 @@
       "expectedAction": "investigate_implementation",
       "ruleHint": "calendar_rule_general",
       "reviewStatus": "investigate_implementation_candidate",
-      "reviewNotes": "再調査後も月・日・時で複数差分が残るため、旧年代対応と暦法実装の見直し候補として保持する。",
-      "notes": "『阿部泰山全集』由来。1883 年ケースは月柱未対応を含むため、まずは実装修正候補として整理する。",
+      "reviewNotes": "1883 年の正節データ追加により monthPillar は甲子まで改善済み。year/day/hour の差分は継続して investigate_implementation として保持する。",
+      "notes": "『阿部泰山全集』由来。1883 年ケースの monthPillar 未対応は正節データ不足が主因だったため、まずは月柱だけ改善したうえで残差分を継続確認する。",
       "expected": {
         "yearPillar": "癸未",
         "monthPillar": "甲子",
