@@ -1,0 +1,9 @@
+sample_id,sample_group,reliability_rank,source_title,source_author,source_chapter,source_page,source_url,source_note,birth_date,birth_time,birth_time_precision,gender,birth_place,calendar_note,sample_status,remarks
+REG-1990-0130,general,S,内部回帰ケース,FourPillarsOfDestiny,regression,1,,既存回帰テスト由来,1990-02-05,13:30,minute,男性,unknown,gregorian,usable,命式計算回帰の基準ケース
+REG-1990-2259,general,S,内部回帰ケース,FourPillarsOfDestiny,regression,2,,23時境界直前,1990-02-05,22:59,minute,男性,unknown,gregorian,usable,日界23時直前の確認用
+REG-1990-2300,general,S,内部回帰ケース,FourPillarsOfDestiny,regression,3,,23時境界到達,1990-02-05,23:00,minute,男性,unknown,gregorian,usable,日界23時到達の確認用
+TZ-001,taizan_primary,A,四柱推命学奥義伝,阿部泰山,命式例,unknown,,旧年代外部比較ケース,1923-01-15,14:00,minute,男性,unknown,gregorian,partial,monthPillar は改善済みで残差分あり
+TZ-002,taizan_secondary,A,阿部泰山全集,阿部泰山,命式例,unknown,,旧年代外部比較ケース,1883-12-14,04:00,minute,男性,unknown,gregorian,partial,monthPillar は改善済みで残差分あり
+TZ-003,reference,B,検証用正答表,external_source,比較表,unknown,,日界仕様差比較ケース,1952-05-10,10:30,minute,女性,unknown,gregorian,usable,day boundary の spec gap 候補
+DOC-2026-0204-0600,reference,A,既知命式サンプル整理資料,DeepResearch,2026立春境界,unknown,,principal term boundary 再調査ケース,2026-02-04,06:00,minute,女性,unknown,gregorian,usable,year/month 一致で regression 候補
+DOC-2026-1220-2230,reference,A,既知命式サンプル整理資料,DeepResearch,2026時柱確認,unknown,,hour rule 確認ケース,2026-12-20,22:30,minute,女性,unknown,gregorian,usable,current 実装と一致している確認用

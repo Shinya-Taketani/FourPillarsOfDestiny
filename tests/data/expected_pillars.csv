@@ -1,0 +1,8 @@
+sample_id,year_pillar,month_pillar,day_pillar,hour_pillar,day_boundary_mode,true_solar_time_applied,calc_note
+REG-1990-0130,庚午,戊寅,辛丑,乙未,adopted_23_00,false,既存 regression 基準ケース
+REG-1990-2259,庚午,戊寅,辛丑,己亥,adopted_23_00,false,23時境界直前の回帰ケース
+REG-1990-2300,庚午,戊寅,壬寅,庚子,adopted_23_00,false,23時境界到達の回帰ケース
+TZ-001,壬戌,癸丑,癸酉,己未,adopted_23_00,false,旧年代外部比較ケースで monthPillar 改善済み
+TZ-002,癸未,甲子,丙午,庚寅,adopted_23_00,false,旧年代外部比較ケースで monthPillar 改善済み
+TZ-003,壬辰,乙巳,戊寅,丁巳,adopted_23_00,false,外部比較用の spec gap 候補ケース
+DOC-2026-0204-0600,丙午,庚寅,己酉,丁卯,adopted_23_00,false,principal term boundary の確認ケース

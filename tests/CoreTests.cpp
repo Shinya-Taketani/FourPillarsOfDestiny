@@ -1,9 +1,12 @@
 #include <QtTest>
 
 #include <QFile>
+#include <QHash>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
+#include <QStringList>
 #include <QTemporaryDir>
 
 #include "AppController.h"
@@ -30,6 +33,75 @@ QString specGapRegistryFilePath()
 {
     return QString::fromUtf8(FPOFD_SOURCE_DIR)
         + QStringLiteral("/tests/data/spec_gap_registry.json");
+}
+
+QString testSamplesMasterCsvFilePath()
+{
+    return QString::fromUtf8(FPOFD_SOURCE_DIR)
+        + QStringLiteral("/tests/data/test_samples_master.csv");
+}
+
+QString expectedPillarsCsvFilePath()
+{
+    return QString::fromUtf8(FPOFD_SOURCE_DIR)
+        + QStringLiteral("/tests/data/expected_pillars.csv");
+}
+
+QStringList parseCsvLine(const QString &line)
+{
+    QStringList columns;
+    QString current;
+    bool inQuotes = false;
+
+    for (QChar character : line) {
+        if (character == QLatin1Char('"')) {
+            inQuotes = !inQuotes;
+            continue;
+        }
+
+        if (character == QLatin1Char(',') && !inQuotes) {
+            columns << current;
+            current.clear();
+            continue;
+        }
+
+        current.append(character);
+    }
+
+    columns << current;
+    return columns;
+}
+
+QList<QHash<QString, QString>> loadCsvRows(const QString &filePath)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return {};
+    }
+
+    const QString content = QString::fromUtf8(file.readAll());
+    const QStringList lines = content.split(QRegularExpression(QStringLiteral("\\r?\\n")), Qt::SkipEmptyParts);
+    if (lines.isEmpty()) {
+        return {};
+    }
+
+    const QStringList header = parseCsvLine(lines.first());
+    QList<QHash<QString, QString>> rows;
+
+    for (int index = 1; index < lines.size(); ++index) {
+        const QStringList columns = parseCsvLine(lines.at(index));
+        if (columns.size() != header.size()) {
+            continue;
+        }
+
+        QHash<QString, QString> row;
+        for (int headerIndex = 0; headerIndex < header.size(); ++headerIndex) {
+            row.insert(header.at(headerIndex), columns.at(headerIndex));
+        }
+        rows.append(row);
+    }
+
+    return rows;
 }
 
 QJsonArray loadVerificationCases()
@@ -290,6 +362,9 @@ private slots:
     void chartCalculatorMatchesRegressionVerificationCases_data();
     void chartCalculatorMatchesRegressionVerificationCases();
     void chartCalculatorReportsNonRegressionVerificationDifferences();
+    void testSamplesMasterCsvLoadsRows();
+    void expectedPillarsCsvLoadsRows();
+    void expectedPillarsCsvMatchesRegressionCaseIds();
     void verificationNonRegressionCasesContainReviewMetadata();
     void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
     void chartCalculatorYearPillarChangesWithBirthYear();
@@ -505,6 +580,75 @@ void CoreTests::chartCalculatorReportsNonRegressionVerificationDifferences()
         .arg(reviewOutcomeCounts.value(QStringLiteral("manual_review_required")))
         .arg(reviewOutcomeCounts.value(QStringLiteral("ready_for_regression_review")));
     QWARN(qPrintable(summary));
+}
+
+void CoreTests::testSamplesMasterCsvLoadsRows()
+{
+    const QList<QHash<QString, QString>> rows = loadCsvRows(testSamplesMasterCsvFilePath());
+
+    QVERIFY2(!rows.isEmpty(), "test_samples_master.csv を読み込めません。");
+    QVERIFY(rows.size() >= 4);
+
+    for (const QHash<QString, QString> &row : rows) {
+        QVERIFY2(!row.value(QStringLiteral("sample_id")).isEmpty(), "sample_id が空の台帳行があります。");
+        QVERIFY2(!row.value(QStringLiteral("sample_group")).isEmpty(), "sample_group が空の台帳行があります。");
+        QVERIFY2(!row.value(QStringLiteral("reliability_rank")).isEmpty(), "reliability_rank が空の台帳行があります。");
+        QVERIFY2(!row.value(QStringLiteral("sample_status")).isEmpty(), "sample_status が空の台帳行があります。");
+    }
+}
+
+void CoreTests::expectedPillarsCsvLoadsRows()
+{
+    const QList<QHash<QString, QString>> rows = loadCsvRows(expectedPillarsCsvFilePath());
+
+    QVERIFY2(!rows.isEmpty(), "expected_pillars.csv を読み込めません。");
+    QVERIFY(rows.size() >= 4);
+
+    for (const QHash<QString, QString> &row : rows) {
+        QVERIFY2(!row.value(QStringLiteral("sample_id")).isEmpty(), "sample_id が空の正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("year_pillar")).isEmpty(), "year_pillar が空の正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("month_pillar")).isEmpty(), "month_pillar が空の正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("day_pillar")).isEmpty(), "day_pillar が空の正答表行があります。");
+        QVERIFY2(!row.value(QStringLiteral("hour_pillar")).isEmpty(), "hour_pillar が空の正答表行があります。");
+    }
+}
+
+void CoreTests::expectedPillarsCsvMatchesRegressionCaseIds()
+{
+    const QList<QHash<QString, QString>> expectedRows = loadCsvRows(expectedPillarsCsvFilePath());
+    QVERIFY2(!expectedRows.isEmpty(), "expected_pillars.csv を読み込めません。");
+
+    QSet<QString> expectedSampleIds;
+    for (const QHash<QString, QString> &row : expectedRows) {
+        expectedSampleIds.insert(row.value(QStringLiteral("sample_id")));
+    }
+
+    const QJsonArray verificationCases = loadVerificationCases();
+    QVERIFY2(!verificationCases.isEmpty(), "verification_cases.json を読み込めません。");
+
+    int regressionCaseCount = 0;
+    int overlappedCaseCount = 0;
+
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        const QString caseId = caseObject.value(QStringLiteral("caseId")).toString();
+        if (expectedSampleIds.contains(caseId)) {
+            ++overlappedCaseCount;
+        }
+
+        if (!caseObject.value(QStringLiteral("enabledForRegression")).toBool(true)) {
+            continue;
+        }
+
+        ++regressionCaseCount;
+        QVERIFY2(
+            expectedSampleIds.contains(caseId),
+            qPrintable(QStringLiteral("regression ケース %1 が expected_pillars.csv に存在しません。").arg(caseId))
+        );
+    }
+
+    QVERIFY(regressionCaseCount > 0);
+    QVERIFY2(overlappedCaseCount >= 3, "expected_pillars.csv と verification_cases.json の整合ケース数が不足しています。");
 }
 
 void CoreTests::verificationSpecGapRegistryCoversKeepAsSpecGapCases()
