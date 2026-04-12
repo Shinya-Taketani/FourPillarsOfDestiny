@@ -1,0 +1,8 @@
+sample_id,base_year,annual_1_year,annual_1_pillar,annual_1_ten_god,annual_1_twelve_phase,annual_2_year,annual_2_pillar,annual_2_ten_god,annual_2_twelve_phase,annual_3_year,annual_3_pillar,annual_3_ten_god,annual_3_twelve_phase,annual_note
+REG-1990-0130,1990,1990,庚午,劫財,病,1991,辛未,日主,衰,1992,壬申,傷官,帝旺,既存 regression ケースの先頭3年流年基準値
+REG-1990-2259,1990,1990,庚午,劫財,病,1991,辛未,日主,衰,1992,壬申,傷官,帝旺,23時境界直前でも流年骨格は同一
+REG-1990-2300,1990,1990,庚午,偏財,死,1991,辛未,正財,墓,1992,壬申,正官,絶,日界到達後は日干変化を受ける確認用
+TZ-001,1923,1923,癸亥,比肩,帝旺,1924,甲子,傷官,建禄,1925,乙丑,食神,養,external ケースのため流年通変星と十二運は review_needed 相当
+TZ-002,1883,1883,癸未,偏印,養,1884,甲申,劫財,帝旺,1885,乙酉,比肩,建禄,external ケースのため流年通変星と十二運は review_needed 相当
+TZ-003,1952,1952,壬辰,偏官,病,1953,癸巳,正官,帝旺,1954,甲午,偏印,建禄,external ケースのため review_needed 相当
+DOC-2026-0204-0600,2026,2026,丙午,偏印,建禄,2027,丁未,印綬,冠帯,2028,戊申,劫財,帝旺,principal term boundary 改善後の流年確認用
