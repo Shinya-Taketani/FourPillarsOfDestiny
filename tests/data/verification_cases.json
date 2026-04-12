@@ -101,7 +101,7 @@
       "expectedAction": "investigate_implementation",
       "ruleHint": "principal_term_boundary",
       "reviewStatus": "pending",
-      "reviewNotes": "研究資料では 05:02 の立春を採るため、本アプリの固定サンプル節入り時刻との差分確認が必要。",
+      "reviewNotes": "2026 立春境界の year/month 判定は実装改善済み。day/hour は継続確認。",
       "notes": "年柱・月柱の境界差が出やすいため、実装修正候補の洗い出し用に保持する。",
       "expected": {
         "yearPillar": "丙午",
