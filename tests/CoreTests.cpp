@@ -549,6 +549,7 @@ private slots:
     void chartCalculatorMatchesTz001MonthPillarIf1923DataIsSupported();
     void chartCalculatorMatchesTz002MonthPillarIf1883DataIsSupported();
     void chartCalculatorProvidesMonthPillarStatusMessageWithDataQuality();
+    void chartCalculatorProvidesTz001OldYearProvisionalDayPillarReviewNote();
     void solarTermResolverReturnsSupportedSampleContract();
     void chartResultToVariantMapContainsRequiredKeys();
     void birthInfoValidationAcceptsValidInput();
@@ -1321,7 +1322,7 @@ void CoreTests::verificationCasesOldYearMetadataReflectsDataQuality()
     QCOMPARE(tz001.value(QStringLiteral("expectedAction")).toString(), QStringLiteral("manual_review_required"));
     QCOMPARE(tz001.value(QStringLiteral("reviewStatus")).toString(), QStringLiteral("manual_review_required"));
     QVERIFY(tz001.value(QStringLiteral("reviewNotes")).toString().contains(QStringLiteral("1923")));
-    QVERIFY(tz001.value(QStringLiteral("reviewNotes")).toString().contains(QStringLiteral("provisional")));
+    QVERIFY(tz001.value(QStringLiteral("reviewNotes")).toString().contains(QStringLiteral("JD+49")));
 
     const QJsonObject tz002 = caseMap.value(QStringLiteral("TZ-002"));
     QCOMPARE(tz002.value(QStringLiteral("expectedAction")).toString(), QStringLiteral("manual_review_required"));
@@ -2934,6 +2935,25 @@ void CoreTests::chartCalculatorProvidesMonthPillarStatusMessageWithDataQuality()
 
     QVERIFY(verifiedResult.monthPillarStatusMessage.contains(QStringLiteral("verified")));
     QVERIFY(provisionalResult.monthPillarStatusMessage.contains(QStringLiteral("provisional")));
+}
+
+void CoreTests::chartCalculatorProvidesTz001OldYearProvisionalDayPillarReviewNote()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("1923-01-15"),
+        QStringLiteral("14:00"),
+        QStringLiteral("男性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.yearPillar, QStringLiteral("壬戌"));
+    QCOMPARE(result.monthPillar, QStringLiteral("癸丑"));
+    QCOMPARE(result.dayPillar, QStringLiteral("戊子"));
+    QVERIFY(result.description.contains(QStringLiteral("provisional 節入りデータ")));
+    QVERIFY(result.description.contains(QStringLiteral("通日(JD+49)ベース")));
+    QVERIFY(result.description.contains(QStringLiteral("外部資料の命式例と差分が残る場合があります")));
 }
 
 void CoreTests::solarTermResolverReturnsSupportedSampleContract()

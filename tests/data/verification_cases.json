@@ -13,8 +13,8 @@
       "expectedAction": "manual_review_required",
       "ruleHint": "calendar_rule_general",
       "reviewStatus": "manual_review_required",
-      "reviewNotes": "1923 年は provisional + 要確認の節入りデータに依存するため、monthPillar 改善後も exact time 採用は保留です。year/day/hour の残差分は manual review として保持します。",
-      "notes": "『四柱推命学奥義伝』由来。1923 年の月柱境界は provisional データで運用可能だが、exact time の正式採用には慎重さが必要なため regression 候補には上げず manual review として扱う。",
+      "reviewNotes": "1923 年の正節データで monthPillar は癸丑まで改善済みです。一方で日柱は通日(JD+49)ベースの最小実装と外部資料の命式例に差分が残るため、exact time の正式出典確認までは manual review として保持します。",
+      "notes": "『四柱推命学奥義伝』由来。1923 年ケースでは月柱境界は provisional データで扱えるが、日柱は JD ベースの最小実装と外部資料との差分が残るため、現時点では regression 候補に上げず manual review として扱う。",
       "expected": {
         "yearPillar": "壬戌",
         "monthPillar": "癸丑",

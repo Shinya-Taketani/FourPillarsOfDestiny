@@ -2176,6 +2176,9 @@ QString ChartCalculator::buildDescription(
 ) const
 {
     QStringList lines;
+    const QDate birthDate = QDate::fromString(birthInfo.birthDate, QStringLiteral("yyyy-MM-dd"));
+    const bool usesProvisionalSolarTermData = monthResolution.adoptable == QStringLiteral("provisional");
+    const bool isOldYearCase = birthDate.isValid() && birthDate.year() <= 1923;
 
     lines << QStringLiteral("一般四柱推命の共通計算基盤として、このソフトで採用する暦法と起運計算を反映しています。")
           << QStringLiteral("年柱は立春の節入り日時基準で切り替えます。")
@@ -2197,6 +2200,14 @@ QString ChartCalculator::buildDescription(
           << QStringLiteral("節入り差情報には、出生日時と参照正節日時との差分、および起運年齢換算結果を保持します。")
           << QStringLiteral("流年一覧は出生年から並べた最小表示骨格で、原命式との同干・同支・冲・害・破・刑・干合・三合・方合候補を参考表示します。")
           << QStringLiteral("流年解釈の吉凶断定や流派固有判断は未実装です。");
+
+    if (usesProvisionalSolarTermData) {
+        lines << QStringLiteral("この命式の年柱・月柱境界には provisional 節入りデータを使っています。");
+    }
+
+    if (usesProvisionalSolarTermData && isOldYearCase) {
+        lines << QStringLiteral("旧年代ケースの日柱は、通日(JD+49)ベースの最小実装をそのまま使っています。exact time の正式出典が弱い年では、外部資料の命式例と差分が残る場合があります。");
+    }
 
     if (!birthInfo.birthDate.isEmpty() || !birthInfo.birthTime.isEmpty() || !birthInfo.gender.isEmpty()) {
         lines << QStringLiteral("入力値: %1 / %2 / %3")
