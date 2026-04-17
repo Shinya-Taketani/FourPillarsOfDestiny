@@ -215,8 +215,10 @@ bool isSupportedReviewStatus(const QString &reviewStatus)
 {
     static const QSet<QString> supportedStatuses{
         QStringLiteral("pending"),
+        QStringLiteral("confirmed_spec_gap"),
         QStringLiteral("confirmed_spec_gap_candidate"),
         QStringLiteral("investigate_implementation_candidate"),
+        QStringLiteral("manual_review_required"),
         QStringLiteral("ready_for_regression_review"),
         QStringLiteral("promoted_to_regression")
     };
@@ -480,6 +482,7 @@ private slots:
     void verificationPromotedCaseParticipatesInRegressionSet();
     void verificationNonRegressionCasesContainReviewMetadata();
     void verificationSpecGapRegistryCoversKeepAsSpecGapCases();
+    void verificationCasesOldYearMetadataReflectsDataQuality();
     void chartCalculatorYearPillarChangesWithBirthYear();
     void chartCalculatorReturnsStableResultForSameInput();
     void chartCalculatorHourPillarChangesWithBirthTime();
@@ -1295,6 +1298,45 @@ void CoreTests::verificationNonRegressionCasesContainReviewMetadata()
         externalNonRegressionCount >= 5,
         qPrintable(QStringLiteral("external non-regression ケース数が不足しています: %1").arg(externalNonRegressionCount))
     );
+}
+
+void CoreTests::verificationCasesOldYearMetadataReflectsDataQuality()
+{
+    const QJsonArray verificationCases = loadVerificationCases();
+    const QJsonArray specGaps = loadSpecGapRegistry();
+    QVERIFY(!verificationCases.isEmpty());
+    QVERIFY(!specGaps.isEmpty());
+
+    QMap<QString, QJsonObject> caseMap;
+    for (const QJsonValue &caseValue : verificationCases) {
+        const QJsonObject caseObject = caseValue.toObject();
+        caseMap.insert(caseObject.value(QStringLiteral("caseId")).toString(), caseObject);
+    }
+
+    QVERIFY(caseMap.contains(QStringLiteral("TZ-001")));
+    QVERIFY(caseMap.contains(QStringLiteral("TZ-002")));
+    QVERIFY(caseMap.contains(QStringLiteral("TZ-003")));
+
+    const QJsonObject tz001 = caseMap.value(QStringLiteral("TZ-001"));
+    QCOMPARE(tz001.value(QStringLiteral("expectedAction")).toString(), QStringLiteral("manual_review_required"));
+    QCOMPARE(tz001.value(QStringLiteral("reviewStatus")).toString(), QStringLiteral("manual_review_required"));
+    QVERIFY(tz001.value(QStringLiteral("reviewNotes")).toString().contains(QStringLiteral("1923")));
+    QVERIFY(tz001.value(QStringLiteral("reviewNotes")).toString().contains(QStringLiteral("provisional")));
+
+    const QJsonObject tz002 = caseMap.value(QStringLiteral("TZ-002"));
+    QCOMPARE(tz002.value(QStringLiteral("expectedAction")).toString(), QStringLiteral("manual_review_required"));
+    QCOMPARE(tz002.value(QStringLiteral("reviewStatus")).toString(), QStringLiteral("manual_review_required"));
+    QVERIFY(tz002.value(QStringLiteral("reviewNotes")).toString().contains(QStringLiteral("1883")));
+    QVERIFY(tz002.value(QStringLiteral("reviewNotes")).toString().contains(QStringLiteral("最弱")));
+
+    const QJsonObject tz003 = caseMap.value(QStringLiteral("TZ-003"));
+    QCOMPARE(tz003.value(QStringLiteral("expectedAction")).toString(), QStringLiteral("keep_as_spec_gap"));
+    QCOMPARE(tz003.value(QStringLiteral("reviewStatus")).toString(), QStringLiteral("confirmed_spec_gap"));
+    QCOMPARE(tz003.value(QStringLiteral("ruleHint")).toString(), QStringLiteral("day_boundary_23_00"));
+
+    const QJsonObject specGap = findSpecGapByRuleHint(specGaps, tz003.value(QStringLiteral("ruleHint")).toString());
+    QVERIFY(!specGap.isEmpty());
+    QVERIFY(specGap.value(QStringLiteral("notes")).toString().contains(QStringLiteral("TZ-003")));
 }
 
 void CoreTests::chartCalculatorYearPillarChangesWithBirthYear()
