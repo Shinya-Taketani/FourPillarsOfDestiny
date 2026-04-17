@@ -571,8 +571,21 @@ SolarTermResolution SolarTermResolver::resolveMonthPillar(const BirthInfo &birth
         true,
         monthPillar,
         QStringLiteral(
-            "本アプリ採用仕様として、正節 %1 の節入り日時以後の区間から月柱を確定しました。 使用データ品質: %2。"
-        ).arg(matchedTermName, dataQualityLabel(yearData)),
+            "本アプリ採用仕様として、正節 %1 の節入り日時 %2 以後の区間から月柱を確定しました。 使用データ品質: %3。"
+        ).arg(
+            matchedTermName,
+            yearData.entries.isEmpty()
+                ? QStringLiteral("未対応")
+                : [&yearData, &matchedTermName]() {
+                    for (const SolarTermEntry &entry : yearData.entries) {
+                        if (entry.termName == matchedTermName && entry.atDateTime.isValid()) {
+                            return entry.atDateTime.toString(Qt::ISODate);
+                        }
+                    }
+                    return QStringLiteral("未対応");
+                }(),
+            dataQualityLabel(yearData)
+        ),
         yearData.sourceQuality,
         yearData.adoptable,
         yearData.notes

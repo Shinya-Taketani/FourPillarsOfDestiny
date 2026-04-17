@@ -101,8 +101,8 @@
       "expectedAction": "no_action_needed",
       "ruleHint": "principal_term_boundary",
       "reviewStatus": "promoted_to_regression",
-      "reviewNotes": "Deep Research 再調査後も四柱一致が継続し、principal term boundary の targeted fix も安定したため regression へ昇格した。",
-      "notes": "principal term boundary の targeted fix 後に現行実装と一致し続けているため、2026 立春境界の回帰ケースとして採用する。",
+      "reviewNotes": "2026-02-04 05:02 JST の立春節入り時刻を verified データとして参照し、06:00 を立春後として yearPillar=丙午、monthPillar=庚寅 に確定できるため regression へ昇格した。",
+      "notes": "principal term boundary の targeted fix 後に現行実装と一致し続けており、2026-02-04 05:02 JST を境界に年柱・月柱が切り替わる回帰ケースとして採用する。",
       "expected": {
         "yearPillar": "丙午",
         "monthPillar": "庚寅",

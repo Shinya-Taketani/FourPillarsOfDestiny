@@ -545,6 +545,7 @@ private slots:
     void solarTermDataSourceLoadsSampleYearData();
     void solarTermDataSourceHandlesMissingYearData();
     void chartCalculatorMatches2026LichunBoundaryCaseYearAndMonthPillars();
+    void chartCalculatorMatchesDoc202602040600YearAndMonthPillars();
     void chartCalculatorChangesYearAndMonthPillarsAcross2026LichunBoundary();
     void chartCalculatorMatchesTz001MonthPillarIf1923DataIsSupported();
     void chartCalculatorMatchesTz002MonthPillarIf1883DataIsSupported();
@@ -2663,6 +2664,24 @@ void CoreTests::chartCalculatorMatches2026LichunBoundaryCaseYearAndMonthPillars(
 
     QCOMPARE(result.yearPillar, QStringLiteral("丙午"));
     QCOMPARE(result.monthPillar, QStringLiteral("庚寅"));
+}
+
+void CoreTests::chartCalculatorMatchesDoc202602040600YearAndMonthPillars()
+{
+    ChartCalculator calculator;
+    const BirthInfo birthInfo{
+        QStringLiteral("2026-02-04"),
+        QStringLiteral("06:00"),
+        QStringLiteral("女性")
+    };
+
+    const ChartResult result = calculator.calculate(birthInfo);
+
+    QCOMPARE(result.yearPillar, QStringLiteral("丙午"));
+    QCOMPARE(result.monthPillar, QStringLiteral("庚寅"));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("立春")));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("2026-02-04T05:02:00+09:00")));
+    QVERIFY(result.monthPillarStatusMessage.contains(QStringLiteral("verified")));
 }
 
 void CoreTests::chartCalculatorChangesYearAndMonthPillarsAcross2026LichunBoundary()
