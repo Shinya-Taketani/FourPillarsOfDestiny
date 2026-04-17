@@ -564,6 +564,7 @@ private slots:
     void appControllerExposesBirthInfoValidation();
     void appControllerReturnsChartResultMap();
     void interpretationEngineReturnsNonEmptyResult();
+    void interpretationEngineBuildsStructuredSummaryFromChartResult();
     void appControllerReturnsInterpretationResultMap();
     void savedChartRecordConvertsToJsonObject();
     void jsonRecordStorageWritesJsonFile();
@@ -3587,6 +3588,81 @@ void CoreTests::interpretationEngineReturnsNonEmptyResult()
     QVERIFY(!result.summaryText.isEmpty());
     QVERIFY(!result.detailText.isEmpty());
     QVERIFY(!result.cautionText.isEmpty());
+}
+
+void CoreTests::interpretationEngineBuildsStructuredSummaryFromChartResult()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("庚午"),
+        QStringLiteral("戊寅"),
+        QStringLiteral("辛丑"),
+        QStringLiteral("乙未"),
+        QStringLiteral("命式説明です。"),
+        QStringLiteral("月柱は立春基準で確定しました。"),
+        {},
+        {},
+        {},
+        QString(),
+        {
+            {QStringLiteral("season"), QStringLiteral("春")},
+            {QStringLiteral("suitability"), QStringLiteral("旺")}
+        },
+        QString(),
+        {
+            {QStringLiteral("label"), QStringLiteral("strong")},
+            {QStringLiteral("reason"), QStringLiteral("supportiveCount が多く季節評価も追い風です。")}
+        },
+        QString(),
+        {
+            {QStringLiteral("temperature"), QStringLiteral("やや寒")},
+            {QStringLiteral("moisture"), QStringLiteral("やや湿")}
+        },
+        QString(),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("水"), QStringLiteral("木")}},
+            {QStringLiteral("reason"), QStringLiteral("強弱補正では水を優先し、乾湿補正では木も参考になります。")}
+        },
+        QString(),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("印綬格"), QStringLiteral("偏財格")}},
+            {QStringLiteral("reason"), QStringLiteral("月干通変星を主根拠に印綬格を第一候補とします。")}
+        },
+        QString(),
+        {
+            QVariantMap{
+                {QStringLiteral("pillar"), QStringLiteral("己卯")},
+                {QStringLiteral("relationSummary"), QStringLiteral("同支: 月柱 / 干合候補: 日柱")}
+            }
+        },
+        QString(),
+        {
+            QVariantMap{
+                {QStringLiteral("year"), 1990},
+                {QStringLiteral("pillar"), QStringLiteral("庚午")},
+                {QStringLiteral("relationSummary"), QStringLiteral("同干: 年柱 / 同支: 年柱")}
+            }
+        },
+        QString(),
+        {},
+        QString(),
+        {},
+        QString()
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+
+    QVERIFY(result.summaryText.contains(QStringLiteral("strong")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("水")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("印綬格")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("春")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("己卯")));
+    QVERIFY(result.detailText.contains(QStringLiteral("強弱評価")));
+    QVERIFY(result.detailText.contains(QStringLiteral("用神候補")));
+    QVERIFY(result.detailText.contains(QStringLiteral("格局候補")));
+    QVERIFY(result.detailText.contains(QStringLiteral("関係判定")));
+    QVERIFY(result.detailText.contains(QStringLiteral("同支: 月柱")));
+    QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
 }
 
 void CoreTests::appControllerReturnsInterpretationResultMap()
