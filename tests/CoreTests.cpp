@@ -548,6 +548,8 @@ private slots:
     void chartCalculatorMatchesDoc202602040600YearAndMonthPillars();
     void chartCalculatorChangesYearAndMonthPillarsAcross2026LichunBoundary();
     void chartCalculatorChangesMonthPillarAcross2026JingzheBoundary();
+    void chartCalculatorChangesMonthPillarAcross2026VerifiedPrincipalTerms_data();
+    void chartCalculatorChangesMonthPillarAcross2026VerifiedPrincipalTerms();
     void chartCalculatorMatchesTz001MonthPillarIf1923DataIsSupported();
     void chartCalculatorMatchesTz002MonthPillarIf1883DataIsSupported();
     void chartCalculatorProvidesMonthPillarStatusMessageWithDataQuality();
@@ -2744,6 +2746,111 @@ void CoreTests::chartCalculatorChangesMonthPillarAcross2026JingzheBoundary()
     QVERIFY(beforeResult.monthPillar != boundaryResult.monthPillar);
     QVERIFY(boundaryResult.monthPillarStatusMessage.contains(QStringLiteral("啓蟄")));
     QVERIFY(boundaryResult.monthPillarStatusMessage.contains(QStringLiteral("2026-03-05T22:59:00+09:00")));
+}
+
+void CoreTests::chartCalculatorChangesMonthPillarAcross2026VerifiedPrincipalTerms_data()
+{
+    QTest::addColumn<QString>("birthDate");
+    QTest::addColumn<QString>("beforeTime");
+    QTest::addColumn<QString>("boundaryTime");
+    QTest::addColumn<QString>("beforeYearPillar");
+    QTest::addColumn<QString>("boundaryYearPillar");
+    QTest::addColumn<QString>("beforeMonthPillar");
+    QTest::addColumn<QString>("boundaryMonthPillar");
+    QTest::addColumn<QString>("boundaryTerm");
+    QTest::addColumn<QString>("boundaryIso");
+
+    QTest::addRow("lichun")
+        << QStringLiteral("2026-02-04")
+        << QStringLiteral("05:01")
+        << QStringLiteral("05:02")
+        << QStringLiteral("乙巳")
+        << QStringLiteral("丙午")
+        << QStringLiteral("己丑")
+        << QStringLiteral("庚寅")
+        << QStringLiteral("立春")
+        << QStringLiteral("2026-02-04T05:02:00+09:00");
+
+    QTest::addRow("jingzhe")
+        << QStringLiteral("2026-03-05")
+        << QStringLiteral("22:58")
+        << QStringLiteral("22:59")
+        << QStringLiteral("丙午")
+        << QStringLiteral("丙午")
+        << QStringLiteral("庚寅")
+        << QStringLiteral("辛卯")
+        << QStringLiteral("啓蟄")
+        << QStringLiteral("2026-03-05T22:59:00+09:00");
+
+    QTest::addRow("qingming")
+        << QStringLiteral("2026-04-05")
+        << QStringLiteral("03:39")
+        << QStringLiteral("03:40")
+        << QStringLiteral("丙午")
+        << QStringLiteral("丙午")
+        << QStringLiteral("辛卯")
+        << QStringLiteral("壬辰")
+        << QStringLiteral("清明")
+        << QStringLiteral("2026-04-05T03:40:00+09:00");
+
+    QTest::addRow("lixia")
+        << QStringLiteral("2026-05-05")
+        << QStringLiteral("20:48")
+        << QStringLiteral("20:49")
+        << QStringLiteral("丙午")
+        << QStringLiteral("丙午")
+        << QStringLiteral("壬辰")
+        << QStringLiteral("癸巳")
+        << QStringLiteral("立夏")
+        << QStringLiteral("2026-05-05T20:49:00+09:00");
+
+    QTest::addRow("bailu")
+        << QStringLiteral("2026-09-07")
+        << QStringLiteral("23:40")
+        << QStringLiteral("23:41")
+        << QStringLiteral("丙午")
+        << QStringLiteral("丙午")
+        << QStringLiteral("丙申")
+        << QStringLiteral("丁酉")
+        << QStringLiteral("白露")
+        << QStringLiteral("2026-09-07T23:41:00+09:00");
+}
+
+void CoreTests::chartCalculatorChangesMonthPillarAcross2026VerifiedPrincipalTerms()
+{
+    QFETCH(QString, birthDate);
+    QFETCH(QString, beforeTime);
+    QFETCH(QString, boundaryTime);
+    QFETCH(QString, beforeYearPillar);
+    QFETCH(QString, boundaryYearPillar);
+    QFETCH(QString, beforeMonthPillar);
+    QFETCH(QString, boundaryMonthPillar);
+    QFETCH(QString, boundaryTerm);
+    QFETCH(QString, boundaryIso);
+
+    ChartCalculator calculator;
+    const BirthInfo beforeBoundary{
+        birthDate,
+        beforeTime,
+        QStringLiteral("女性")
+    };
+    const BirthInfo atBoundary{
+        birthDate,
+        boundaryTime,
+        QStringLiteral("女性")
+    };
+
+    const ChartResult beforeResult = calculator.calculate(beforeBoundary);
+    const ChartResult boundaryResult = calculator.calculate(atBoundary);
+
+    QCOMPARE(beforeResult.yearPillar, beforeYearPillar);
+    QCOMPARE(boundaryResult.yearPillar, boundaryYearPillar);
+    QCOMPARE(beforeResult.monthPillar, beforeMonthPillar);
+    QCOMPARE(boundaryResult.monthPillar, boundaryMonthPillar);
+    QVERIFY(beforeResult.monthPillar != boundaryResult.monthPillar);
+    QVERIFY(boundaryResult.monthPillarStatusMessage.contains(boundaryTerm));
+    QVERIFY(boundaryResult.monthPillarStatusMessage.contains(boundaryIso));
+    QVERIFY(boundaryResult.monthPillarStatusMessage.contains(QStringLiteral("verified")));
 }
 
 void CoreTests::chartCalculatorMatchesTz001MonthPillarIf1923DataIsSupported()
