@@ -565,6 +565,8 @@ private slots:
     void appControllerReturnsChartResultMap();
     void interpretationEngineReturnsNonEmptyResult();
     void interpretationEngineBuildsStructuredSummaryFromChartResult();
+    void interpretationEngineReflectsStatusMessagesInDetailAndCaution();
+    void interpretationEngineExplainsTenGodMeanings();
     void appControllerReturnsInterpretationResultMap();
     void savedChartRecordConvertsToJsonObject();
     void jsonRecordStorageWritesJsonFile();
@@ -3662,6 +3664,146 @@ void CoreTests::interpretationEngineBuildsStructuredSummaryFromChartResult()
     QVERIFY(result.detailText.contains(QStringLiteral("格局候補")));
     QVERIFY(result.detailText.contains(QStringLiteral("関係判定")));
     QVERIFY(result.detailText.contains(QStringLiteral("同支: 月柱")));
+    QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
+}
+
+void CoreTests::interpretationEngineReflectsStatusMessagesInDetailAndCaution()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("壬辰"),
+        QStringLiteral("乙巳"),
+        QStringLiteral("丙寅"),
+        QStringLiteral("丁巳"),
+        QStringLiteral("この命式の年柱・月柱境界には provisional 節入りデータを使っています。"),
+        QStringLiteral("本アプリ採用仕様として、正節 立夏 の節入り日時以後の区間から月柱を確定しました。 使用データ品質: provisional（暫定データ）。"),
+        {},
+        {},
+        {},
+        QStringLiteral("四柱天干・地支・蔵干を単純件数で集計しています。"),
+        {
+            {QStringLiteral("season"), QStringLiteral("夏")},
+            {QStringLiteral("suitability"), QStringLiteral("やや旺")}
+        },
+        QStringLiteral("月支ベースの季節評価による最小判定です。"),
+        {
+            {QStringLiteral("label"), QStringLiteral("strong")},
+            {QStringLiteral("reason"), QStringLiteral("五行分布と季節評価を使った暫定的な強弱評価です。")}
+        },
+        QStringLiteral("五行分布と季節評価を使った暫定的な強弱評価です。"),
+        {
+            {QStringLiteral("temperature"), QStringLiteral("暖")},
+            {QStringLiteral("moisture"), QStringLiteral("やや湿")}
+        },
+        QStringLiteral("月支ベースの寒暖・乾湿に関する最小評価です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("水"), QStringLiteral("金")}},
+            {QStringLiteral("reason"), QStringLiteral("断定しない暫定候補です。")}
+        },
+        QStringLiteral("五行分布・季節・寒暖乾湿に加えて、strengthEvaluation の構造化情報を参照した断定しない暫定候補です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("印綬格")}},
+            {QStringLiteral("reason"), QStringLiteral("断定しない暫定候補です。")}
+        },
+        QStringLiteral("月干通変星と月支蔵干を主軸に、strengthEvaluation と usefulGodCandidates の構造化情報も補助参照した断定しない暫定候補です。"),
+        {
+            QVariantMap{
+                {QStringLiteral("pillar"), QStringLiteral("丙申")},
+                {QStringLiteral("relationSummary"), QStringLiteral("同干: 日柱")}
+            }
+        },
+        QStringLiteral("大運表示です。起運年齢は参考表示で、原命式との同干・同支・冲候補・干合候補を表示します。"),
+        {
+            QVariantMap{
+                {QStringLiteral("year"), 1952},
+                {QStringLiteral("pillar"), QStringLiteral("壬辰")},
+                {QStringLiteral("relationSummary"), QStringLiteral("同支: 年柱")}
+            }
+        },
+        QStringLiteral("流年表示です。通変星と十二運を参考表示し、原命式との同干・同支・冲候補・干合候補を表示します。"),
+        {},
+        QStringLiteral("一般四柱推命の共通基盤として、年干陰陽と性別による順逆判定です。"),
+        {},
+        QStringLiteral("一般四柱推命の共通基盤として、正節の節入り日時との差分を保持する採用仕様です。")
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+
+    QVERIFY(result.summaryText.contains(QStringLiteral("採用仕様")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("provisional")));
+    QVERIFY(result.detailText.contains(QStringLiteral("命式計算の採用仕様")));
+    QVERIFY(result.detailText.contains(QStringLiteral("月柱判定根拠")));
+    QVERIFY(result.detailText.contains(QStringLiteral("採用仕様")));
+    QVERIFY(result.detailText.contains(QStringLiteral("暫定性と候補の補足")));
+    QVERIFY(result.detailText.contains(QStringLiteral("大運・流年の補足")));
+    QVERIFY(result.cautionText.contains(QStringLiteral("provisional")));
+    QVERIFY(result.cautionText.contains(QStringLiteral("参考表示")));
+    QVERIFY(result.cautionText.contains(QStringLiteral("採用仕様")));
+}
+
+void CoreTests::interpretationEngineExplainsTenGodMeanings()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("庚午"),
+        QStringLiteral("戊寅"),
+        QStringLiteral("辛丑"),
+        QStringLiteral("乙未"),
+        QStringLiteral("命式説明です。"),
+        QStringLiteral("月柱は正節基準で判定しました。"),
+        {
+            {QStringLiteral("yearPillar"), QStringLiteral("劫財")},
+            {QStringLiteral("monthPillar"), QStringLiteral("印綬")},
+            {QStringLiteral("dayPillar"), QStringLiteral("日主")},
+            {QStringLiteral("hourPillar"), QStringLiteral("偏財")}
+        },
+        {},
+        {},
+        QString(),
+        {
+            {QStringLiteral("season"), QStringLiteral("春")},
+            {QStringLiteral("suitability"), QStringLiteral("旺")}
+        },
+        QStringLiteral("季節評価の最小判定です。"),
+        {
+            {QStringLiteral("label"), QStringLiteral("strong")},
+            {QStringLiteral("reason"), QStringLiteral("supportiveCount が多い状態です。")}
+        },
+        QStringLiteral("強弱評価は暫定候補です。"),
+        {
+            {QStringLiteral("temperature"), QStringLiteral("やや寒")},
+            {QStringLiteral("moisture"), QStringLiteral("やや湿")}
+        },
+        QStringLiteral("寒暖・乾湿評価は暫定候補です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("水")}},
+            {QStringLiteral("reason"), QStringLiteral("参考表示です。")}
+        },
+        QStringLiteral("用神候補は参考表示です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("印綬格")}},
+            {QStringLiteral("reason"), QStringLiteral("月干通変星からの暫定候補です。")}
+        },
+        QStringLiteral("格局候補は暫定候補です。"),
+        {},
+        QStringLiteral("大運表示は参考表示です。"),
+        {},
+        QStringLiteral("流年表示は参考表示です。"),
+        {},
+        QStringLiteral("順逆は一般ルールによる暫定表示です。"),
+        {},
+        QStringLiteral("節入り差準備は採用仕様です。")
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+
+    QVERIFY(result.summaryText.contains(QStringLiteral("印綬")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("学習")));
+    QVERIFY(result.detailText.contains(QStringLiteral("通変星解釈: 印綬")));
+    QVERIFY(result.detailText.contains(QStringLiteral("基本意味")));
+    QVERIFY(result.detailText.contains(QStringLiteral("長所")));
+    QVERIFY(result.detailText.contains(QStringLiteral("注意点")));
+    QVERIFY(result.detailText.contains(QStringLiteral("仕事面")));
     QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
 }
 
