@@ -721,10 +721,15 @@ QStringList usefulElementDetailLines(
 )
 {
     QStringList lines;
+    bool hasSectionContent = false;
 
     const QString usefulElement = firstUsefulElement(usefulGodCandidates);
     const ElementRoleMeaning *usefulMeaning = meaningForElementRole(usefulElement, QStringLiteral("joy"));
     if (!usefulElement.isEmpty() && usefulMeaning != nullptr) {
+        if (!hasSectionContent) {
+            lines << QStringLiteral("喜神・忌神・調候用神:");
+            hasSectionContent = true;
+        }
         lines << QStringLiteral("喜神の意味: %1").arg(usefulElement);
         lines << QStringLiteral("  基本意味: %1").arg(usefulMeaning->basicMeaning);
         lines << QStringLiteral("  長所: %1").arg(usefulMeaning->positiveExpression);
@@ -737,6 +742,10 @@ QStringList usefulElementDetailLines(
     const QString harmfulElement = harmfulElementCandidate(usefulGodCandidates);
     const ElementRoleMeaning *harmfulMeaning = meaningForElementRole(harmfulElement, QStringLiteral("harmful"));
     if (!harmfulElement.isEmpty() && harmfulMeaning != nullptr && harmfulElement != usefulElement) {
+        if (!hasSectionContent) {
+            lines << QStringLiteral("喜神・忌神・調候用神:");
+            hasSectionContent = true;
+        }
         lines << QStringLiteral("忌神の意味: %1").arg(harmfulElement);
         lines << QStringLiteral("  基本意味: %1").arg(harmfulMeaning->basicMeaning);
         lines << QStringLiteral("  長所寄りの見方: %1").arg(harmfulMeaning->positiveExpression);
@@ -749,6 +758,10 @@ QStringList usefulElementDetailLines(
     const QString climateElement = climateElementCandidate(seasonalEvaluation, climateEvaluation);
     const ElementRoleMeaning *climateMeaning = meaningForElementRole(climateElement, QStringLiteral("climate"));
     if (!climateElement.isEmpty() && climateMeaning != nullptr) {
+        if (!hasSectionContent) {
+            lines << QStringLiteral("喜神・忌神・調候用神:");
+            hasSectionContent = true;
+        }
         lines << QStringLiteral("調候用神の補足: %1").arg(climateElement);
         lines << QStringLiteral("  基本意味: %1").arg(climateMeaning->basicMeaning);
         lines << QStringLiteral("  長所: %1").arg(climateMeaning->positiveExpression);
@@ -919,7 +932,7 @@ QStringList tenGodDetailLines(const QVariantMap &tenGods)
     }
 
     return {
-        QStringLiteral("通変星解釈: %1").arg(representative),
+        QStringLiteral("通変星の意味: %1").arg(representative),
         QStringLiteral("  基本意味: %1").arg(meaning->basicMeaning),
         QStringLiteral("  長所: %1").arg(meaning->positiveExpression),
         QStringLiteral("  注意点: %1").arg(meaning->cautionExpression),

@@ -568,6 +568,7 @@ private slots:
     void interpretationEngineReflectsStatusMessagesInDetailAndCaution();
     void interpretationEngineExplainsTenGodMeanings();
     void interpretationEngineExplainsUsefulGodElementMeanings();
+    void interpretationEngineExplainsTenGodAndUsefulGodMeanings();
     void interpretationEngineBuildsEssenceSocialPartnerSections();
     void interpretationEngineBuildsSixRelationsSection();
     void interpretationEngineBuildsFortuneCycleExplanations();
@@ -3805,7 +3806,7 @@ void CoreTests::interpretationEngineExplainsTenGodMeanings()
 
     QVERIFY(result.summaryText.contains(QStringLiteral("印綬")));
     QVERIFY(result.summaryText.contains(QStringLiteral("学習")));
-    QVERIFY(result.detailText.contains(QStringLiteral("通変星解釈: 印綬")));
+    QVERIFY(result.detailText.contains(QStringLiteral("通変星の意味: 印綬")));
     QVERIFY(result.detailText.contains(QStringLiteral("基本意味")));
     QVERIFY(result.detailText.contains(QStringLiteral("長所")));
     QVERIFY(result.detailText.contains(QStringLiteral("注意点")));
@@ -3883,6 +3884,80 @@ void CoreTests::interpretationEngineExplainsUsefulGodElementMeanings()
     QVERIFY(result.detailText.contains(QStringLiteral("調候用神の補足: 火")));
     QVERIFY(result.detailText.contains(QStringLiteral("冷えた命式を暖め")));
     QVERIFY(result.detailText.contains(QStringLiteral("注意点")));
+    QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
+}
+
+void CoreTests::interpretationEngineExplainsTenGodAndUsefulGodMeanings()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("庚午"),
+        QStringLiteral("戊寅"),
+        QStringLiteral("辛丑"),
+        QStringLiteral("乙未"),
+        QStringLiteral("命式説明です。"),
+        QStringLiteral("月柱は正節基準で判定しました。"),
+        {
+            {QStringLiteral("yearPillar"), QStringLiteral("劫財")},
+            {QStringLiteral("monthPillar"), QStringLiteral("印綬")},
+            {QStringLiteral("dayPillar"), QStringLiteral("日主")},
+            {QStringLiteral("hourPillar"), QStringLiteral("偏財")}
+        },
+        {},
+        {},
+        QString(),
+        {
+            {QStringLiteral("season"), QStringLiteral("冬")},
+            {QStringLiteral("suitability"), QStringLiteral("不利")}
+        },
+        QStringLiteral("季節評価の最小判定です。"),
+        {
+            {QStringLiteral("label"), QStringLiteral("strong")},
+            {QStringLiteral("reason"), QStringLiteral("支援要素数が多い状態です。")}
+        },
+        QStringLiteral("強弱評価は暫定候補です。"),
+        {
+            {QStringLiteral("temperature"), QStringLiteral("寒")},
+            {QStringLiteral("moisture"), QStringLiteral("やや乾")}
+        },
+        QStringLiteral("寒暖・乾湿評価は暫定候補です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("火"), QStringLiteral("木")}},
+            {QStringLiteral("rankedElements"), QVariantList{
+                 QStringLiteral("火"),
+                 QStringLiteral("土"),
+                 QStringLiteral("金"),
+                 QStringLiteral("木"),
+                 QStringLiteral("水")
+             }},
+            {QStringLiteral("reason"), QStringLiteral("寒冷補正では火を優先し、木を補助候補とします。")}
+        },
+        QStringLiteral("用神候補は参考表示です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("印綬格")}},
+            {QStringLiteral("reason"), QStringLiteral("月干通変星からの暫定候補です。")}
+        },
+        QStringLiteral("格局候補は暫定候補です。"),
+        {},
+        QStringLiteral("大運表示は参考表示です。"),
+        {},
+        QStringLiteral("流年表示は参考表示です。"),
+        {},
+        QStringLiteral("順逆は一般ルールによる暫定表示です。"),
+        {},
+        QStringLiteral("節入り差準備は採用仕様です。")
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+
+    QVERIFY(result.detailText.contains(QStringLiteral("通変星の意味: 印綬")));
+    QVERIFY(result.detailText.contains(QStringLiteral("学習")));
+    QVERIFY(result.detailText.contains(QStringLiteral("喜神・忌神・調候用神:")));
+    QVERIFY(result.detailText.contains(QStringLiteral("喜神の意味: 火")));
+    QVERIFY(result.detailText.contains(QStringLiteral("忌神の意味: 水")));
+    QVERIFY(result.detailText.contains(QStringLiteral("調候用神の補足: 火")));
+    QVERIFY(result.detailText.contains(QStringLiteral("火")));
+    QVERIFY(result.detailText.contains(QStringLiteral("水")));
     QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
 }
 
