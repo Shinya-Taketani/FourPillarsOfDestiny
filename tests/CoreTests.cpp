@@ -568,6 +568,8 @@ private slots:
     void interpretationEngineReflectsStatusMessagesInDetailAndCaution();
     void interpretationEngineExplainsTenGodMeanings();
     void interpretationEngineExplainsUsefulGodElementMeanings();
+    void interpretationEngineBuildsEssenceSocialPartnerSections();
+    void interpretationEngineBuildsSixRelationsSection();
     void appControllerReturnsInterpretationResultMap();
     void savedChartRecordConvertsToJsonObject();
     void jsonRecordStorageWritesJsonFile();
@@ -3878,6 +3880,154 @@ void CoreTests::interpretationEngineExplainsUsefulGodElementMeanings()
     QVERIFY(result.detailText.contains(QStringLiteral("調候用神の補足: 火")));
     QVERIFY(result.detailText.contains(QStringLiteral("冷えた命式を暖め")));
     QVERIFY(result.detailText.contains(QStringLiteral("注意点")));
+    QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
+}
+
+void CoreTests::interpretationEngineBuildsEssenceSocialPartnerSections()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("庚午"),
+        QStringLiteral("丁酉"),
+        QStringLiteral("壬寅"),
+        QStringLiteral("乙未"),
+        QStringLiteral("命式説明です。"),
+        QStringLiteral("月柱は正節基準で判定しました。"),
+        {
+            {QStringLiteral("yearPillar"), QStringLiteral("偏官")},
+            {QStringLiteral("monthPillar"), QStringLiteral("正財")},
+            {QStringLiteral("dayPillar"), QStringLiteral("日主")},
+            {QStringLiteral("hourPillar"), QStringLiteral("傷官")}
+        },
+        {},
+        {},
+        QString(),
+        {
+            {QStringLiteral("season"), QStringLiteral("秋")},
+            {QStringLiteral("suitability"), QStringLiteral("やや不利")}
+        },
+        QStringLiteral("季節評価の最小判定です。"),
+        {
+            {QStringLiteral("label"), QStringLiteral("neutral")},
+            {QStringLiteral("reason"), QStringLiteral("五行の偏りが中程度です。")}
+        },
+        QStringLiteral("強弱評価は暫定候補です。"),
+        {
+            {QStringLiteral("temperature"), QStringLiteral("やや涼")},
+            {QStringLiteral("moisture"), QStringLiteral("やや乾")}
+        },
+        QStringLiteral("寒暖・乾湿評価は暫定候補です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("火"), QStringLiteral("木")}},
+            {QStringLiteral("rankedElements"), QVariantList{
+                 QStringLiteral("火"),
+                 QStringLiteral("木"),
+                 QStringLiteral("土"),
+                 QStringLiteral("金"),
+                 QStringLiteral("水")
+             }},
+            {QStringLiteral("reason"), QStringLiteral("参考表示です。")}
+        },
+        QStringLiteral("用神候補は参考表示です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("正財格")}},
+            {QStringLiteral("reason"), QStringLiteral("月干通変星からの暫定候補です。")}
+        },
+        QStringLiteral("格局候補は暫定候補です。"),
+        {},
+        QStringLiteral("大運表示は参考表示です。"),
+        {},
+        QStringLiteral("流年表示は参考表示です。"),
+        {},
+        QStringLiteral("順逆は一般ルールによる暫定表示です。"),
+        {},
+        QStringLiteral("節入り差準備は採用仕様です。")
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+
+    QVERIFY(result.detailText.contains(QStringLiteral("日主の本質: 壬")));
+    QVERIFY(result.detailText.contains(QStringLiteral("大洋")));
+    QVERIFY(result.detailText.contains(QStringLiteral("社会的な性質: 酉")));
+    QVERIFY(result.detailText.contains(QStringLiteral("精査して整える")));
+    QVERIFY(result.detailText.contains(QStringLiteral("パートナー傾向: 寅")));
+    QVERIFY(result.detailText.contains(QStringLiteral("活動的で前進型")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("日主の壬")));
+    QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
+}
+
+void CoreTests::interpretationEngineBuildsSixRelationsSection()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("庚午"),
+        QStringLiteral("丁酉"),
+        QStringLiteral("壬寅"),
+        QStringLiteral("乙未"),
+        QStringLiteral("命式説明です。"),
+        QStringLiteral("月柱は正節基準で判定しました。"),
+        {
+            {QStringLiteral("yearPillar"), QStringLiteral("偏官")},
+            {QStringLiteral("monthPillar"), QStringLiteral("正財")},
+            {QStringLiteral("dayPillar"), QStringLiteral("日主")},
+            {QStringLiteral("hourPillar"), QStringLiteral("傷官")}
+        },
+        {},
+        {},
+        QString(),
+        {
+            {QStringLiteral("season"), QStringLiteral("秋")},
+            {QStringLiteral("suitability"), QStringLiteral("やや不利")}
+        },
+        QStringLiteral("季節評価の最小判定です。"),
+        {
+            {QStringLiteral("label"), QStringLiteral("neutral")},
+            {QStringLiteral("reason"), QStringLiteral("五行の偏りが中程度です。")}
+        },
+        QStringLiteral("強弱評価は暫定候補です。"),
+        {
+            {QStringLiteral("temperature"), QStringLiteral("やや涼")},
+            {QStringLiteral("moisture"), QStringLiteral("やや乾")}
+        },
+        QStringLiteral("寒暖・乾湿評価は暫定候補です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("火"), QStringLiteral("木")}},
+            {QStringLiteral("rankedElements"), QVariantList{
+                 QStringLiteral("火"),
+                 QStringLiteral("木"),
+                 QStringLiteral("土"),
+                 QStringLiteral("金"),
+                 QStringLiteral("水")
+             }},
+            {QStringLiteral("reason"), QStringLiteral("参考表示です。")}
+        },
+        QStringLiteral("用神候補は参考表示です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("正財格")}},
+            {QStringLiteral("reason"), QStringLiteral("月干通変星からの暫定候補です。")}
+        },
+        QStringLiteral("格局候補は暫定候補です。"),
+        {},
+        QStringLiteral("大運表示は参考表示です。"),
+        {},
+        QStringLiteral("流年表示は参考表示です。"),
+        {},
+        QStringLiteral("順逆は一般ルールによる暫定表示です。"),
+        {},
+        QStringLiteral("節入り差準備は採用仕様です。")
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+
+    QVERIFY(result.detailText.contains(QStringLiteral("六親: 日主 壬 / 月支 酉 / 日支 寅")));
+    QVERIFY(result.detailText.contains(QStringLiteral("父:")));
+    QVERIFY(result.detailText.contains(QStringLiteral("母:")));
+    QVERIFY(result.detailText.contains(QStringLiteral("兄弟:")));
+    QVERIFY(result.detailText.contains(QStringLiteral("配偶者:")));
+    QVERIFY(result.detailText.contains(QStringLiteral("配偶者宮補足: 日支 寅")));
+    QVERIFY(result.detailText.contains(QStringLiteral("子ども:")));
+    QVERIFY(result.detailText.contains(QStringLiteral("日主の本質: 壬")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("家族や配偶者の読み")));
     QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
 }
 

@@ -23,6 +23,31 @@ struct ElementRoleMeaning
     QString fortuneCycleTheme;
 };
 
+struct DayMasterMeaning
+{
+    QString basicNature;
+    QString positiveExpression;
+    QString cautionExpression;
+    QString workTheme;
+    QString relationshipTheme;
+};
+
+struct BranchSectionMeaning
+{
+    QString coreMeaning;
+    QString positiveExpression;
+    QString cautionExpression;
+};
+
+struct KinshipMeaning
+{
+    QString basicMeaning;
+    QString positiveExpression;
+    QString cautionExpression;
+    QString relationshipTheme;
+    QString distanceExpression;
+};
+
 QString compactStatusLine(const QString &label, const QString &statusMessage)
 {
     if (statusMessage.trimmed().isEmpty()) {
@@ -30,6 +55,152 @@ QString compactStatusLine(const QString &label, const QString &statusMessage)
     }
 
     return QStringLiteral("%1: %2").arg(label, statusMessage.trimmed());
+}
+
+QString heavenlyStemOfPillar(const QString &pillar)
+{
+    return pillar.isEmpty() ? QString() : pillar.left(1);
+}
+
+QString earthlyBranchOfPillar(const QString &pillar)
+{
+    return pillar.size() < 2 ? QString() : pillar.mid(1, 1);
+}
+
+const QMap<QString, DayMasterMeaning> &dayMasterMeanings()
+{
+    static const QMap<QString, DayMasterMeaning> meanings{
+        {QStringLiteral("甲"), {QStringLiteral("大樹のように骨格をつくり、大きな方向性を見て進めやすい日主です。"), QStringLiteral("筋を通し、道を切り開く力として表れやすいです。"), QStringLiteral("硬直すると押し切りや独断に傾きやすい面があります。"), QStringLiteral("方針設計、経営、開拓、企画統率に向きやすいです。"), QStringLiteral("まっすぐ支えようとする一方、相手にも筋を求めやすい傾向があります。")}},
+        {QStringLiteral("乙"), {QStringLiteral("草花やつるのように、しなやかに広がりながら環境へ馴染みやすい日主です。"), QStringLiteral("柔らかな調整力や感受性として表れやすいです。"), QStringLiteral("迷いや遠慮が強まると決め切れなさに傾きやすい面があります。"), QStringLiteral("調整、補佐、デザイン、対人支援に向きやすいです。"), QStringLiteral("相手に合わせるのが上手い一方、本音を後ろへ置きやすい傾向があります。")}},
+        {QStringLiteral("丙"), {QStringLiteral("太陽のように明るく、外へ熱と意志を放ちやすい日主です。"), QStringLiteral("率直さや牽引力、場を照らす力として表れやすいです。"), QStringLiteral("勢いが過ぎると大づかみや感情先行に傾きやすい面があります。"), QStringLiteral("発信、営業、先導、表現活動に向きやすいです。"), QStringLiteral("明快で温かい一方、強く出過ぎると圧になりやすい傾向があります。")}},
+        {QStringLiteral("丁"), {QStringLiteral("灯火のように、細やかな観察で必要な場所を照らしやすい日主です。"), QStringLiteral("気配りや集中力、静かな情熱として表れやすいです。"), QStringLiteral("神経を使い過ぎると傷つきやすさやこだわりに傾きやすい面があります。"), QStringLiteral("研究、編集、調整、専門職に向きやすいです。"), QStringLiteral("繊細に寄り添える一方、気疲れしやすい傾向があります。")}},
+        {QStringLiteral("戊"), {QStringLiteral("山岳のように重厚で、土台を保ち続けやすい日主です。"), QStringLiteral("安定感、包容力、構えの大きさとして表れやすいです。"), QStringLiteral("動きが遅くなると固執や鈍重さに傾きやすい面があります。"), QStringLiteral("管理、保全、基盤構築、長期運営に向きやすいです。"), QStringLiteral("受け止める力が強い一方、抱え込みやすい傾向があります。")}},
+        {QStringLiteral("己"), {QStringLiteral("田園の湿土のように、細やかに育てて蓄えやすい日主です。"), QStringLiteral("面倒見や実務感覚、育成力として表れやすいです。"), QStringLiteral("内に溜め込み過ぎると過干渉や悩み込みに傾きやすい面があります。"), QStringLiteral("実務、育成、補佐、現場調整に向きやすいです。"), QStringLiteral("親身で支え役になりやすい一方、境界が曖昧になりやすい傾向があります。")}},
+        {QStringLiteral("庚"), {QStringLiteral("鋼鉄のように剛断で、是非をはっきり分けやすい日主です。"), QStringLiteral("決断力や突破力、改革性として表れやすいです。"), QStringLiteral("強さが過ぎると攻撃性や対立化に傾きやすい面があります。"), QStringLiteral("執行、交渉、改革、難所突破に向きやすいです。"), QStringLiteral("頼もしさが出る一方、白黒を急ぎ過ぎる傾向があります。")}},
+        {QStringLiteral("辛"), {QStringLiteral("宝石のように精製され、品位や精度を重んじやすい日主です。"), QStringLiteral("審美眼や精密さ、洗練として表れやすいです。"), QStringLiteral("神経を使い過ぎると傷つきやすさや批判性に傾きやすい面があります。"), QStringLiteral("品質管理、審査、美容工芸、調整に向きやすいです。"), QStringLiteral("品よく距離を取れる一方、選別が強く出やすい傾向があります。")}},
+        {QStringLiteral("壬"), {QStringLiteral("大洋のように流動し、広く包み込みながら動きやすい日主です。"), QStringLiteral("スケール感や応用力、融通として表れやすいです。"), QStringLiteral("広がり過ぎると拡散や落ち着かなさに傾きやすい面があります。"), QStringLiteral("流通、企画、越境的な仕事、変化対応に向きやすいです。"), QStringLiteral("広くつながれる一方、散りやすさが出やすい傾向があります。")}},
+        {QStringLiteral("癸"), {QStringLiteral("雨露のように静かに浸透し、滋養を届けやすい日主です。"), QStringLiteral("観察力や静かな知性、染み込む理解として表れやすいです。"), QStringLiteral("迷いが強まると受け身や湿っぽさに傾きやすい面があります。"), QStringLiteral("研究、記録、支援、ケア、補助に向きやすいです。"), QStringLiteral("心情理解が深い一方、言語化に時間がかかりやすい傾向があります。")}}
+    };
+
+    return meanings;
+}
+
+const QMap<QString, BranchSectionMeaning> &monthBranchMeanings()
+{
+    static const QMap<QString, BranchSectionMeaning> meanings{
+        {QStringLiteral("子"), {QStringLiteral("情報の流れを素早く察し、周囲の変化に感応しやすい月支です。"), QStringLiteral("察知力や機転として社会面に出やすいです。"), QStringLiteral("落ち着きにくさや散りやすさとして見えやすい面があります。")}},
+        {QStringLiteral("丑"), {QStringLiteral("慎重に積み上げ、実務を安定させやすい月支です。"), QStringLiteral("粘り強さや堅実さとして社会面に出やすいです。"), QStringLiteral("変化への反応が遅く、重さとして見えやすい面があります。")}},
+        {QStringLiteral("寅"), {QStringLiteral("先に動いて道を開き、発動力を社会面へ出しやすい月支です。"), QStringLiteral("開拓力や行動力として見られやすいです。"), QStringLiteral("焦りや衝動が先に出やすい面があります。")}},
+        {QStringLiteral("卯"), {QStringLiteral("関係調整や洗練を大切にし、協調を社会面へ出しやすい月支です。"), QStringLiteral("美意識や調整力として見られやすいです。"), QStringLiteral("気疲れや優柔不断として出やすい面があります。")}},
+        {QStringLiteral("辰"), {QStringLiteral("調整しながら展開し、複数の要素を抱えて進めやすい月支です。"), QStringLiteral("段取り力や包含力として見られやすいです。"), QStringLiteral("曖昧さや迷いが残りやすい面があります。")}},
+        {QStringLiteral("巳"), {QStringLiteral("内側で熱を持ちながら見抜き、戦略的に絞り込みやすい月支です。"), QStringLiteral("洞察力や戦略性として社会面へ出やすいです。"), QStringLiteral("牽制や疑い深さとして見えやすい面があります。")}},
+        {QStringLiteral("午"), {QStringLiteral("率直に押し出し、熱量をそのまま社会面へ出しやすい月支です。"), QStringLiteral("明るさや推進力として見られやすいです。"), QStringLiteral("熱しやすさや波の大きさとして見えやすい面があります。")}},
+        {QStringLiteral("未"), {QStringLiteral("守り育てる姿勢が社会面に出やすく、穏当に支えやすい月支です。"), QStringLiteral("面倒見や穏当さとして見られやすいです。"), QStringLiteral("抱え込みやため込みとして出やすい面があります。")}},
+        {QStringLiteral("申"), {QStringLiteral("目的へ合理的に動き、機転を社会面で使いやすい月支です。"), QStringLiteral("要領や判断の速さとして見られやすいです。"), QStringLiteral("打算的、落ち着き不足として見えやすい面があります。")}},
+        {QStringLiteral("酉"), {QStringLiteral("精査して整える姿勢が社会面へ出やすく、完成度を求めやすい月支です。"), QStringLiteral("精度や審美眼として見られやすいです。"), QStringLiteral("批判的、神経質として出やすい面があります。")}},
+        {QStringLiteral("戌"), {QStringLiteral("原則や責任を守り抜く姿勢が社会面へ出やすい月支です。"), QStringLiteral("義理堅さや責任感として見られやすいです。"), QStringLiteral("頑なさや内圧として出やすい面があります。")}},
+        {QStringLiteral("亥"), {QStringLiteral("受け入れながら広げる姿勢が社会面に出やすく、包摂力を持ちやすい月支です。"), QStringLiteral("共感や理想性として見られやすいです。"), QStringLiteral("境界が曖昧になりやすい面があります。")}}
+    };
+
+    return meanings;
+}
+
+const QMap<QString, BranchSectionMeaning> &dayBranchPartnerMeanings()
+{
+    static const QMap<QString, BranchSectionMeaning> meanings{
+        {QStringLiteral("子"), {QStringLiteral("知的で会話重視の関係をつくりやすい配偶者宮の傾向があります。"), QStringLiteral("友達のように言葉を交わしながら関係を育てやすいです。"), QStringLiteral("情の温度が下がると、理屈先行に見えやすい面があります。")}},
+        {QStringLiteral("丑"), {QStringLiteral("堅実で実務的な安心感を求めやすい配偶者宮の傾向があります。"), QStringLiteral("長続き志向で生活を整えやすいです。"), QStringLiteral("変化が少なく、停滞感として出やすい面があります。")}},
+        {QStringLiteral("寅"), {QStringLiteral("活動的で前進型の関係を求めやすい配偶者宮の傾向があります。"), QStringLiteral("刺激と成長をともに求めやすいです。"), QStringLiteral("衝突時には熱くなりやすい面があります。")}},
+        {QStringLiteral("卯"), {QStringLiteral("柔和で調和的な関係を求めやすい配偶者宮の傾向があります。"), QStringLiteral("穏やかで気づかいのある関係をつくりやすいです。"), QStringLiteral("遠慮が重なると本音が遅れやすい面があります。")}},
+        {QStringLiteral("辰"), {QStringLiteral("しっかり支え合いながら共同成長を求めやすい配偶者宮の傾向があります。"), QStringLiteral("頼り合いながら現実を整えやすいです。"), QStringLiteral("主導権争いになると重くなりやすい面があります。")}},
+        {QStringLiteral("巳"), {QStringLiteral("冷静で洞察的な距離感を大切にしやすい配偶者宮の傾向があります。"), QStringLiteral("知的で慎重な相手を評価しやすいです。"), QStringLiteral("疑い深さや牽制として出やすい面があります。")}},
+        {QStringLiteral("午"), {QStringLiteral("情熱や自由さを共有できる関係を求めやすい配偶者宮の傾向があります。"), QStringLiteral("明るさや表現の楽しさを関係へ持ち込みやすいです。"), QStringLiteral("束縛への反発が強く出やすい面があります。")}},
+        {QStringLiteral("未"), {QStringLiteral("思いやりや癒やしを重視し、安心感のある関係を求めやすい配偶者宮の傾向があります。"), QStringLiteral("優しく支え合う関係をつくりやすいです。"), QStringLiteral("依存や抱え込みとして出やすい面があります。")}},
+        {QStringLiteral("申"), {QStringLiteral("機転や戦略性を共有できる関係を求めやすい配偶者宮の傾向があります。"), QStringLiteral("実利やテンポの良さを関係へ持ち込みやすいです。"), QStringLiteral("計算高く見えやすい面があります。")}},
+        {QStringLiteral("酉"), {QStringLiteral("美意識や精査を重視し、洗練された関係を求めやすい配偶者宮の傾向があります。"), QStringLiteral("品位や選択眼を関係へ活かしやすいです。"), QStringLiteral("批評モードが強いと緊張感を生みやすい面があります。")}},
+        {QStringLiteral("戌"), {QStringLiteral("誠実さや責任感を軸に、約束を守る関係を求めやすい配偶者宮の傾向があります。"), QStringLiteral("義理堅く支え合う関係をつくりやすいです。"), QStringLiteral("頑固さや譲れなさとして出やすい面があります。")}},
+        {QStringLiteral("亥"), {QStringLiteral("包摂や理想を共有し、共感重視の関係を求めやすい配偶者宮の傾向があります。"), QStringLiteral("優しく受け止め合う関係をつくりやすいです。"), QStringLiteral("境界が甘くなりやすい面があります。")}}
+    };
+
+    return meanings;
+}
+
+const QMap<QString, KinshipMeaning> &kinshipMeanings()
+{
+    static const QMap<QString, KinshipMeaning> meanings{
+        {
+            QStringLiteral("父"),
+            {
+                QStringLiteral("現実面や社会的な基準を示す存在として意識しやすい六親です。"),
+                QStringLiteral("現実感覚や行動基準を受け取りやすい関係として出やすいです。"),
+                QStringLiteral("距離が出ると評価や結果だけが先に立ちやすい面があります。"),
+                QStringLiteral("役割や責任を通して関係を認識しやすい傾向があります。"),
+                QStringLiteral("近いと指針になりやすく、離れると厳しさとして感じやすいです。")
+            }
+        },
+        {
+            QStringLiteral("母"),
+            {
+                QStringLiteral("保護や受容、支えを示す存在として意識しやすい六親です。"),
+                QStringLiteral("安心感や受け止められる感覚につながりやすい関係として出やすいです。"),
+                QStringLiteral("近すぎると依存や甘えとして出やすい面があります。"),
+                QStringLiteral("支援や育成を通して関係を深めやすい傾向があります。"),
+                QStringLiteral("近いと心の支えになりやすく、離れると不足感として残りやすいです。")
+            }
+        },
+        {
+            QStringLiteral("兄弟"),
+            {
+                QStringLiteral("競争や並走、自立の鏡として意識しやすい六親です。"),
+                QStringLiteral("励まし合いながら力を出す関係として働きやすいです。"),
+                QStringLiteral("張り合いが強すぎると対立や比較に傾きやすい面があります。"),
+                QStringLiteral("対等性や同じ目線を通して関係が動きやすい傾向があります。"),
+                QStringLiteral("近いと刺激になりやすく、離れると比較意識だけが残りやすいです。")
+            }
+        },
+        {
+            QStringLiteral("姉妹"),
+            {
+                QStringLiteral("共感や日常的な支え合いとして意識しやすい六親です。"),
+                QStringLiteral("気づかいや協力を通して関係を整えやすいです。"),
+                QStringLiteral("遠慮が重なると本音が見えにくくなりやすい面があります。"),
+                QStringLiteral("生活感覚や感情共有を通して関係が深まりやすい傾向があります。"),
+                QStringLiteral("近いと安心感になりやすく、離れると気持ちのすれ違いが残りやすいです。")
+            }
+        },
+        {
+            QStringLiteral("妻"),
+            {
+                QStringLiteral("生活の安定や現実の共有を担う関係として意識しやすい六親です。"),
+                QStringLiteral("共に暮らしや実務を整える力として働きやすいです。"),
+                QStringLiteral("役割負担が偏ると実利だけの関係に見えやすい面があります。"),
+                QStringLiteral("安心感、日常運営、支え合いを通して関係が育ちやすい傾向があります。"),
+                QStringLiteral("近いと実務の相棒になりやすく、離れるとすれ違いが生活面へ出やすいです。")
+            }
+        },
+        {
+            QStringLiteral("夫"),
+            {
+                QStringLiteral("責任や秩序、外向きの支えを担う関係として意識しやすい六親です。"),
+                QStringLiteral("守りや役割分担を通して安心感をつくりやすいです。"),
+                QStringLiteral("規範が強すぎると窮屈さや上下感として出やすい面があります。"),
+                QStringLiteral("責任感や約束を通して関係が安定しやすい傾向があります。"),
+                QStringLiteral("近いと支柱になりやすく、離れると評価や形式だけが残りやすいです。")
+            }
+        },
+        {
+            QStringLiteral("子ども"),
+            {
+                QStringLiteral("未来への広がりや表現の延長として意識しやすい六親です。"),
+                QStringLiteral("育成や創造の喜びとして働きやすいです。"),
+                QStringLiteral("期待が強すぎると管理や心配の形で出やすい面があります。"),
+                QStringLiteral("成長の見守りや表現の受け渡しを通して関係が深まりやすい傾向があります。"),
+                QStringLiteral("近いと育てる喜びになりやすく、離れると期待や不安として残りやすいです。")
+            }
+        }
+    };
+
+    return meanings;
 }
 
 const QMap<QString, TenGodMeaning> &tenGodMeanings()
@@ -654,6 +825,147 @@ QStringList tenGodDetailLines(const QVariantMap &tenGods)
     };
 }
 
+QString dayMasterSummaryText(const QString &dayPillar)
+{
+    const QString stem = heavenlyStemOfPillar(dayPillar);
+    const auto it = dayMasterMeanings().constFind(stem);
+    if (it == dayMasterMeanings().constEnd()) {
+        return QString();
+    }
+
+    return QStringLiteral("日主の%1は、%2").arg(stem, it.value().basicNature);
+}
+
+QStringList dayMasterDetailLines(const QString &dayPillar)
+{
+    const QString stem = heavenlyStemOfPillar(dayPillar);
+    const auto it = dayMasterMeanings().constFind(stem);
+    if (it == dayMasterMeanings().constEnd()) {
+        return {};
+    }
+
+    const DayMasterMeaning &meaning = it.value();
+    return {
+        QStringLiteral("日主の本質: %1").arg(stem),
+        QStringLiteral("  基本性質: %1").arg(meaning.basicNature),
+        QStringLiteral("  長所寄り: %1").arg(meaning.positiveExpression),
+        QStringLiteral("  注意点: %1").arg(meaning.cautionExpression),
+        QStringLiteral("  仕事面: %1").arg(meaning.workTheme),
+        QStringLiteral("  対人面: %1").arg(meaning.relationshipTheme)
+    };
+}
+
+QStringList monthBranchDetailLines(const QString &monthPillar)
+{
+    const QString branch = earthlyBranchOfPillar(monthPillar);
+    const auto it = monthBranchMeanings().constFind(branch);
+    if (it == monthBranchMeanings().constEnd()) {
+        return {};
+    }
+
+    const BranchSectionMeaning &meaning = it.value();
+    return {
+        QStringLiteral("社会的な性質: %1").arg(branch),
+        QStringLiteral("  核心: %1").arg(meaning.coreMeaning),
+        QStringLiteral("  長所寄り: %1").arg(meaning.positiveExpression),
+        QStringLiteral("  注意点: %1").arg(meaning.cautionExpression)
+    };
+}
+
+QStringList dayBranchPartnerDetailLines(const QString &dayPillar)
+{
+    const QString branch = earthlyBranchOfPillar(dayPillar);
+    const auto it = dayBranchPartnerMeanings().constFind(branch);
+    if (it == dayBranchPartnerMeanings().constEnd()) {
+        return {};
+    }
+
+    const BranchSectionMeaning &meaning = it.value();
+    return {
+        QStringLiteral("パートナー傾向: %1").arg(branch),
+        QStringLiteral("  核心: %1").arg(meaning.coreMeaning),
+        QStringLiteral("  長所寄り: %1").arg(meaning.positiveExpression),
+        QStringLiteral("  注意点: %1").arg(meaning.cautionExpression)
+    };
+}
+
+QString spouseKinshipKey()
+{
+    return QStringLiteral("配偶者");
+}
+
+QString spouseKinshipMeaningText()
+{
+    const KinshipMeaning *wifeMeaning = nullptr;
+    const KinshipMeaning *husbandMeaning = nullptr;
+    const auto &meanings = kinshipMeanings();
+    const auto wifeIt = meanings.constFind(QStringLiteral("妻"));
+    if (wifeIt != meanings.constEnd()) {
+        wifeMeaning = &wifeIt.value();
+    }
+    const auto husbandIt = meanings.constFind(QStringLiteral("夫"));
+    if (husbandIt != meanings.constEnd()) {
+        husbandMeaning = &husbandIt.value();
+    }
+
+    if (wifeMeaning == nullptr && husbandMeaning == nullptr) {
+        return QString();
+    }
+
+    if (wifeMeaning != nullptr && husbandMeaning != nullptr) {
+        return QStringLiteral("妻は%1 夫は%2").arg(
+            wifeMeaning->basicMeaning,
+            husbandMeaning->basicMeaning
+        );
+    }
+
+    return wifeMeaning != nullptr ? wifeMeaning->basicMeaning : husbandMeaning->basicMeaning;
+}
+
+QStringList kinshipDetailLines(const QString &dayPillar, const QString &monthPillar)
+{
+    const QString dayStem = heavenlyStemOfPillar(dayPillar);
+    const QString dayBranch = earthlyBranchOfPillar(dayPillar);
+    const QString monthBranch = earthlyBranchOfPillar(monthPillar);
+    const auto &meanings = kinshipMeanings();
+
+    auto buildLines = [&](const QString &label) -> QStringList {
+        const auto it = meanings.constFind(label);
+        if (it == meanings.constEnd()) {
+            return {};
+        }
+
+        const KinshipMeaning &meaning = it.value();
+        return {
+            QStringLiteral("  %1: %2").arg(label, meaning.basicMeaning),
+            QStringLiteral("    長所寄り: %1").arg(meaning.positiveExpression),
+            QStringLiteral("    注意点: %1").arg(meaning.cautionExpression),
+            QStringLiteral("    関係の出方: %1").arg(meaning.relationshipTheme),
+            QStringLiteral("    距離感の補足: %1").arg(meaning.distanceExpression)
+        };
+    };
+
+    QStringList lines{
+        QStringLiteral("六親: 日主 %1 / 月支 %2 / 日支 %3 を踏まえた参考説明です。").arg(
+            dayStem.isEmpty() ? QStringLiteral("未対応") : dayStem,
+            monthBranch.isEmpty() ? QStringLiteral("未対応") : monthBranch,
+            dayBranch.isEmpty() ? QStringLiteral("未対応") : dayBranch
+        )
+    };
+    lines.append(buildLines(QStringLiteral("父")));
+    lines.append(buildLines(QStringLiteral("母")));
+    lines.append(buildLines(QStringLiteral("兄弟")));
+    lines.append(buildLines(QStringLiteral("姉妹")));
+
+    lines << QStringLiteral("  %1: %2").arg(spouseKinshipKey(), spouseKinshipMeaningText());
+    if (!dayBranch.isEmpty()) {
+        lines << QStringLiteral("    配偶者宮補足: 日支 %1 の傾向も参考にします。").arg(dayBranch);
+    }
+
+    lines.append(buildLines(QStringLiteral("子ども")));
+    return lines;
+}
+
 QString climateSummaryText(
     const QVariantMap &seasonalEvaluation,
     const QVariantMap &climateEvaluation
@@ -700,6 +1012,16 @@ QString fortuneSummaryText(const QVariantList &majorFortunes, const QVariantList
     return parts.join(QStringLiteral(" "));
 }
 
+QString kinshipSummaryText(const QString &dayPillar)
+{
+    const QString dayBranch = earthlyBranchOfPillar(dayPillar);
+    if (dayBranch.isEmpty()) {
+        return QString();
+    }
+
+    return QStringLiteral("家族や配偶者の読みは、日支 %1 を含む六親の参考説明を併記しています。").arg(dayBranch);
+}
+
 QString joinedNonEmpty(const QStringList &parts)
 {
     QStringList filtered;
@@ -733,6 +1055,7 @@ InterpretationResult InterpretationEngine::interpret(const ChartResult &chartRes
         || chartResult.description.contains(QStringLiteral("採用仕様"));
 
     const QString tenGodLine = tenGodSummaryText(chartResult.tenGods);
+    const QString dayMasterLine = dayMasterSummaryText(chartResult.dayPillar);
     const QString strengthLine = strengthSummaryText(chartResult.strengthEvaluation);
     const QString usefulGodLine = usefulGodSummaryText(chartResult.usefulGodCandidates);
     const QString usefulElementLine = usefulElementSummaryText(
@@ -749,15 +1072,18 @@ InterpretationResult InterpretationEngine::interpret(const ChartResult &chartRes
         chartResult.majorFortunes,
         chartResult.annualFortunes
     );
+    const QString kinshipLine = kinshipSummaryText(chartResult.dayPillar);
 
     QString summaryText = joinedNonEmpty({
         tenGodLine,
+        dayMasterLine,
         strengthLine,
         usefulGodLine,
         usefulElementLine,
         patternLine,
         climateLine,
         fortuneLine,
+        kinshipLine,
         includesAdoptedSpec
             ? QStringLiteral("月柱や行運は採用仕様に基づく判定を含みます。")
             : QString(),
@@ -773,6 +1099,9 @@ InterpretationResult InterpretationEngine::interpret(const ChartResult &chartRes
     const QString annualRelationSummary = firstRelationSummary(chartResult.annualFortunes);
 
     QStringList detailLines;
+    detailLines.append(dayMasterDetailLines(chartResult.dayPillar));
+    detailLines.append(monthBranchDetailLines(chartResult.monthPillar));
+    detailLines.append(dayBranchPartnerDetailLines(chartResult.dayPillar));
     detailLines.append(tenGodDetailLines(chartResult.tenGods));
     detailLines << QStringLiteral("強弱評価: %1").arg(
         chartResult.strengthEvaluation.value(QStringLiteral("label")).toString().isEmpty()
@@ -798,6 +1127,7 @@ InterpretationResult InterpretationEngine::interpret(const ChartResult &chartRes
         chartResult.seasonalEvaluation,
         chartResult.climateEvaluation
     ));
+    detailLines.append(kinshipDetailLines(chartResult.dayPillar, chartResult.monthPillar));
 
     detailLines << QStringLiteral("格局候補: %1").arg(
         chartResult.patternCandidates.value(QStringLiteral("candidates")).toStringList().join(QStringLiteral(" / "))
