@@ -1201,39 +1201,88 @@ QStringList candidateElementsFromFortune(const QVariantMap &fortune)
 QString fortuneRelationClause(const QVariantMap &fortune)
 {
     const QString relationSummary = fortune.value(QStringLiteral("relationSummary")).toString();
-    if (!relationSummary.isEmpty()) {
-        return QStringLiteral("%1 が参考的に重なっています。").arg(relationSummary);
-    }
-
-    QStringList parts;
     const QStringList sameStemMatches = fortune.value(QStringLiteral("sameStemMatches")).toStringList();
     const QStringList sameBranchMatches = fortune.value(QStringLiteral("sameBranchMatches")).toStringList();
     const QStringList clashBranches = fortune.value(QStringLiteral("clashBranches")).toStringList();
     const QStringList stemCombinationCandidates = fortune.value(QStringLiteral("stemCombinationCandidates")).toStringList();
+    const bool hasSameStem = relationSummary.contains(QStringLiteral("同干")) || !sameStemMatches.isEmpty();
+    const bool hasSameBranch = relationSummary.contains(QStringLiteral("同支")) || !sameBranchMatches.isEmpty();
+    const bool hasClash = relationSummary.contains(QStringLiteral("冲候補"))
+        || relationSummary.contains(QStringLiteral("冲"))
+        || !clashBranches.isEmpty();
+    const bool hasStemCombination = relationSummary.contains(QStringLiteral("干合候補"))
+        || relationSummary.contains(QStringLiteral("干合"))
+        || !stemCombinationCandidates.isEmpty();
+    const bool hasHarm = relationSummary.contains(QStringLiteral("害候補"))
+        || relationSummary.contains(QStringLiteral("害"));
+    const bool hasBreak = relationSummary.contains(QStringLiteral("破候補"))
+        || relationSummary.contains(QStringLiteral("破"));
 
-    if (!sameStemMatches.isEmpty()) {
-        parts << QStringLiteral("同干 %1").arg(sameStemMatches.join(QStringLiteral(" / ")));
+    QStringList parts;
+    if (hasSameStem) {
+        parts << QStringLiteral("同干が見えるため、本来の資質や考え方が前面に出やすい流れです。");
     }
-    if (!sameBranchMatches.isEmpty()) {
-        parts << QStringLiteral("同支 %1").arg(sameBranchMatches.join(QStringLiteral(" / ")));
+    if (hasSameBranch) {
+        parts << QStringLiteral("同支が重なるぶん、もとの傾向や慣れた動き方が強まりやすい時期です。");
     }
-    if (!clashBranches.isEmpty()) {
-        parts << QStringLiteral("冲候補 %1").arg(clashBranches.join(QStringLiteral(" / ")));
+    if (hasClash) {
+        parts << QStringLiteral("冲候補があるため、切替や揺れをきっかけに流れが動きやすくなります。");
     }
-    if (!stemCombinationCandidates.isEmpty()) {
-        parts << QStringLiteral("干合候補 %1").arg(stemCombinationCandidates.join(QStringLiteral(" / ")));
+    if (hasStemCombination) {
+        parts << QStringLiteral("干合候補があるため、結びつきや変化の契機として表れやすいです。");
+    }
+    if (hasHarm) {
+        parts << QStringLiteral("害候補が見えるときは、行き違いや細かな調整負荷が出やすい点に注意が必要です。");
+    }
+    if (hasBreak) {
+        parts << QStringLiteral("破候補が重なると、崩れや見直しの契機が生じやすくなります。");
     }
 
     if (parts.isEmpty()) {
         return QString();
     }
 
-    return QStringLiteral("%1 が関係補足として見えます。").arg(parts.join(QStringLiteral("、")));
+    return parts.join(QStringLiteral(" "));
+}
+
+QString fortunePolarityClause(
+    const QVariantMap &fortune,
+    const QVariantMap &usefulGodCandidates,
+    const QVariantMap &seasonalEvaluation,
+    const QVariantMap &climateEvaluation,
+    bool annualMode
+)
+{
+    const QString usefulElement = firstUsefulElement(usefulGodCandidates);
+    const QString harmfulElement = harmfulElementCandidate(usefulGodCandidates);
+    const QString climateElement = climateElementCandidate(seasonalEvaluation, climateEvaluation);
+    const QStringList fortuneElements = candidateElementsFromFortune(fortune);
+
+    QStringList parts;
+    if (!usefulElement.isEmpty() && fortuneElements.contains(usefulElement)) {
+        parts << (annualMode
+                ? QStringLiteral("%1が喜神候補に触れるため、その年は動き出しや判断が通りやすくなりやすいです。").arg(usefulElement)
+                : QStringLiteral("%1が喜神候補に触れるため、この時期は流れを前向きに使いやすくなります。").arg(usefulElement));
+    }
+    if (!harmfulElement.isEmpty() && harmfulElement != usefulElement && fortuneElements.contains(harmfulElement)) {
+        parts << (annualMode
+                ? QStringLiteral("%1は忌神寄りに働きやすく、迷い・停滞・反応過多には少し注意が必要です。").arg(harmfulElement)
+                : QStringLiteral("%1は忌神寄りに働きやすく、力の使い過ぎや偏りが続きやすい点には注意が必要です。").arg(harmfulElement));
+    }
+    if (!climateElement.isEmpty() && fortuneElements.contains(climateElement)) {
+        parts << (annualMode
+                ? QStringLiteral("調候用神候補の%1にも触れるため、その年は寒暖乾湿の偏りを整える動きが出やすいです。").arg(climateElement)
+                : QStringLiteral("調候用神候補の%1にも触れるため、この時期は全体の巡りや体感の偏りを整える助けになりやすいです。").arg(climateElement));
+    }
+
+    return parts.join(QStringLiteral(" "));
 }
 
 QString majorFortuneExplanationText(
     const QVariantList &majorFortunes,
-    const QVariantMap &usefulGodCandidates
+    const QVariantMap &usefulGodCandidates,
+    const QVariantMap &seasonalEvaluation,
+    const QVariantMap &climateEvaluation
 )
 {
     const QVariantMap fortune = majorFortunes.value(0).toMap();
@@ -1246,24 +1295,22 @@ QString majorFortuneExplanationText(
     const QString twelvePhase = fortune.value(QStringLiteral("twelvePhase")).toString();
     const QString note = fortune.value(QStringLiteral("note")).toString();
     const QString relationClause = fortuneRelationClause(fortune);
-
-    QString polarityClause;
-    for (const QString &element : candidateElementsFromFortune(fortune)) {
-        const QString polarity = elementPolarityText(element, usefulGodCandidates);
-        if (!polarity.isEmpty()) {
-            polarityClause = QStringLiteral("%1として働く場面があります。").arg(polarity);
-            break;
-        }
-    }
+    const QString polarityClause = fortunePolarityClause(
+        fortune,
+        usefulGodCandidates,
+        seasonalEvaluation,
+        climateEvaluation,
+        false
+    );
 
     QStringList parts{
-        QStringLiteral("%1の時期は、十年単位で流れを形づくる参考運です。").arg(pillar)
+        QStringLiteral("%1の時期は、十年単位で物事の運び方や関わり方の癖が表へ出やすい参考運です。").arg(pillar)
     };
     if (!tenGod.isEmpty()) {
-        parts << QStringLiteral("表面には%1のテーマが出やすいです。").arg(tenGod);
+        parts << QStringLiteral("%1の性質が前面に出やすく、取り組み方の軸になりやすいです。").arg(tenGod);
     }
     if (!twelvePhase.isEmpty()) {
-        parts << QStringLiteral("十二運では%1にあたり、勢いの出方をみる補足になります。").arg(twelvePhase);
+        parts << QStringLiteral("十二運が%1なので、勢いの立ち上がり方や持続の仕方をみる補足になります。").arg(twelvePhase);
     }
     if (!polarityClause.isEmpty()) {
         parts << polarityClause;
@@ -1287,7 +1334,9 @@ QString majorFortuneExplanationText(
 QString annualFortuneExplanationText(
     const QVariantList &annualFortunes,
     const QVariantList &majorFortunes,
-    const QVariantMap &usefulGodCandidates
+    const QVariantMap &usefulGodCandidates,
+    const QVariantMap &seasonalEvaluation,
+    const QVariantMap &climateEvaluation
 )
 {
     const QVariantMap fortune = annualFortunes.value(0).toMap();
@@ -1301,30 +1350,28 @@ QString annualFortuneExplanationText(
     const QString twelvePhase = fortune.value(QStringLiteral("twelvePhase")).toString();
     const QString relationClause = fortuneRelationClause(fortune);
     const QString currentMajorPillar = firstFortunePillar(majorFortunes);
-
-    QString polarityClause;
-    for (const QString &element : candidateElementsFromFortune(fortune)) {
-        const QString polarity = elementPolarityText(element, usefulGodCandidates);
-        if (!polarity.isEmpty()) {
-            polarityClause = QStringLiteral("%1として短期的に表面化しやすいです。").arg(polarity);
-            break;
-        }
-    }
+    const QString polarityClause = fortunePolarityClause(
+        fortune,
+        usefulGodCandidates,
+        seasonalEvaluation,
+        climateEvaluation,
+        true
+    );
 
     QStringList parts{
-        QStringLiteral("%1年の%2は、その年の変化として表に出やすい参考運です。").arg(
+        QStringLiteral("%1年の%2は、その年の動きや反応として表へ出やすい参考運です。").arg(
             year.isEmpty() ? QStringLiteral("当年") : year,
             pillar
         )
     };
     if (!tenGod.isEmpty()) {
-        parts << QStringLiteral("まず%1のテーマが前面に出やすいです。").arg(tenGod);
+        parts << QStringLiteral("その年はまず%1のテーマが前面に出やすく、出来事の受け止め方にも影響しやすいです。").arg(tenGod);
     }
     if (!currentMajorPillar.isEmpty()) {
-        parts << QStringLiteral("現行の%1運と重なることで、その年の傾向が増幅または調整されやすくなります。").arg(currentMajorPillar);
+        parts << QStringLiteral("現行の%1運と重なるぶん、その年の出来事は大運の流れに乗って強まりやすくも、調整へ向かいやすくもなります。").arg(currentMajorPillar);
     }
     if (!twelvePhase.isEmpty()) {
-        parts << QStringLiteral("十二運では%1にあたり、その年の勢いの強弱をみる補足になります。").arg(twelvePhase);
+        parts << QStringLiteral("十二運が%1なので、その年の勢いの出方や反応速度をみる補足になります。").arg(twelvePhase);
     }
     if (!polarityClause.isEmpty()) {
         parts << polarityClause;
@@ -1395,12 +1442,16 @@ InterpretationResult InterpretationEngine::interpret(const ChartResult &chartRes
     const QString kinshipLine = kinshipSummaryText(chartResult.dayPillar);
     const QString majorFortuneDetail = majorFortuneExplanationText(
         chartResult.majorFortunes,
-        chartResult.usefulGodCandidates
+        chartResult.usefulGodCandidates,
+        chartResult.seasonalEvaluation,
+        chartResult.climateEvaluation
     );
     const QString annualFortuneDetail = annualFortuneExplanationText(
         chartResult.annualFortunes,
         chartResult.majorFortunes,
-        chartResult.usefulGodCandidates
+        chartResult.usefulGodCandidates,
+        chartResult.seasonalEvaluation,
+        chartResult.climateEvaluation
     );
     const QString fortuneCycleLine = (!majorFortuneDetail.isEmpty() || !annualFortuneDetail.isEmpty())
         ? QStringLiteral("先頭大運・先頭流年の参考説明を併記しています。")

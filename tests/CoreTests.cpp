@@ -4191,13 +4191,18 @@ void CoreTests::interpretationEngineBuildsFortuneCycleExplanations()
     QVERIFY(result.detailText.contains(QStringLiteral("大運補足: 丙寅の時期は")));
     QVERIFY(result.detailText.contains(QStringLiteral("偏財")));
     QVERIFY(result.detailText.contains(QStringLiteral("長生")));
-    QVERIFY(result.detailText.contains(QStringLiteral("同支: 日柱 / 干合候補: 年柱")));
+    QVERIFY(result.detailText.contains(QStringLiteral("もとの傾向や慣れた動き方が強まりやすい")));
+    QVERIFY(result.detailText.contains(QStringLiteral("結びつきや変化の契機")));
+    QVERIFY(result.detailText.contains(QStringLiteral("喜神候補に触れる")));
+    QVERIFY(result.detailText.contains(QStringLiteral("調候用神候補の火")));
     QVERIFY(result.detailText.contains(QStringLiteral("歳運補足: 2026年の庚午は")));
     QVERIFY(result.detailText.contains(QStringLiteral("偏印")));
     QVERIFY(result.detailText.contains(QStringLiteral("帝旺")));
-    QVERIFY(result.detailText.contains(QStringLiteral("喜神候補")));
+    QVERIFY(result.detailText.contains(QStringLiteral("その年の動きや反応として表へ出やすい参考運")));
+    QVERIFY(result.detailText.contains(QStringLiteral("現行の丙寅運と重なる")));
     QVERIFY(result.summaryText.contains(QStringLiteral("先頭大運")));
     QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
+    QVERIFY(!result.detailText.contains(QStringLiteral("relationSummary")));
 }
 
 void CoreTests::interpretationTextIsJapaneseAndLineBroken()
