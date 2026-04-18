@@ -574,7 +574,7 @@ private slots:
     void interpretationEngineBuildsFortuneCycleExplanations();
     void interpretationTextIsJapaneseAndLineBroken();
     void interpretationDetailStartsWithFourPillars();
-    void interpretationDoesNotExposeRawInternalKeys();
+    void interpretationDoesNotExposeRawInternalKeysIncludingFinalScore();
     void appControllerReturnsInterpretationResultMap();
     void savedChartRecordConvertsToJsonObject();
     void jsonRecordStorageWritesJsonFile();
@@ -4295,7 +4295,7 @@ void CoreTests::interpretationDetailStartsWithFourPillars()
     ));
 }
 
-void CoreTests::interpretationDoesNotExposeRawInternalKeys()
+void CoreTests::interpretationDoesNotExposeRawInternalKeysIncludingFinalScore()
 {
     InterpretationEngine engine;
     ChartResult chartResult{
@@ -4303,7 +4303,7 @@ void CoreTests::interpretationDoesNotExposeRawInternalKeys()
         QStringLiteral("丁酉"),
         QStringLiteral("壬寅"),
         QStringLiteral("乙未"),
-        QStringLiteral("balanceState や referenceScore は内部補助値です。"),
+        QStringLiteral("balanceState や referenceScore、finalScore は内部補助値です。"),
         QStringLiteral("monthTenGod と monthHiddenStemTenGods をそのまま表示しないでください。"),
         {
             {QStringLiteral("monthPillar"), QStringLiteral("印綬")}
@@ -4318,7 +4318,7 @@ void CoreTests::interpretationDoesNotExposeRawInternalKeys()
         QStringLiteral("seasonalEvaluation は最小判定です。"),
         {
             {QStringLiteral("label"), QStringLiteral("strong")},
-            {QStringLiteral("reason"), QStringLiteral("balanceState strong と referenceScore 4 を内部参照し、strengthPriority と climatePriority を補助使用します。")}
+            {QStringLiteral("reason"), QStringLiteral("balanceState strong と referenceScore 4、finalScore 6 を内部参照し、strengthPriority と climatePriority を補助使用します。")}
         },
         QStringLiteral("strengthSupport と shortagePriority は内部参照です。"),
         {
@@ -4330,7 +4330,7 @@ void CoreTests::interpretationDoesNotExposeRawInternalKeys()
             {QStringLiteral("candidates"), QStringList{QStringLiteral("火"), QStringLiteral("木")}},
             {QStringLiteral("reason"), QStringLiteral("rankedElements と primaryBasis を内部参照し、usefulGodSupport を補助的に使います。")}
         },
-        QStringLiteral("balanceState / referenceScore / rankedElements は画面へ生表示しません。"),
+        QStringLiteral("balanceState / referenceScore / finalScore / rankedElements は画面へ生表示しません。"),
         {
             {QStringLiteral("candidates"), QStringList{QStringLiteral("正財格")}},
             {QStringLiteral("reason"), QStringLiteral("monthTenGod と monthHiddenStemTenGods、rankedPatterns を内部参照します。")}
@@ -4351,6 +4351,7 @@ void CoreTests::interpretationDoesNotExposeRawInternalKeys()
 
     QVERIFY(!allText.contains(QStringLiteral("balanceState")));
     QVERIFY(!allText.contains(QStringLiteral("referenceScore")));
+    QVERIFY(!allText.contains(QStringLiteral("finalScore")));
     QVERIFY(!allText.contains(QStringLiteral("strengthPriority")));
     QVERIFY(!allText.contains(QStringLiteral("climatePriority")));
     QVERIFY(!allText.contains(QStringLiteral("shortagePriority")));
@@ -4363,6 +4364,7 @@ void CoreTests::interpretationDoesNotExposeRawInternalKeys()
     QVERIFY(!allText.contains(QStringLiteral("rankedPatterns")));
     QVERIFY(result.summaryText.contains(QStringLiteral("強め")));
     QVERIFY(result.summaryText.contains(QStringLiteral("参考スコア")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("評価参考値")));
 }
 
 void CoreTests::appControllerReturnsInterpretationResultMap()

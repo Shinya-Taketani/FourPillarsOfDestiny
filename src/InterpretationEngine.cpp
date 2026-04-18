@@ -104,6 +104,7 @@ QString replaceDisplayTerms(QString text)
         {QStringLiteral("patternCandidates"), QStringLiteral("格局候補")},
         {QStringLiteral("balanceState"), QStringLiteral("強弱傾向")},
         {QStringLiteral("referenceScore"), QStringLiteral("参考スコア")},
+        {QStringLiteral("finalScore"), QStringLiteral("評価参考値")},
         {QStringLiteral("strengthPriority"), QStringLiteral("強弱優先順")},
         {QStringLiteral("climatePriority"), QStringLiteral("調候優先順")},
         {QStringLiteral("shortagePriority"), QStringLiteral("不足優先順")},
