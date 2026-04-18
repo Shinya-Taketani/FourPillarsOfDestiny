@@ -571,6 +571,9 @@ private slots:
     void interpretationEngineBuildsEssenceSocialPartnerSections();
     void interpretationEngineBuildsSixRelationsSection();
     void interpretationEngineBuildsFortuneCycleExplanations();
+    void interpretationTextIsJapaneseAndLineBroken();
+    void interpretationDetailStartsWithFourPillars();
+    void interpretationDoesNotExposeRawInternalKeys();
     void appControllerReturnsInterpretationResultMap();
     void savedChartRecordConvertsToJsonObject();
     void jsonRecordStorageWritesJsonFile();
@@ -3593,7 +3596,6 @@ void CoreTests::interpretationEngineReturnsNonEmptyResult()
 
     QVERIFY(!result.summaryText.isEmpty());
     QVERIFY(!result.detailText.isEmpty());
-    QVERIFY(!result.cautionText.isEmpty());
 }
 
 void CoreTests::interpretationEngineBuildsStructuredSummaryFromChartResult()
@@ -3658,17 +3660,17 @@ void CoreTests::interpretationEngineBuildsStructuredSummaryFromChartResult()
 
     const InterpretationResult result = engine.interpret(chartResult);
 
-    QVERIFY(result.summaryText.contains(QStringLiteral("strong")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("強め")));
     QVERIFY(result.summaryText.contains(QStringLiteral("水")));
     QVERIFY(result.summaryText.contains(QStringLiteral("印綬格")));
     QVERIFY(result.summaryText.contains(QStringLiteral("春")));
     QVERIFY(result.summaryText.contains(QStringLiteral("己卯")));
+    QVERIFY(result.detailText.startsWith(QStringLiteral("年柱: 庚午\n月柱: 戊寅\n日柱: 辛丑\n時柱: 乙未")));
     QVERIFY(result.detailText.contains(QStringLiteral("強弱評価")));
     QVERIFY(result.detailText.contains(QStringLiteral("用神候補")));
     QVERIFY(result.detailText.contains(QStringLiteral("格局候補")));
     QVERIFY(result.detailText.contains(QStringLiteral("関係判定")));
     QVERIFY(result.detailText.contains(QStringLiteral("同支: 月柱")));
-    QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
 }
 
 void CoreTests::interpretationEngineReflectsStatusMessagesInDetailAndCaution()
@@ -3734,13 +3736,13 @@ void CoreTests::interpretationEngineReflectsStatusMessagesInDetailAndCaution()
     const InterpretationResult result = engine.interpret(chartResult);
 
     QVERIFY(result.summaryText.contains(QStringLiteral("採用仕様")));
-    QVERIFY(result.summaryText.contains(QStringLiteral("provisional")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("暫定")));
     QVERIFY(result.detailText.contains(QStringLiteral("命式計算の採用仕様")));
     QVERIFY(result.detailText.contains(QStringLiteral("月柱判定根拠")));
     QVERIFY(result.detailText.contains(QStringLiteral("採用仕様")));
     QVERIFY(result.detailText.contains(QStringLiteral("暫定性と候補の補足")));
     QVERIFY(result.detailText.contains(QStringLiteral("大運・流年の補足")));
-    QVERIFY(result.cautionText.contains(QStringLiteral("provisional")));
+    QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
     QVERIFY(result.cautionText.contains(QStringLiteral("参考表示")));
     QVERIFY(result.cautionText.contains(QStringLiteral("採用仕様")));
 }
@@ -4119,8 +4121,173 @@ void CoreTests::interpretationEngineBuildsFortuneCycleExplanations()
     QVERIFY(result.detailText.contains(QStringLiteral("偏印")));
     QVERIFY(result.detailText.contains(QStringLiteral("帝旺")));
     QVERIFY(result.detailText.contains(QStringLiteral("喜神候補")));
-    QVERIFY(result.summaryText.contains(QStringLiteral("先頭大運・先頭流年の参考説明")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("先頭大運")));
     QVERIFY(result.cautionText.contains(QStringLiteral("暫定")));
+}
+
+void CoreTests::interpretationTextIsJapaneseAndLineBroken()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("壬辰"),
+        QStringLiteral("乙巳"),
+        QStringLiteral("丙寅"),
+        QStringLiteral("丁巳"),
+        QStringLiteral("この命式の年柱・月柱境界には provisional 節入りデータを使っています。"),
+        QStringLiteral("本アプリ採用仕様として、正節 立夏 の節入り日時以後の区間から月柱を確定しました。 使用データ品質: provisional（暫定データ）。"),
+        {
+            {QStringLiteral("monthPillar"), QStringLiteral("印綬")}
+        },
+        {},
+        {},
+        QString(),
+        {
+            {QStringLiteral("season"), QStringLiteral("夏")},
+            {QStringLiteral("suitability"), QStringLiteral("やや旺")}
+        },
+        QStringLiteral("月支ベースの季節評価による最小判定です。"),
+        {
+            {QStringLiteral("label"), QStringLiteral("strong")},
+            {QStringLiteral("reason"), QStringLiteral("supportiveCount が多く、季節評価も追い風です。")}
+        },
+        QStringLiteral("五行分布と季節評価を使った暫定的な強弱評価です。"),
+        {
+            {QStringLiteral("temperature"), QStringLiteral("暖")},
+            {QStringLiteral("moisture"), QStringLiteral("やや湿")}
+        },
+        QStringLiteral("月支ベースの寒暖・乾湿に関する最小評価です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("水"), QStringLiteral("金")}},
+            {QStringLiteral("reason"), QStringLiteral("断定しない暫定候補です。")}
+        },
+        QStringLiteral("五行分布・季節・寒暖乾湿に加えて、strengthEvaluation の構造化情報を参照した断定しない暫定候補です。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("印綬格")}},
+            {QStringLiteral("reason"), QStringLiteral("断定しない暫定候補です。")}
+        },
+        QStringLiteral("月干通変星と月支蔵干を主軸に、strengthEvaluation と usefulGodCandidates の構造化情報も補助参照した断定しない暫定候補です。"),
+        {
+            QVariantMap{
+                {QStringLiteral("pillar"), QStringLiteral("丙申")},
+                {QStringLiteral("relationSummary"), QStringLiteral("同干: 日柱")}
+            }
+        },
+        QStringLiteral("大運表示です。起運年齢は参考表示で、原命式との同干・同支・冲候補・干合候補を表示します。"),
+        {
+            QVariantMap{
+                {QStringLiteral("year"), 1952},
+                {QStringLiteral("pillar"), QStringLiteral("壬辰")},
+                {QStringLiteral("relationSummary"), QStringLiteral("同支: 年柱")}
+            }
+        },
+        QStringLiteral("流年表示です。通変星と十二運を参考表示し、原命式との同干・同支・冲候補・干合候補を表示します。"),
+        {},
+        QStringLiteral("一般四柱推命の共通基盤として、年干陰陽と性別による順逆判定です。"),
+        {},
+        QStringLiteral("一般四柱推命の共通基盤として、正節の節入り日時との差分を保持する採用仕様です。")
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+    const QString allText = result.summaryText + QStringLiteral("\n") + result.detailText + QStringLiteral("\n") + result.cautionText;
+
+    QVERIFY(result.summaryText.contains(QStringLiteral("。\n")));
+    QVERIFY(result.detailText.contains(QStringLiteral("。\n")));
+    QVERIFY(!allText.contains(QStringLiteral("basicNature")));
+    QVERIFY(!allText.contains(QStringLiteral("positiveExpression")));
+    QVERIFY(!allText.contains(QStringLiteral("cautionExpression")));
+    QVERIFY(!allText.contains(QStringLiteral("strong")));
+    QVERIFY(!allText.contains(QStringLiteral("verified")));
+    QVERIFY(!allText.contains(QStringLiteral("provisional")));
+    QVERIFY(!allText.contains(QStringLiteral("relationSummary")));
+    QVERIFY(!allText.contains(QStringLiteral("sameStemMatches")));
+}
+
+void CoreTests::interpretationDetailStartsWithFourPillars()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("庚午"),
+        QStringLiteral("戊寅"),
+        QStringLiteral("辛丑"),
+        QStringLiteral("乙未"),
+        QStringLiteral("命式説明です。")
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+
+    QVERIFY(result.detailText.startsWith(
+        QStringLiteral("年柱: 庚午\n月柱: 戊寅\n日柱: 辛丑\n時柱: 乙未")
+    ));
+}
+
+void CoreTests::interpretationDoesNotExposeRawInternalKeys()
+{
+    InterpretationEngine engine;
+    ChartResult chartResult{
+        QStringLiteral("庚午"),
+        QStringLiteral("丁酉"),
+        QStringLiteral("壬寅"),
+        QStringLiteral("乙未"),
+        QStringLiteral("balanceState や referenceScore は内部補助値です。"),
+        QStringLiteral("monthTenGod と monthHiddenStemTenGods をそのまま表示しないでください。"),
+        {
+            {QStringLiteral("monthPillar"), QStringLiteral("印綬")}
+        },
+        {},
+        {},
+        QString(),
+        {
+            {QStringLiteral("season"), QStringLiteral("秋")},
+            {QStringLiteral("suitability"), QStringLiteral("やや不利")}
+        },
+        QStringLiteral("seasonalEvaluation は最小判定です。"),
+        {
+            {QStringLiteral("label"), QStringLiteral("strong")},
+            {QStringLiteral("reason"), QStringLiteral("balanceState strong と referenceScore 4 を内部参照し、strengthPriority と climatePriority を補助使用します。")}
+        },
+        QStringLiteral("strengthSupport と shortagePriority は内部参照です。"),
+        {
+            {QStringLiteral("temperature"), QStringLiteral("やや涼")},
+            {QStringLiteral("moisture"), QStringLiteral("やや乾")}
+        },
+        QStringLiteral("climatePriority を内部補助に使っています。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("火"), QStringLiteral("木")}},
+            {QStringLiteral("reason"), QStringLiteral("rankedElements と primaryBasis を内部参照し、usefulGodSupport を補助的に使います。")}
+        },
+        QStringLiteral("balanceState / referenceScore / rankedElements は画面へ生表示しません。"),
+        {
+            {QStringLiteral("candidates"), QStringList{QStringLiteral("正財格")}},
+            {QStringLiteral("reason"), QStringLiteral("monthTenGod と monthHiddenStemTenGods、rankedPatterns を内部参照します。")}
+        },
+        QStringLiteral("primaryBasis や rankedPatterns は内部判定用です。"),
+        {},
+        QString(),
+        {},
+        QString(),
+        {},
+        QString(),
+        {},
+        QString()
+    };
+
+    const InterpretationResult result = engine.interpret(chartResult);
+    const QString allText = result.summaryText + QStringLiteral("\n") + result.detailText + QStringLiteral("\n") + result.cautionText;
+
+    QVERIFY(!allText.contains(QStringLiteral("balanceState")));
+    QVERIFY(!allText.contains(QStringLiteral("referenceScore")));
+    QVERIFY(!allText.contains(QStringLiteral("strengthPriority")));
+    QVERIFY(!allText.contains(QStringLiteral("climatePriority")));
+    QVERIFY(!allText.contains(QStringLiteral("shortagePriority")));
+    QVERIFY(!allText.contains(QStringLiteral("rankedElements")));
+    QVERIFY(!allText.contains(QStringLiteral("primaryBasis")));
+    QVERIFY(!allText.contains(QStringLiteral("monthTenGod")));
+    QVERIFY(!allText.contains(QStringLiteral("monthHiddenStemTenGods")));
+    QVERIFY(!allText.contains(QStringLiteral("strengthSupport")));
+    QVERIFY(!allText.contains(QStringLiteral("usefulGodSupport")));
+    QVERIFY(!allText.contains(QStringLiteral("rankedPatterns")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("強め")));
+    QVERIFY(result.summaryText.contains(QStringLiteral("参考スコア")));
 }
 
 void CoreTests::appControllerReturnsInterpretationResultMap()

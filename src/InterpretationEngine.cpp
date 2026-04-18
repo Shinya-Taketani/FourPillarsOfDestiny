@@ -57,6 +57,107 @@ QString compactStatusLine(const QString &label, const QString &statusMessage)
     return QStringLiteral("%1: %2").arg(label, statusMessage.trimmed());
 }
 
+QString localizedStrengthLabel(const QString &label)
+{
+    if (label == QStringLiteral("strong")) {
+        return QStringLiteral("強め");
+    }
+    if (label == QStringLiteral("neutral")) {
+        return QStringLiteral("中庸");
+    }
+    if (label == QStringLiteral("weak")) {
+        return QStringLiteral("弱め");
+    }
+    return label;
+}
+
+QString replaceDisplayTerms(QString text)
+{
+    static const QList<QPair<QString, QString>> replacements{
+        {QStringLiteral("basicNature"), QStringLiteral("基本性質")},
+        {QStringLiteral("positiveExpression"), QStringLiteral("長所寄り表現")},
+        {QStringLiteral("cautionExpression"), QStringLiteral("注意点表現")},
+        {QStringLiteral("workTheme"), QStringLiteral("仕事面")},
+        {QStringLiteral("relationshipTheme"), QStringLiteral("対人面")},
+        {QStringLiteral("strong"), QStringLiteral("強め")},
+        {QStringLiteral("neutral"), QStringLiteral("中庸")},
+        {QStringLiteral("weak"), QStringLiteral("弱め")},
+        {QStringLiteral("verified"), QStringLiteral("採用済み")},
+        {QStringLiteral("provisional"), QStringLiteral("暫定")},
+        {QStringLiteral("sameStemMatches"), QStringLiteral("同干候補")},
+        {QStringLiteral("sameBranchMatches"), QStringLiteral("同支候補")},
+        {QStringLiteral("clashBranches"), QStringLiteral("冲候補")},
+        {QStringLiteral("stemCombinationCandidates"), QStringLiteral("干合候補")},
+        {QStringLiteral("relationSummary"), QStringLiteral("関係補足")},
+        {QStringLiteral("major fortune"), QStringLiteral("大運")},
+        {QStringLiteral("annual fortune"), QStringLiteral("歳運")},
+        {QStringLiteral("majorFortune"), QStringLiteral("大運")},
+        {QStringLiteral("annualFortune"), QStringLiteral("歳運")},
+        {QStringLiteral("majorFortunes"), QStringLiteral("大運一覧")},
+        {QStringLiteral("annualFortunes"), QStringLiteral("歳運一覧")},
+        {QStringLiteral("monthPillar"), QStringLiteral("月柱")},
+        {QStringLiteral("yearPillar"), QStringLiteral("年柱")},
+        {QStringLiteral("dayPillar"), QStringLiteral("日柱")},
+        {QStringLiteral("hourPillar"), QStringLiteral("時柱")},
+        {QStringLiteral("strengthEvaluation"), QStringLiteral("強弱評価")},
+        {QStringLiteral("usefulGodCandidates"), QStringLiteral("用神候補")},
+        {QStringLiteral("patternCandidates"), QStringLiteral("格局候補")},
+        {QStringLiteral("balanceState"), QStringLiteral("強弱傾向")},
+        {QStringLiteral("referenceScore"), QStringLiteral("参考スコア")},
+        {QStringLiteral("strengthPriority"), QStringLiteral("強弱優先順")},
+        {QStringLiteral("climatePriority"), QStringLiteral("調候優先順")},
+        {QStringLiteral("shortagePriority"), QStringLiteral("不足優先順")},
+        {QStringLiteral("rankedElements"), QStringLiteral("五行候補一覧")},
+        {QStringLiteral("primaryBasis"), QStringLiteral("主判定根拠")},
+        {QStringLiteral("monthTenGod"), QStringLiteral("月干通変星")},
+        {QStringLiteral("monthHiddenStemTenGods"), QStringLiteral("月支蔵干通変星")},
+        {QStringLiteral("strengthSupport"), QStringLiteral("強弱補足")},
+        {QStringLiteral("usefulGodSupport"), QStringLiteral("用神補足")},
+        {QStringLiteral("rankedPatterns"), QStringLiteral("格局候補一覧")},
+        {QStringLiteral("month_tengod_centered"), QStringLiteral("月干通変星基準")},
+        {QStringLiteral("supportiveCount"), QStringLiteral("支援要素数")}
+    };
+
+    for (const auto &replacement : replacements) {
+        text.replace(replacement.first, replacement.second);
+    }
+
+    return text.trimmed();
+}
+
+QString insertLineBreakAfterPeriod(const QString &text)
+{
+    QString result;
+    result.reserve(text.size() + 16);
+
+    for (int i = 0; i < text.size(); ++i) {
+        const QChar current = text.at(i);
+        result.append(current);
+
+        if (current != QChar(0x3002)) {
+            continue;
+        }
+
+        if (i + 1 >= text.size()) {
+            continue;
+        }
+
+        const QChar next = text.at(i + 1);
+        if (next == QChar::LineFeed || next == QChar::CarriageReturn) {
+            continue;
+        }
+
+        result.append(QChar::LineFeed);
+    }
+
+    return result.trimmed();
+}
+
+QString polishDisplayText(const QString &text)
+{
+    return insertLineBreakAfterPeriod(replaceDisplayTerms(text));
+}
+
 QString heavenlyStemOfPillar(const QString &pillar)
 {
     return pillar.isEmpty() ? QString() : pillar.left(1);
@@ -753,7 +854,9 @@ QString firstFortunePillar(const QVariantList &fortunes)
 
 QString strengthSummaryText(const QVariantMap &strengthEvaluation)
 {
-    const QString label = strengthEvaluation.value(QStringLiteral("label")).toString();
+    const QString label = localizedStrengthLabel(
+        strengthEvaluation.value(QStringLiteral("label")).toString()
+    );
     const QString reason = strengthEvaluation.value(QStringLiteral("reason")).toString();
     if (label.isEmpty() && reason.isEmpty()) {
         return QString();
@@ -1006,7 +1109,7 @@ QString fortuneSummaryText(const QVariantList &majorFortunes, const QVariantList
         parts << QStringLiteral("先頭大運は %1 です。").arg(firstMajorFortune);
     }
     if (!firstAnnualFortune.isEmpty()) {
-        parts << QStringLiteral("先頭流年は %1 です。").arg(firstAnnualFortune);
+        parts << QStringLiteral("先頭歳運は %1 です。").arg(firstAnnualFortune);
     }
 
     return parts.join(QStringLiteral(" "));
@@ -1304,17 +1407,29 @@ InterpretationResult InterpretationEngine::interpret(const ChartResult &chartRes
             ? QStringLiteral("月柱や行運は採用仕様に基づく判定を含みます。")
             : QString(),
         includesProvisionalData
-            ? QStringLiteral("一部に provisional / 暫定データや参考表示を含みます。")
+            ? QStringLiteral("一部に暫定データや参考表示を含みます。")
             : QString()
     });
     if (summaryText.isEmpty()) {
-        summaryText = QStringLiteral("命式情報が不足しているため、解釈要約は未対応です。");
+        summaryText = QStringLiteral("命式情報が不足しているため、解釈要約を表示できません。");
     }
 
     const QString majorRelationSummary = firstRelationSummary(chartResult.majorFortunes);
     const QString annualRelationSummary = firstRelationSummary(chartResult.annualFortunes);
 
     QStringList detailLines;
+    detailLines << QStringLiteral("年柱: %1").arg(
+        chartResult.yearPillar.isEmpty() ? QStringLiteral("未対応") : chartResult.yearPillar
+    );
+    detailLines << QStringLiteral("月柱: %1").arg(
+        chartResult.monthPillar.isEmpty() ? QStringLiteral("未対応") : chartResult.monthPillar
+    );
+    detailLines << QStringLiteral("日柱: %1").arg(
+        chartResult.dayPillar.isEmpty() ? QStringLiteral("未対応") : chartResult.dayPillar
+    );
+    detailLines << QStringLiteral("時柱: %1").arg(
+        chartResult.hourPillar.isEmpty() ? QStringLiteral("未対応") : chartResult.hourPillar
+    );
     detailLines.append(dayMasterDetailLines(chartResult.dayPillar));
     detailLines.append(monthBranchDetailLines(chartResult.monthPillar));
     detailLines.append(dayBranchPartnerDetailLines(chartResult.dayPillar));
@@ -1322,7 +1437,9 @@ InterpretationResult InterpretationEngine::interpret(const ChartResult &chartRes
     detailLines << QStringLiteral("強弱評価: %1").arg(
         chartResult.strengthEvaluation.value(QStringLiteral("label")).toString().isEmpty()
             ? QStringLiteral("未対応")
-            : chartResult.strengthEvaluation.value(QStringLiteral("label")).toString()
+            : localizedStrengthLabel(
+                chartResult.strengthEvaluation.value(QStringLiteral("label")).toString()
+            )
     );
     if (!chartResult.strengthEvaluation.value(QStringLiteral("reason")).toString().isEmpty()) {
         detailLines << QStringLiteral("  根拠: %1").arg(
@@ -1421,19 +1538,35 @@ InterpretationResult InterpretationEngine::interpret(const ChartResult &chartRes
     const QString detailText = detailLines.join(QStringLiteral("\n"));
 
     QStringList cautionParts;
-    cautionParts << QStringLiteral("この解釈は暫定候補と参考表示に基づく要約です。");
     if (includesAdoptedSpec) {
         cautionParts << QStringLiteral("月柱や行運には採用仕様に基づく判定が含まれます。");
     }
     if (includesProvisionalData) {
-        cautionParts << QStringLiteral("節入りデータや候補表示に provisional / 暫定 / 参考表示が含まれる可能性があります。");
+        cautionParts << QStringLiteral("節入りデータや候補表示に暫定データが含まれる可能性があります。");
     }
-    cautionParts << QStringLiteral("大運・流年は参考表示段階の要素を含みます。");
-    cautionParts << QStringLiteral("泰山流固有ルールや吉凶断定は未確定部分が残っています。");
+    if (!chartResult.majorFortunesStatusMessage.trimmed().isEmpty()
+        || !chartResult.annualFortunesStatusMessage.trimmed().isEmpty()
+        || !majorFortuneDetail.isEmpty()
+        || !annualFortuneDetail.isEmpty()) {
+        cautionParts << QStringLiteral("大運・歳運の説明は参考表示段階の補足を含みます。");
+    }
+    if (!chartResult.strengthEvaluationStatusMessage.trimmed().isEmpty()
+        || !chartResult.usefulGodCandidatesStatusMessage.trimmed().isEmpty()
+        || !chartResult.patternCandidatesStatusMessage.trimmed().isEmpty()) {
+        cautionParts << QStringLiteral("強弱評価・用神候補・格局候補は断定ではなく候補表示を含みます。");
+    }
+    if (!chartResult.monthPillarStatusMessage.trimmed().isEmpty()
+        || !chartResult.solarTermDifferencePreparationStatusMessage.trimmed().isEmpty()) {
+        cautionParts << QStringLiteral("節入りや境界判定には採用仕様に基づく補足があります。");
+    }
+    if (!chartResult.description.trimmed().isEmpty()
+        && chartResult.description.contains(QStringLiteral("要確認"))) {
+        cautionParts << QStringLiteral("未確定の仕様や要確認事項が一部に残っています。");
+    }
 
     return {
-        summaryText,
-        detailText,
-        cautionParts.join(QStringLiteral(" " ))
+        polishDisplayText(summaryText),
+        polishDisplayText(detailText),
+        polishDisplayText(cautionParts.join(QStringLiteral(" ")))
     };
 }

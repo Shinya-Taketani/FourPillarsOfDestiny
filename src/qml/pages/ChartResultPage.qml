@@ -156,6 +156,40 @@ Kirigami.Page {
 
                     Label {
                         width: parent.width
+                        text: "解釈メモ"
+                        font.bold: true
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: interpretationResult.summaryText
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: interpretationResult.detailText
+                    }
+
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        color: Kirigami.Theme.disabledTextColor
+                        text: interpretationResult.cautionText
+                    }
+                }
+            }
+
+            Frame {
+                width: parent.width
+
+                Column {
+                    width: parent.width
+                    spacing: 12
+
+                    Label {
+                        width: parent.width
                         text: "詳細命式"
                         font.bold: true
                     }
@@ -662,40 +696,6 @@ Kirigami.Page {
                         visible: chartResult.annualFortunesStatusMessage.length > 0
                         color: Kirigami.Theme.disabledTextColor
                         text: "流年状態: " + chartResult.annualFortunesStatusMessage
-                    }
-                }
-            }
-
-            Frame {
-                width: parent.width
-
-                Column {
-                    width: parent.width
-                    spacing: 12
-
-                    Label {
-                        width: parent.width
-                        text: "解釈メモ"
-                        font.bold: true
-                    }
-
-                    Label {
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                        text: interpretationResult.summaryText
-                    }
-
-                    Label {
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                        text: interpretationResult.detailText
-                    }
-
-                    Label {
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                        color: Kirigami.Theme.disabledTextColor
-                        text: interpretationResult.cautionText
                     }
                 }
             }
